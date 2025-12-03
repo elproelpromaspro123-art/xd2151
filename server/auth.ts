@@ -17,18 +17,32 @@ function createTransporter() {
   
   if (!gmailUser || !gmailPass) {
     console.error("Gmail credentials not configured in environment variables");
+    console.error("GMAIL_USER:", gmailUser ? "✓ configured" : "✗ missing");
+    console.error("GMAIL_APP_PASSWORD:", gmailPass ? "✓ configured" : "✗ missing");
     return null;
   }
   
+  console.log(`Creating Gmail transporter for: ${gmailUser}`);
+  
+  // Configuración explícita de Gmail SMTP con TLS
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // true para 465, false para otros puertos
+    requireTLS: true,
     auth: {
       user: gmailUser,
       pass: gmailPass,
     },
-    connectionTimeout: 10000, // 10 segundos
-    socketTimeout: 10000, // 10 segundos
-    greetingTimeout: 10000, // 10 segundos
+    connectionTimeout: 30000, // 30 segundos
+    socketTimeout: 30000, // 30 segundos
+    greetingTimeout: 30000, // 30 segundos
+    tls: {
+      // No rechazar conexiones no autorizadas
+      rejectUnauthorized: false,
+    },
+    debug: process.env.NODE_ENV === "development", // Activar debug en desarrollo
+    logger: process.env.NODE_ENV === "development", // Logs en desarrollo
   });
 }
 
@@ -288,9 +302,22 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     return false;
   }
 
+  console.log(`Attempting to send verification email to: ${email}`);
+  console.log(`Using Gmail account: ${gmailUser}`);
+
   const transporter = createTransporter();
   if (!transporter) {
     console.error("Failed to create email transporter");
+    return false;
+  }
+
+  // Verificar conexión antes de enviar
+  try {
+    console.log("Verifying Gmail transporter connection...");
+    await transporter.verify();
+    console.log("Gmail transporter connection verified successfully");
+  } catch (verifyError) {
+    console.error("Gmail transporter verification failed:", verifyError);
     return false;
   }
 

@@ -632,10 +632,60 @@ export async function registerRoutes(
         return res.status(400).json({ error: result.error });
       }
 
+      // Verificar si el email se envió realmente
+      // registerUser ya intentó enviar el email, pero necesitamos verificar el código generado
+      const verificationData = loadVerificationData();
+      const verification = verificationData.codes[email.toLowerCase()];
+      
+      if (!verification) {
+        return res.status(500).json({ 
+          success: false,
+          error: "Error al generar código de verificación. Por favor intenta de nuevo.",
+          requiresVerification: true,
+          emailSent: false
+        });
+      }
+
+      // Intentar enviar el email con timeout
+      let emailSent = false;
+      try {
+        const emailPromise = sendVerificationEmail(email, verification.code);
+        const timeoutPromise = new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            console.error("Email sending timeout after 30 seconds");
+            resolve(false);
+          }, 30000);
+        });
+        emailSent = await Promise.race([emailPromise, timeoutPromise]);
+        
+        if (emailSent) {
+          console.log(`Verification email successfully sent to ${email}`);
+        } else {
+          console.error(`Failed to send verification email to ${email}`);
+        }
+      } catch (error) {
+        console.error("Error sending verification email on register:", error);
+        emailSent = false;
+      }
+
+      // Si el email no se envió, retornar error
+      if (!emailSent) {
+        return res.status(500).json({ 
+          success: false,
+          error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo o contacta soporte.",
+          requiresVerification: true,
+          emailSent: false,
+          email: email
+        });
+      }
+
+      // Solo retornar éxito si el email se envió correctamente
       res.status(201).json({ 
         success: true, 
         message: "Registro exitoso. Te hemos enviado un código de verificación a tu correo. Revisa también tu carpeta de spam.",
-        requiresVerification: true
+        requiresVerification: true,
+        emailSent: true,
+        email: email
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -678,9 +728,54 @@ export async function registerRoutes(
         return res.status(400).json({ error: result.error });
       }
 
+      // Verificar si el email realmente se envió
+      const verificationData = loadVerificationData();
+      const verification = verificationData.codes[email.toLowerCase()];
+      
+      if (!verification) {
+        return res.status(500).json({ 
+          success: false,
+          error: "Error al generar código de verificación. Por favor intenta de nuevo.",
+          emailSent: false
+        });
+      }
+
+      // Intentar enviar el email con timeout
+      let emailSent = false;
+      try {
+        const emailPromise = sendVerificationEmail(email, verification.code);
+        const timeoutPromise = new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            console.error("Email sending timeout after 30 seconds");
+            resolve(false);
+          }, 30000);
+        });
+        emailSent = await Promise.race([emailPromise, timeoutPromise]);
+        
+        if (emailSent) {
+          console.log(`Verification email successfully resent to ${email}`);
+        } else {
+          console.error(`Failed to resend verification email to ${email}`);
+        }
+      } catch (error) {
+        console.error("Error resending verification email:", error);
+        emailSent = false;
+      }
+
+      // Si el email no se envió, retornar error
+      if (!emailSent) {
+        return res.status(500).json({ 
+          success: false,
+          error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
+          emailSent: false
+        });
+      }
+
+      // Solo retornar éxito si el email se envió correctamente
       res.json({ 
         success: true, 
-        message: "Código reenviado. Revisa tu correo (también la carpeta de spam)." 
+        message: "Código reenviado. Revisa tu correo (también la carpeta de spam).",
+        emailSent: true
       });
     } catch (error) {
       console.error("Resend verification error:", error);
@@ -789,26 +884,47 @@ export async function registerRoutes(
         saveVerificationData(verificationData);
 
         // Enviar email con timeout para evitar que se quede congelado
+        // IMPORTANTE: Solo retornar emailSent: true si realmente se envió
         let emailSent = false;
         try {
           const emailPromise = sendVerificationEmail(googleData.email, code);
           const timeoutPromise = new Promise<boolean>((resolve) => {
-            setTimeout(() => resolve(false), 15000); // 15 segundos timeout
+            setTimeout(() => {
+              console.error("Email sending timeout after 30 seconds");
+              resolve(false);
+            }, 30000); // 30 segundos timeout (coincide con connectionTimeout)
           });
           emailSent = await Promise.race([emailPromise, timeoutPromise]);
+          
+          if (emailSent) {
+            console.log(`Verification email successfully sent to ${googleData.email}`);
+          } else {
+            console.error(`Failed to send verification email to ${googleData.email}`);
+          }
         } catch (error) {
           console.error("Error sending verification email:", error);
           emailSent = false;
         }
 
+        // Si el email no se envió, retornar error
+        if (!emailSent) {
+          return res.status(500).json({
+            success: false,
+            requiresVerification: true,
+            email: googleData.email,
+            emailSent: false,
+            error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo o contacta soporte.",
+            message: "Error al enviar el código. Intenta de nuevo."
+          });
+        }
+
+        // Solo retornar éxito si el email se envió correctamente
         return res.status(200).json({
           success: false,
           requiresVerification: true,
           email: googleData.email,
-          emailSent,
-          message: emailSent 
-            ? "Se ha enviado un código de verificación a tu correo. Debes verificar tu correo antes de continuar."
-            : "Error al enviar el código. Intenta de nuevo."
+          emailSent: true,
+          message: "Se ha enviado un código de verificación a tu correo. Debes verificar tu correo antes de continuar."
         });
       }
 

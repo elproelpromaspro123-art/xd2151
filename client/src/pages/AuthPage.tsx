@@ -100,12 +100,22 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       if (data.requiresVerification) {
         setEmail(data.email);
         setMode("verify");
-        toast({
-          title: "Verificación requerida",
-          description: data.emailSent 
-            ? "Hemos enviado un código de verificación a tu correo"
-            : "Por favor verifica tu correo electrónico",
-        });
+        
+        // SOLO mostrar éxito si el email realmente se envió
+        if (data.emailSent === true) {
+          toast({
+            title: "Código enviado",
+            description: "Hemos enviado un código de verificación a tu correo. Revisa también la carpeta de spam.",
+            variant: "default",
+          });
+        } else {
+          // Si el email NO se envió, mostrar error
+          toast({
+            title: "Error al enviar código",
+            description: data.error || data.message || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
@@ -167,12 +177,22 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         throw new Error(data.error || "Error al registrar");
       }
 
-      toast({
-        title: "Registro exitoso",
-        description: "Te hemos enviado un código de verificación. Revisa tu correo (también la carpeta de spam).",
-      });
-
-      setMode("verify");
+      // SOLO mostrar éxito si el email realmente se envió
+      if (data.emailSent === true) {
+        toast({
+          title: "Registro exitoso",
+          description: "Te hemos enviado un código de verificación. Revisa tu correo (también la carpeta de spam).",
+          variant: "default",
+        });
+        setMode("verify");
+      } else {
+        // Si el email NO se envió, mostrar error
+        toast({
+          title: "Error al enviar código",
+          description: data.error || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -272,10 +292,20 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         throw new Error(data.error || "Error al reenviar código");
       }
 
-      toast({
-        title: "Código reenviado",
-        description: "Revisa tu correo (también la carpeta de spam)",
-      });
+      // SOLO mostrar éxito si el email realmente se envió
+      if (data.emailSent === true) {
+        toast({
+          title: "Código reenviado",
+          description: "Revisa tu correo (también la carpeta de spam)",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error al reenviar código",
+          description: data.error || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -322,7 +352,11 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
                   <div>
                     <p className="text-sm text-blue-200">
-                      Hemos enviado un código de verificación a <strong>{email}</strong>
+                      {email ? (
+                        <>Se enviará un código de verificación a <strong>{email}</strong></>
+                      ) : (
+                        "Ingresa tu correo para recibir el código de verificación"
+                      )}
                     </p>
                     <p className="text-xs text-blue-300/70 mt-1">
                       Si no lo encuentras en tu bandeja de entrada, revisa la carpeta de spam o correo no deseado.
