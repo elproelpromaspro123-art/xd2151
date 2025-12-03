@@ -24,25 +24,28 @@ function createTransporter() {
   
   console.log(`Creating Gmail transporter for: ${gmailUser}`);
   
-  // Configuración explícita de Gmail SMTP con TLS
+  // Intentar primero con puerto 465 (SSL) que es más confiable
+  // Si falla, el código intentará con 587 (TLS)
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // true para 465, false para otros puertos
-    requireTLS: true,
+    port: 465,
+    secure: true, // true para puerto 465 (SSL)
     auth: {
       user: gmailUser,
       pass: gmailPass,
     },
-    connectionTimeout: 30000, // 30 segundos
-    socketTimeout: 30000, // 30 segundos
-    greetingTimeout: 30000, // 30 segundos
+    connectionTimeout: 20000, // 20 segundos
+    socketTimeout: 20000, // 20 segundos
+    greetingTimeout: 20000, // 20 segundos
     tls: {
-      // No rechazar conexiones no autorizadas
-      rejectUnauthorized: false,
+      rejectUnauthorized: false, // No rechazar certificados
+      minVersion: 'TLSv1.2',
     },
-    debug: process.env.NODE_ENV === "development", // Activar debug en desarrollo
-    logger: process.env.NODE_ENV === "development", // Logs en desarrollo
+    pool: true, // Usar conexión persistente
+    maxConnections: 1,
+    maxMessages: 3,
+    rateDelta: 1000,
+    rateLimit: 5,
   });
 }
 
@@ -305,24 +308,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
   console.log(`Attempting to send verification email to: ${email}`);
   console.log(`Using Gmail account: ${gmailUser}`);
 
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.error("Failed to create email transporter");
-    return false;
-  }
-
-  // Verificar conexión antes de enviar
-  try {
-    console.log("Verifying Gmail transporter connection...");
-    await transporter.verify();
-    console.log("Gmail transporter connection verified successfully");
-  } catch (verifyError) {
-    console.error("Gmail transporter verification failed:", verifyError);
-    return false;
-  }
-
-  try {
-    const htmlContent = `
+  const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -371,6 +357,83 @@ export async function sendVerificationEmail(email: string, code: string): Promis
   </table>
 </body>
 </html>
+    `;
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.error("Failed to create email transporter");
+    return false;
+  }
+
+  // NO verificar conexión antes de enviar - esto causa timeout
+  // En su lugar, intentar enviar directamente y manejar el error
+  // Usar Promise.race con timeout para evitar que se quede congelado
+  try {
+    const sendPromise = transporter.sendMail({
+      from: `"Roblox UI Designer Pro" <${gmailUser}>`,
+      to: email,
+      subject: "Verificación - Roblox UI Designer Pro",
+      html: htmlContent,
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Email sending timeout after 25 seconds"));
+      }, 25000); // 25 segundos timeout
+    });
+
+    await Promise.race([sendPromise, timeoutPromise]);
+    console.log(`Verification email sent successfully to ${email}`);
+    return true;
+  } catch (error: any) {
+    console.error("Error sending verification email:", error);
+    
+    // Si falla con puerto 465, intentar con puerto 587 (TLS)
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message?.includes('timeout')) {
+      console.log("Retrying with port 587 (TLS)...");
+      try {
+        const fallbackTransporter = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: {
+            user: gmailUser,
+            pass: gmailPass,
+          },
+          connectionTimeout: 15000,
+          socketTimeout: 15000,
+          greetingTimeout: 15000,
+          tls: {
+            rejectUnauthorized: false,
+          },
+        });
+
+        const sendPromise = fallbackTransporter.sendMail({
+          from: `"Roblox UI Designer Pro" <${gmailUser}>`,
+          to: email,
+          subject: "Verificación - Roblox UI Designer Pro",
+          html: htmlContent,
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Email sending timeout after 25 seconds"));
+          }, 25000);
+        });
+
+        await Promise.race([sendPromise, timeoutPromise]);
+        console.log(`Verification email sent successfully to ${email} (using fallback port 587)`);
+        return true;
+      } catch (fallbackError) {
+        console.error("Fallback email sending also failed:", fallbackError);
+        return false;
+      }
+    }
+    
+    return false;
+  }
+}
     `;
 
     await transporter.sendMail({
