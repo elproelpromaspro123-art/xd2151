@@ -159,7 +159,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
           useWebSearch,
           model: selectedModel,
           useReasoning,
-          imageBase64,
+          imageBase64: imageBase64 ?? undefined,
           chatMode
         }),
       });
