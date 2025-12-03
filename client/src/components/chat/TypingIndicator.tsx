@@ -1,11 +1,21 @@
-export function TypingIndicator() {
+interface TypingIndicatorProps {
+  chatMode?: "roblox" | "general";
+}
+
+export function TypingIndicator({ chatMode = "roblox" }: TypingIndicatorProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 message-fade-in">
-      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+        chatMode === 'general'
+          ? 'bg-indigo-100'
+          : 'bg-primary/10'
+      }`}>
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className="w-5 h-5 text-primary"
+          className={`w-5 h-5 transition-colors ${
+            chatMode === 'general' ? 'text-indigo-600' : 'text-primary'
+          }`}
           stroke="currentColor"
           strokeWidth="1.5"
         >
@@ -17,8 +27,14 @@ export function TypingIndicator() {
         </svg>
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-foreground">Roblox UI Designer</span>
-        <div className="typing-indicator">
+        <span className={`text-sm font-medium transition-colors ${
+          chatMode === 'general'
+            ? 'text-slate-900'
+            : 'text-foreground'
+        }`}>{chatMode === 'general' ? 'Asistente Pro' : 'Roblox UI Designer'}</span>
+        <div className={`typing-indicator ${
+          chatMode === 'general' ? 'general-typing' : ''
+        }`}>
           <span></span>
           <span></span>
           <span></span>

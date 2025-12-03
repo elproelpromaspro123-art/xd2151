@@ -78,7 +78,7 @@ export function MessageBubble({ message, isStreaming = false, onRegenerate, chat
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <MessageContent content={message.content} isStreaming={isStreaming} />
+            <MessageContent content={message.content} isStreaming={isStreaming} chatMode={chatMode} />
           )}
         </div>
 

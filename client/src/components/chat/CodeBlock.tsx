@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 interface CodeBlockProps {
   language: string;
   code: string;
+  chatMode?: "roblox" | "general";
 }
 
 const customTheme = {
@@ -26,7 +27,7 @@ const customTheme = {
   },
 };
 
-export function CodeBlock({ language, code }: CodeBlockProps) {
+export function CodeBlock({ language, code, chatMode = "roblox" }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -42,16 +43,30 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   const displayLanguage = language === "lua" || language === "luau" ? "Luau" : language.toUpperCase();
 
   return (
-    <div className="group relative rounded-lg overflow-visible animated-border my-3">
-      <div className="flex items-center justify-between px-4 py-2 bg-card/80 border-b border-border/50 rounded-t-lg">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className={`group relative rounded-lg overflow-visible my-3 transition-colors ${
+      chatMode === 'general' ? 'animated-border-general' : 'animated-border'
+    }`}>
+      <div className={`flex items-center justify-between px-4 py-2 border-b rounded-t-lg transition-colors ${
+        chatMode === 'general'
+          ? 'bg-indigo-50/60 border-indigo-200/30'
+          : 'bg-card/80 border-border/50'
+      }`}>
+        <span className={`text-xs font-medium uppercase tracking-wider transition-colors ${
+          chatMode === 'general'
+            ? 'text-indigo-700'
+            : 'text-muted-foreground'
+        }`}>
           {displayLanguage}
         </span>
         <Button
           size="sm"
           variant="ghost"
           onClick={handleCopy}
-          className="h-7 px-2 text-xs gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          className={`h-7 px-2 text-xs gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${
+            chatMode === 'general'
+              ? 'text-indigo-600 hover:bg-indigo-100/40'
+              : ''
+          }`}
           data-testid="button-copy-code"
         >
           {copied ? (
@@ -67,7 +82,11 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           )}
         </Button>
       </div>
-      <div className="bg-[#1a1a1f] p-4 overflow-x-auto rounded-b-lg">
+      <div className={`p-4 overflow-x-auto rounded-b-lg transition-colors ${
+        chatMode === 'general'
+          ? 'bg-slate-900/80 border border-t-0 border-indigo-200/20'
+          : 'bg-[#1a1a1f]'
+      }`}>
         <SyntaxHighlighter
           language={language === "luau" ? "lua" : language}
           style={customTheme}

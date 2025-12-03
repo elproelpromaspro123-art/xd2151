@@ -455,7 +455,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
           <div className="flex items-center gap-3">
             {user && (
-              <ProfileModal user={user}>
+              <ProfileModal user={user} chatMode={chatMode}>
                 <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
                   <UserIcon className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline max-w-[100px] truncate">{user.email}</span>
@@ -480,7 +480,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
               <span>{aiUsageRemaining === 999 ? "∞" : aiUsageRemaining} usos</span>
             </div>
             
-            <UpgradeModal usage={usage || null}>
+            <UpgradeModal usage={usage || null} chatMode={chatMode}>
               <Button variant="outline" size="sm" className={`gap-2 animated-border ${
                 chatMode === 'general'
                   ? 'border-indigo-300/30 text-indigo-600 hover:bg-indigo-50'
@@ -539,7 +539,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 ))}
 
                 {isStreaming && useReasoning && (
-                  <ThinkingIndicator reasoning={streamingReasoning || undefined} modelName={currentModelName || selectedModelInfo?.name} />
+                  <ThinkingIndicator reasoning={streamingReasoning || undefined} modelName={currentModelName || selectedModelInfo?.name} chatMode={chatMode} />
                 )}
 
                 {isStreaming && streamingMessage && (
@@ -556,7 +556,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                   />
                 )}
 
-                {isStreaming && !streamingMessage && <TypingIndicator />}
+                {isStreaming && !streamingMessage && <TypingIndicator chatMode={chatMode} />}
 
                 <div ref={messagesEndRef} />
               </div>

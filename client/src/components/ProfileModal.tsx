@@ -20,6 +20,7 @@ interface ProfileModalProps {
   user: UserType;
   children: React.ReactNode;
   onUserUpdate?: (user: UserType) => void;
+  chatMode?: "roblox" | "general";
 }
 
 function getActualTheme(): boolean {
@@ -30,7 +31,7 @@ function getActualTheme(): boolean {
   return document.documentElement.classList.contains("dark");
 }
 
-export function ProfileModal({ user, children, onUserUpdate }: ProfileModalProps) {
+export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox" }: ProfileModalProps) {
   const [open, setOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -139,10 +140,18 @@ export function ProfileModal({ user, children, onUserUpdate }: ProfileModalProps
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className={`sm:max-w-[425px] transition-colors ${
+        chatMode === 'general'
+          ? 'bg-gradient-to-b from-white/95 to-indigo-50/40 border-indigo-200/30'
+          : ''
+      }`}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+          <DialogTitle className={`flex items-center gap-2 transition-colors ${
+            chatMode === 'general'
+              ? 'text-indigo-900'
+              : ''
+          }`}>
+            <User className={`h-5 w-5 ${chatMode === 'general' ? 'text-indigo-600' : ''}`} />
             Mi Cuenta
           </DialogTitle>
           <DialogDescription className="sr-only">

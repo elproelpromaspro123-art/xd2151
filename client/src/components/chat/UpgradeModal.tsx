@@ -19,6 +19,7 @@ interface UsageInfo {
 interface UpgradeModalProps {
   usage: UsageInfo | null;
   children?: React.ReactNode;
+  chatMode?: "roblox" | "general";
 }
 
 function getNextResetDate(weekStartDate: string): string {
@@ -37,7 +38,7 @@ function getNextResetDate(weekStartDate: string): string {
   return `${hours} hora${hours > 1 ? 's' : ''}`;
 }
 
-export function UpgradeModal({ usage, children }: UpgradeModalProps) {
+export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeModalProps) {
   const isPremium = usage?.isPremium || false;
   const aiUsed = usage?.aiUsageCount || 0;
   const aiLimit = usage?.limits.aiUsagePerWeek || 50;
@@ -74,17 +75,29 @@ export function UpgradeModal({ usage, children }: UpgradeModalProps) {
     <Dialog>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="outline" size="sm" className="gap-2 animated-border">
+          <Button variant="outline" size="sm" className={`gap-2 animated-border transition-colors ${
+            chatMode === 'general'
+              ? 'border-indigo-300/30 text-indigo-600 hover:bg-indigo-50'
+              : ''
+          }`}>
             <Sparkles className="h-4 w-4" />
             {isPremium ? "Premium" : "Mejorar"}
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[650px] bg-background border-border max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`sm:max-w-[650px] border-border max-h-[90vh] overflow-y-auto transition-colors ${
+        chatMode === 'general'
+          ? 'bg-gradient-to-b from-white/95 to-indigo-50/40 border-indigo-200/30'
+          : 'bg-background'
+      }`}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Planes de Roblox UI Designer
+          <DialogTitle className={`flex items-center gap-2 text-xl transition-colors ${
+            chatMode === 'general'
+              ? 'text-indigo-900'
+              : ''
+          }`}>
+            <Sparkles className={`h-5 w-5 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`} />
+            {chatMode === 'general' ? 'Planes de Asistente Pro' : 'Planes de Roblox UI Designer'}
           </DialogTitle>
         </DialogHeader>
         

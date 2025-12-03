@@ -156,25 +156,25 @@ export function ChatInput({
   const hasContent = message.trim() || pastedChips.length > 0;
 
   return (
-    <div className="p-4 border-t border-border/50 bg-background/80 backdrop-blur-sm">
+    <div className={`p-4 border-t transition-colors ${chatMode === 'general' ? 'border-indigo-200/30 bg-gradient-to-r from-white/40 via-indigo-50/20 to-blue-50/20 backdrop-blur-md' : 'border-border/50 bg-background/80 backdrop-blur-sm'}`}>
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-        <div className="relative rounded-xl bg-card animated-border-strong overflow-visible">
+        <div className={`relative rounded-xl animated-border-strong overflow-visible transition-colors ${chatMode === 'general' ? 'bg-white/70 border border-indigo-200/40 shadow-sm hover:border-indigo-300/50' : 'bg-card'}`}>
           {pastedChips.length > 0 && (
             <div className="flex flex-wrap gap-2 p-3 pb-0">
               {pastedChips.map(chip => (
                 <div 
                   key={chip.id}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-secondary/80 rounded-lg text-xs max-w-[200px] group"
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs max-w-[200px] group transition-colors ${chatMode === 'general' ? 'bg-indigo-100/60 border border-indigo-200/40' : 'bg-secondary/80'}`}
                 >
-                  <span className="truncate text-muted-foreground">{chip.preview}</span>
+                  <span className={`truncate ${chatMode === 'general' ? 'text-slate-700' : 'text-muted-foreground'}`}>{chip.preview}</span>
                   <button
                     type="button"
                     onClick={() => removeChip(chip.id)}
-                    className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                    className={`transition-colors opacity-0 group-hover:opacity-100 ${chatMode === 'general' ? 'text-slate-600 hover:text-indigo-600' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
-                  <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${chatMode === 'general' ? 'bg-indigo-100 text-indigo-700' : 'bg-primary/10 text-primary'}`}>
                     PASTED
                   </span>
                 </div>
@@ -188,7 +188,7 @@ export function ChatInput({
                 <img 
                   src={imagePreview} 
                   alt="Preview" 
-                  className="h-20 w-auto rounded-lg object-cover border border-border"
+                  className={`h-20 w-auto rounded-lg object-cover border transition-colors ${chatMode === 'general' ? 'border-indigo-200/50' : 'border-border'}`}
                 />
                 <button
                   type="button"
@@ -212,7 +212,11 @@ export function ChatInput({
               : "Describe el diseño UI/UX que necesitas para Roblox Studio..."}
             disabled={isLoading || disabled}
             rows={1}
-            className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[48px] max-h-[200px] rounded-xl"
+            className={`w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm focus:outline-none disabled:opacity-50 min-h-[48px] max-h-[200px] rounded-xl transition-colors ${
+              chatMode === 'general' 
+                ? 'text-slate-900 placeholder:text-slate-500' 
+                : 'text-foreground placeholder:text-muted-foreground'
+            }`}
             data-testid="input-chat-message"
           />
           
@@ -232,7 +236,11 @@ export function ChatInput({
                 size="icon"
                 variant="ghost"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                className={`h-8 w-8 transition-colors ${
+                  chatMode === 'general'
+                    ? 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
                 title={`Subir imagen (${selectedModelInfo?.name || 'modelo con soporte de imágenes'})`}
               >
                 <Image className="h-4 w-4" />
@@ -243,7 +251,11 @@ export function ChatInput({
               type="submit"
               size="icon"
               disabled={!hasContent || isLoading || disabled}
-              className="h-9 w-9 rounded-lg transition-all bg-primary hover:bg-primary/90"
+              className={`h-9 w-9 rounded-lg transition-all ${
+                chatMode === 'general'
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg'
+                  : 'bg-primary hover:bg-primary/90'
+              }`}
               data-testid="button-send-message"
             >
               {isLoading ? (

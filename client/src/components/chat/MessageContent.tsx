@@ -5,9 +5,10 @@ import { CodeBlock } from "./CodeBlock";
 interface MessageContentProps {
   content: string;
   isStreaming?: boolean;
+  chatMode?: "roblox" | "general";
 }
 
-export function MessageContent({ content, isStreaming = false }: MessageContentProps) {
+export function MessageContent({ content, isStreaming = false, chatMode = "roblox" }: MessageContentProps) {
   return (
     <div className={`prose-chat ${isStreaming ? "cursor-blink" : ""}`}>
       <ReactMarkdown
@@ -28,7 +29,7 @@ export function MessageContent({ content, isStreaming = false }: MessageContentP
             const language = match ? match[1] : "text";
             const codeString = String(children).replace(/\n$/, "");
 
-            return <CodeBlock language={language} code={codeString} />;
+            return <CodeBlock language={language} code={codeString} chatMode={chatMode} />;
           },
           pre({ children }) {
             return <>{children}</>;
