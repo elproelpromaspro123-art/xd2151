@@ -402,7 +402,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
   };
 
   return (
-    <div className={`${chatMode === 'general' ? 'flex h-screen w-full bg-gradient-to-r from-sky-50 to-indigo-50 text-slate-900' : 'flex h-screen w-full bg-background'} `} data-testid="chat-page">
+    <div className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 text-slate-900' : 'bg-background'}`} data-testid="chat-page">
       <ChatSidebar
         conversations={sortedConversations}
         currentConversationId={currentConversationId}
@@ -412,13 +412,22 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         onDeleteAllConversations={() => deleteAllConversationsMutation.mutate()}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        chatMode={chatMode}
       />
 
       <div className="flex flex-col flex-1 min-w-0">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm lg:px-6">
+        <header className={`flex items-center justify-between px-4 py-3 border-b ${
+          chatMode === 'general'
+            ? 'border-indigo-200/50 bg-white/40 backdrop-blur-md shadow-sm'
+            : 'border-border/50 bg-background/80 backdrop-blur-sm'
+        } lg:px-6`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animated-border-strong">
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-primary" stroke="currentColor" strokeWidth="1.5">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center animated-border-strong ${
+              chatMode === 'general'
+                ? 'bg-gradient-to-br from-indigo-100 to-blue-100'
+                : 'bg-primary/10'
+            }`}>
+              <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`} stroke="currentColor" strokeWidth="1.5">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -427,13 +436,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-foreground" data-testid="text-header-title">
-                Roblox UI/UX Designer Pro
+              <h1 className={`text-sm font-semibold ${chatMode === 'general' ? 'text-slate-900' : 'text-foreground'}`} data-testid="text-header-title">
+                {chatMode === 'general' ? 'Asistente Pro' : 'Roblox UI/UX Designer Pro'}
               </h1>
-              <p className="text-xs text-muted-foreground">Especializado en diseño de interfaces premium</p>
+              <p className={`text-xs ${chatMode === 'general' ? 'text-slate-600' : 'text-muted-foreground'}`}>
+                {chatMode === 'general' ? 'Tu asistente inteligente multipropósito' : 'Especializado en diseño de interfaces premium'}
+              </p>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground ml-4">
-              <Zap className="h-3.5 w-3.5 text-primary" />
+            <div className={`hidden sm:flex items-center gap-2 text-xs ml-4 ${
+              chatMode === 'general'
+                ? 'text-slate-600'
+                : 'text-muted-foreground'
+            }`}>
+              <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-indigo-500' : 'text-primary'}`} />
               <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
             </div>
           </div>
@@ -496,12 +511,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        <div className={`flex-1 overflow-hidden ${chatMode === 'general' ? 'bg-gradient-to-b from-white/50 to-indigo-50/30' : ''}`}>
           {showEmptyState ? (
             <EmptyState onSuggestionClick={handleSuggestionClick} />
           ) : (
             <ScrollArea className="h-full">
-              <div className="max-w-4xl mx-auto py-4">
+              <div className={`max-w-4xl mx-auto py-4 ${chatMode === 'general' ? 'px-4' : ''}`}>
                 {messages.map((message, index) => (
                   <MessageBubble
                     key={message.id}

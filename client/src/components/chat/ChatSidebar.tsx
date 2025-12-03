@@ -22,6 +22,7 @@ interface ChatSidebarProps {
   onDeleteAllConversations: () => void;
   isOpen: boolean;
   onToggle: () => void;
+  chatMode?: "roblox" | "general";
 }
 
 export function ChatSidebar({
@@ -33,6 +34,7 @@ export function ChatSidebar({
   onDeleteAllConversations,
   isOpen,
   onToggle,
+  chatMode = "roblox",
 }: ChatSidebarProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
@@ -82,14 +84,26 @@ export function ChatSidebar({
       </Button>
 
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-72 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
+        } ${
+          chatMode === "general"
+            ? "bg-white/80 backdrop-blur-sm border-r border-indigo-200/30"
+            : "bg-sidebar border-r border-sidebar-border"
         }`}
       >
-        <div className="p-4 border-b border-sidebar-border">
+        <div className={`p-4 border-b ${
+          chatMode === "general"
+            ? "border-indigo-200/30 bg-gradient-to-r from-indigo-50/50 to-blue-50/30"
+            : "border-sidebar-border"
+        }`}>
           <Button
             onClick={onNewChat}
-            className="w-full gap-2 animated-border-strong"
+            className={`w-full gap-2 animated-border-strong ${
+              chatMode === "general"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                : ""
+            }`}
             data-testid="button-new-chat"
           >
             <Plus className="h-4 w-4" />
@@ -100,11 +114,23 @@ export function ChatSidebar({
         <div className="flex-1 overflow-y-auto py-2">
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-              <MessageSquare className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground">
+              <MessageSquare className={`h-10 w-10 mb-3 ${
+                chatMode === "general"
+                  ? "text-indigo-300"
+                  : "text-muted-foreground/50"
+              }`} />
+              <p className={`text-sm ${
+                chatMode === "general"
+                  ? "text-slate-700"
+                  : "text-muted-foreground"
+              }`}>
                 No hay conversaciones aún
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
+              <p className={`text-xs mt-1 ${
+                chatMode === "general"
+                  ? "text-slate-500"
+                  : "text-muted-foreground/70"
+              }`}>
                 Inicia una nueva conversación para comenzar
               </p>
             </div>
@@ -116,17 +142,33 @@ export function ChatSidebar({
                   onClick={() => onSelectConversation(conversation.id)}
                   className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all animated-border ${
                     currentConversationId === conversation.id
-                      ? "bg-sidebar-accent animated-border-strong"
+                      ? chatMode === "general"
+                        ? "bg-indigo-100/60 border border-indigo-300/40"
+                        : "bg-sidebar-accent animated-border-strong"
+                      : chatMode === "general"
+                      ? "hover:bg-indigo-50/40"
                       : "hover:bg-sidebar-accent/50"
                   }`}
                   data-testid={`conversation-item-${conversation.id}`}
                 >
-                  <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <MessageSquare className={`h-4 w-4 flex-shrink-0 ${
+                    chatMode === "general"
+                      ? "text-indigo-500"
+                      : "text-muted-foreground"
+                  }`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    <p className={`text-sm font-medium truncate ${
+                      chatMode === "general"
+                        ? "text-slate-900"
+                        : "text-sidebar-foreground"
+                    }`}>
                       {conversation.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className={`text-xs ${
+                      chatMode === "general"
+                        ? "text-slate-500"
+                        : "text-muted-foreground"
+                    }`}>
                       {formatDate(conversation.updatedAt)}
                     </p>
                   </div>
@@ -146,11 +188,19 @@ export function ChatSidebar({
         </div>
 
         {conversations.length > 0 && (
-          <div className="p-4 border-t border-sidebar-border">
+          <div className={`p-4 border-t ${
+            chatMode === "general"
+              ? "border-indigo-200/30 bg-gradient-to-r from-indigo-50/30 to-blue-50/20"
+              : "border-sidebar-border"
+          }`}>
             <Button
               variant="ghost"
               onClick={() => setDeleteAllDialogOpen(true)}
-              className="w-full gap-2 text-muted-foreground hover:text-destructive animated-border"
+              className={`w-full gap-2 animated-border ${
+                chatMode === "general"
+                  ? "text-slate-600 hover:text-red-600 hover:bg-red-50/30"
+                  : "text-muted-foreground hover:text-destructive"
+              }`}
               data-testid="button-delete-all-conversations"
             >
               <Trash2 className="h-4 w-4" />
@@ -162,7 +212,11 @@ export function ChatSidebar({
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden"
+          className={`fixed inset-0 z-30 lg:hidden ${
+            chatMode === "general"
+              ? "bg-slate-900/20 backdrop-blur-sm"
+              : "bg-background/80 backdrop-blur-sm"
+          }`}
           onClick={onToggle}
         />
       )}
