@@ -165,7 +165,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errText = await response.text();
+        let msg = "No se pudo enviar el mensaje.";
+        try {
+          const data = JSON.parse(errText);
+          if (data?.error) msg = data.error;
+        } catch {}
+        toast({ title: "Error", description: msg, variant: "destructive" });
+        setIsStreaming(false);
+        setStreamingMessage("");
+        setStreamingReasoning("");
+        setEstimatedTime(null);
+        setStreamProgress(null);
+        return;
       }
 
       const reader = response.body?.getReader();
