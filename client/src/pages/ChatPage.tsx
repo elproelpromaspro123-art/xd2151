@@ -114,7 +114,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
     if (!conversationId) {
       try {
-        const created = await apiRequest("POST", "/api/conversations", { title: content?.slice(0, 50) || "Chat" });
+        const res = await apiRequest("POST", "/api/conversations", { title: content?.slice(0, 50) || "Chat" });
+        const created = await res.json();
         conversationId = created.id;
         setCurrentConversationId(conversationId);
       } catch (e) {
