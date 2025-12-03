@@ -10,16 +10,27 @@ const IP_TRACKING_FILE = path.join(DATA_DIR, "ip_tracking.json");
 
 const PREMIUM_EMAIL = "uiuxchatbot@gmail.com";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "uiuxchatbot@gmail.com",
-    pass: "meez ijlk yelz ccdf", // contraseña de aplicación
-  },
-  connectionTimeout: 10000, // 10 segundos
-  socketTimeout: 10000, // 10 segundos
-  greetingTimeout: 10000, // 10 segundos
-});
+// Crear transporter dinámicamente usando variables de entorno
+function createTransporter() {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  
+  if (!gmailUser || !gmailPass) {
+    console.error("Gmail credentials not configured in environment variables");
+    return null;
+  }
+  
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailPass,
+    },
+    connectionTimeout: 10000, // 10 segundos
+    socketTimeout: 10000, // 10 segundos
+    greetingTimeout: 10000, // 10 segundos
+  });
+}
 
 const VPN_DATACENTER_ASNS = [
   "AS14061", "AS16276", "AS24940", "AS63949", "AS20473", "AS45102", "AS9009",
@@ -269,6 +280,20 @@ export function recordFailedAttempt(ip: string): void {
 }
 
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  
+  if (!gmailUser || !gmailPass) {
+    console.error("Gmail credentials not configured in environment variables (GMAIL_USER, GMAIL_APP_PASSWORD)");
+    return false;
+  }
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.error("Failed to create email transporter");
+    return false;
+  }
+
   try {
     const htmlContent = `
 <!DOCTYPE html>
@@ -322,12 +347,13 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     `;
 
     await transporter.sendMail({
-      from: "uiuxchatbot@gmail.com",
+      from: `"Roblox UI Designer Pro" <${gmailUser}>`,
       to: email,
-      subject: "Verificación",
+      subject: "Verificación - Roblox UI Designer Pro",
       html: htmlContent,
     });
 
+    console.log(`Verification email sent successfully to ${email}`);
     return true;
   } catch (error) {
     console.error("Error sending verification email:", error);
