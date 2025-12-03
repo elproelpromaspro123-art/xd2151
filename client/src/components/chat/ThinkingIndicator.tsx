@@ -2,6 +2,7 @@ import { Brain, Loader2 } from "lucide-react";
 
 interface ThinkingIndicatorProps {
   reasoning?: string;
+  modelName?: string;
 }
 
 export function ThinkingIndicator({ reasoning }: ThinkingIndicatorProps) {
@@ -18,7 +19,7 @@ export function ThinkingIndicator({ reasoning }: ThinkingIndicatorProps) {
           </div>
         </div>
         <span className="text-xs font-medium text-blue-500 flex items-center gap-2">
-          Grok está pensando...
+          {modelName ? `${modelName} está pensando...` : 'Pensando...'}
           <Loader2 className="h-3 w-3 animate-spin" />
         </span>
       </div>

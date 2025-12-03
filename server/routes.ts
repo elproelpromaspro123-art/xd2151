@@ -56,7 +56,7 @@ const AI_MODELS = {
     name: "DeepSeek R1T2",
     description: "Solo texto - Mejor para programación avanzada",
     supportsImages: false,
-    supportsReasoning: true,
+    supportsReasoning: false,
     isPremiumOnly: false,
     maxTokens: 16000,
     avgTokensPerSecond: 60,
@@ -89,6 +89,17 @@ const AI_MODELS = {
 type ModelKey = keyof typeof AI_MODELS;
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
+
+const MESSAGE_LIMITS = {
+  free: {
+    roblox: 20,
+    general: 30,
+  },
+  premium: {
+    roblox: -1,
+    general: -1,
+  },
+};
 
 const WEB_SEARCH_KEYWORDS = [
   "busca en la web", "buscar en la web", "busca en internet", "buscar en internet",
@@ -682,7 +693,9 @@ export async function registerRoutes(
         return res.status(500).json({ error: "Error al crear usuario" });
       }
 
-      const session = createSession(user.id, userAgent, ip);
+      const remember = !!req.body.remember;
+      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined; // 30 days if remember
+      const session = createSession(user.id, userAgent, ip, rememberDuration);
 
       res.status(201).json({ 
         success: true, 
@@ -807,7 +820,9 @@ export async function registerRoutes(
       }
 
       const userAgent = req.headers["user-agent"];
-      const session = createSession(result.user!.id, userAgent, ip);
+      const remember = !!req.body.remember;
+      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined;
+      const session = createSession(result.user!.id, userAgent, ip, rememberDuration);
 
       res.json({
         success: true,
@@ -874,7 +889,9 @@ export async function registerRoutes(
 
       // Verificación de email deshabilitada - crear sesión directamente
       const userAgent = req.headers["user-agent"];
-      const session = createSession(result.user!.id, userAgent, ip);
+      const remember = !!req.body.remember;
+      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined;
+      const session = createSession(result.user!.id, userAgent, ip, rememberDuration);
 
       res.json({
         success: true,
@@ -991,6 +1008,7 @@ export async function registerRoutes(
     }
   });
 
+  // Include per-mode message limits and counts
   app.get("/api/usage", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
@@ -1012,6 +1030,9 @@ export async function registerRoutes(
           webSearchCount: limits.webSearchCount,
           conversationCount,
           limits: isPremium ? PLAN_LIMITS.premium : PLAN_LIMITS.free,
+          messageLimits: isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free,
+          robloxMessageCount: limits.robloxMessageCount || 0,
+          generalMessageCount: limits.generalMessageCount || 0,
           weekStartDate: limits.weekStartDate,
           isPremium,
           isLoggedIn: false,
@@ -1021,12 +1042,15 @@ export async function registerRoutes(
       const visitorId = getVisitorId(req);
       const fingerprint = getFingerprint(req);
       const limits = await storage.getUsageLimits(visitorId, fingerprint);
-      
+
       res.json({
         aiUsageCount: limits.aiUsageCount,
         webSearchCount: limits.webSearchCount,
         conversationCount,
         limits: isPremium ? PLAN_LIMITS.premium : PLAN_LIMITS.free,
+        messageLimits: isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free,
+        robloxMessageCount: limits.robloxMessageCount || 0,
+        generalMessageCount: limits.generalMessageCount || 0,
         weekStartDate: limits.weekStartDate,
         isPremium,
         isLoggedIn: true,
@@ -1035,6 +1059,8 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to get usage" });
     }
   });
+
+  
 
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
@@ -1263,19 +1289,38 @@ export async function registerRoutes(
       }
 
       const limits = await storage.getUsageLimits(visitorId, fingerprint);
-      const aiLimit = isPremium ? PLAN_LIMITS.premium.aiUsagePerWeek : PLAN_LIMITS.free.aiUsagePerWeek;
-      
-      if (aiLimit !== -1 && limits.aiUsageCount >= aiLimit) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: `Has alcanzado el límite de uso de IA esta semana (${aiLimit} usos). El límite se reinicia cada lunes.`,
-          code: "AI_LIMIT_REACHED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
+      // enforce per-mode message limits (roblox/general)
+      const messageLimits = isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free;
+      const currentRoblox = limits.robloxMessageCount || 0;
+      const currentGeneral = limits.generalMessageCount || 0;
+      const modeLimit = chatMode === 'roblox' ? messageLimits.roblox : messageLimits.general;
+
+      if (modeLimit !== -1) {
+        if (chatMode === 'roblox' && currentRoblox >= modeLimit) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.write(`data: ${JSON.stringify({ 
+            error: `Has alcanzado el límite de mensajes en modo Roblox (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
+            code: "MODE_LIMIT_REACHED"
+          })}\n\n`);
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        }
+
+        if (chatMode === 'general' && currentGeneral >= modeLimit) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.write(`data: ${JSON.stringify({ 
+            error: `Has alcanzado el límite de mensajes en modo General (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
+            code: "MODE_LIMIT_REACHED"
+          })}\n\n`);
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        }
       }
 
       const webSearchLimit = isPremium ? PLAN_LIMITS.premium.webSearchPerWeek : PLAN_LIMITS.free.webSearchPerWeek;
@@ -1318,7 +1363,8 @@ export async function registerRoutes(
         });
       }
 
-      await storage.incrementAiUsage(visitorId, fingerprint);
+      // increment mode-specific message counter
+      await storage.incrementMessageCount(visitorId, fingerprint, chatMode);
 
       let webSearchContext: string | undefined;
       if (useWebSearch) {
@@ -1417,19 +1463,38 @@ export async function registerRoutes(
       }
 
       const limits = await storage.getUsageLimits(visitorId, fingerprint);
-      const aiLimit = isPremium ? PLAN_LIMITS.premium.aiUsagePerWeek : PLAN_LIMITS.free.aiUsagePerWeek;
-      
-      if (aiLimit !== -1 && limits.aiUsageCount >= aiLimit) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: `Has alcanzado el límite de uso de IA esta semana (${aiLimit} usos). El límite se reinicia cada lunes.`,
-          code: "AI_LIMIT_REACHED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
+      // enforce per-mode message limits for regenerate as well
+      const messageLimits = isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free;
+      const currentRoblox = limits.robloxMessageCount || 0;
+      const currentGeneral = limits.generalMessageCount || 0;
+      const modeLimit = chatMode === 'roblox' ? messageLimits.roblox : messageLimits.general;
+
+      if (modeLimit !== -1) {
+        if (chatMode === 'roblox' && currentRoblox >= modeLimit) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.write(`data: ${JSON.stringify({ 
+            error: `Has alcanzado el límite de mensajes en modo Roblox (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
+            code: "MODE_LIMIT_REACHED"
+          })}\n\n`);
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        }
+
+        if (chatMode === 'general' && currentGeneral >= modeLimit) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.write(`data: ${JSON.stringify({ 
+            error: `Has alcanzado el límite de mensajes en modo General (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
+            code: "MODE_LIMIT_REACHED"
+          })}\n\n`);
+          res.write("data: [DONE]\n\n");
+          return res.end();
+        }
       }
 
       let conversation;
@@ -1447,7 +1512,7 @@ export async function registerRoutes(
         return await sendEthicalRejection(res, conversationId, userId, undefined, chatMode);
       }
 
-      await storage.incrementAiUsage(visitorId, fingerprint);
+      await storage.incrementMessageCount(visitorId, fingerprint, chatMode);
 
       let previousMessages;
       if (userId) {

@@ -76,6 +76,8 @@ export interface UsageLimits {
   visitorId: string;
   aiUsageCount: number;
   webSearchCount: number;
+  robloxMessageCount?: number;
+  generalMessageCount?: number;
   weekStartDate: string;
   createdAt: string;
   updatedAt: string;

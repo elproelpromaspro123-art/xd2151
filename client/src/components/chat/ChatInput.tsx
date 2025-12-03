@@ -286,11 +286,18 @@ export function ChatInput({
                   >
                     <div className="flex items-center gap-2 w-full">
                       <span className="font-medium">{model.name}</span>
-                      {model.isPremiumOnly && (
-                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium ml-auto">
-                          PREMIUM
-                        </span>
-                      )}
+                        <div className="ml-auto flex items-center gap-2">
+                          {model.supportsReasoning && (
+                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[10px] font-medium">
+                              WITH REASONING
+                            </span>
+                          )}
+                          {model.isPremiumOnly && (
+                            <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium">
+                              PREMIUM
+                            </span>
+                          )}
+                        </div>
                     </div>
                     <span className="text-[10px] text-muted-foreground">{model.description}</span>
                   </DropdownMenuItem>

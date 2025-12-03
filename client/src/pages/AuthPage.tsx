@@ -40,6 +40,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
@@ -235,7 +236,8 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         body: JSON.stringify({ 
           email, 
           password,
-          turnstileToken: turnstileToken
+          turnstileToken: turnstileToken,
+          remember: rememberMe,
         }),
       });
 
@@ -277,7 +279,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember: rememberMe }),
       });
 
       const data = await res.json();
@@ -302,6 +304,11 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       setIsLoading(false);
     }
   };
+
+  // Include remember option in register as well
+  useEffect(() => {
+    // noop - placeholder to keep linter happy about rememberMe usage elsewhere
+  }, [rememberMe]);
 
 
   return (
@@ -370,6 +377,17 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="remember" className="text-sm text-muted-foreground">Recordarme</label>
                 </div>
 
                 {mode === "register" && (

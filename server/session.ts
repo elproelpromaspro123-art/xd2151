@@ -55,7 +55,7 @@ function generateToken(): string {
   return randomUUID() + "-" + createHash("sha256").update(Date.now().toString() + Math.random()).digest("hex").substring(0, 32);
 }
 
-export function createSession(userId: string, userAgent?: string, ip?: string): Session {
+export function createSession(userId: string, userAgent?: string, ip?: string, durationMs?: number): Session {
   const data = loadSessionsData();
   
   const now = new Date();
@@ -64,7 +64,7 @@ export function createSession(userId: string, userAgent?: string, ip?: string): 
     userId,
     token: generateToken(),
     createdAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + SESSION_DURATION).toISOString(),
+    expiresAt: new Date(now.getTime() + (typeof durationMs === 'number' ? durationMs : SESSION_DURATION)).toISOString(),
     userAgent,
     ip,
   };

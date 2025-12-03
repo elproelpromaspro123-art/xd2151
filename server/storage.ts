@@ -12,6 +12,7 @@ import type {
 const DATA_DIR = process.env.DATA_DIR || "./data";
 const STORAGE_FILE = path.join(DATA_DIR, "storage.json");
 const USAGE_EXPIRY_DAYS = 7;
+const USAGE_RESET_MS = 7 * 24 * 60 * 60 * 1000; // 7 days rolling window
 
 interface StorageData {
   conversations: Record<string, Conversation>;
@@ -219,6 +220,8 @@ export class FileStorage implements IStorage {
         id: randomUUID(),
         visitorId,
         aiUsageCount: 0,
+        robloxMessageCount: 0,
+        generalMessageCount: 0,
         webSearchCount: 0,
         weekStartDate: getWeekStartDate().toISOString(),
         createdAt: new Date().toISOString(),
@@ -234,12 +237,16 @@ export class FileStorage implements IStorage {
       return limitsWithoutFingerprint;
     }
 
-    if (isNewWeek(limits.weekStartDate)) {
+    // Reset after a rolling 7-day period
+    const storedDate = new Date(limits.weekStartDate);
+    if (Date.now() - storedDate.getTime() >= USAGE_RESET_MS) {
       limits = {
         ...limits,
         aiUsageCount: 0,
         webSearchCount: 0,
-        weekStartDate: getWeekStartDate().toISOString(),
+        robloxMessageCount: 0,
+        generalMessageCount: 0,
+        weekStartDate: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       this.data.usageLimits[visitorId] = limits;
@@ -266,6 +273,28 @@ export class FileStorage implements IStorage {
     this.data.usageLimits[visitorId] = updated;
     this.saveData();
     
+    const { fingerprint: _, ...limitsWithoutFingerprint } = updated;
+    return limitsWithoutFingerprint;
+  }
+
+  async incrementMessageCount(visitorId: string, fingerprint: string, mode: 'roblox' | 'general'): Promise<UsageLimits> {
+    const limits = await this.getUsageLimits(visitorId, fingerprint);
+    const storedLimits = this.data.usageLimits[visitorId];
+
+    if (!storedLimits || !verifyFingerprint(storedLimits.fingerprint, fingerprint)) {
+      return limits;
+    }
+
+    const updated = {
+      ...storedLimits,
+      robloxMessageCount: (storedLimits.robloxMessageCount || 0) + (mode === 'roblox' ? 1 : 0),
+      generalMessageCount: (storedLimits.generalMessageCount || 0) + (mode === 'general' ? 1 : 0),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.usageLimits[visitorId] = updated;
+    this.saveData();
+
     const { fingerprint: _, ...limitsWithoutFingerprint } = updated;
     return limitsWithoutFingerprint;
   }

@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Check, Crown, Zap, MessageSquare, Globe, Clock, Image, Brain } from "lucide-react";
+import { Sparkles, Check, Crown, Zap, MessageSquare, Globe, Clock, Image, Brain, Gamepad2, MessageCircle } from "lucide-react";
 
 interface UsageInfo {
   aiUsageCount: number;
@@ -44,9 +45,30 @@ export function UpgradeModal({ usage, children }: UpgradeModalProps) {
   const webLimit = usage?.limits.webSearchPerWeek || 5;
   const chatsUsed = usage?.conversationCount || 0;
   const chatsLimit = usage?.limits.maxChats || 5;
+  const messagesUsedRoblox = usage?.robloxMessageCount || 0;
+  const messagesUsedGeneral = usage?.generalMessageCount || 0;
   
   const resetIn = usage?.weekStartDate ? getNextResetDate(usage.weekStartDate) : "7 días";
   const isUnlimited = aiLimit === -1;
+
+  const [countdown, setCountdown] = useState<string>(resetIn);
+
+  useEffect(() => {
+    if (!usage?.weekStartDate) return;
+    const update = () => {
+      const start = new Date(usage.weekStartDate);
+      const target = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const diff = Math.max(0, target.getTime() - Date.now());
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24) ) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [usage?.weekStartDate]);
 
   return (
     <Dialog>
@@ -72,7 +94,7 @@ export function UpgradeModal({ usage, children }: UpgradeModalProps) {
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  Los límites se reinician en: <strong className="text-foreground">{resetIn}</strong>
+                  Reinicio en: <strong className="text-foreground">{countdown}</strong>
                 </span>
               </div>
               
@@ -128,6 +150,28 @@ export function UpgradeModal({ usage, children }: UpgradeModalProps) {
                       className={`h-full transition-all ${chatsUsed >= chatsLimit ? 'bg-destructive' : 'bg-green-500'}`}
                       style={{ width: `${Math.min((chatsUsed / chatsLimit) * 100, 100)}%` }}
                     />
+                  </div>
+                </div>
+                
+                <div className="mt-3 border-t pt-3">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <Gamepad2 className="h-3.5 w-3.5 text-violet-500" />
+                      Mensajes (Roblox)
+                    </span>
+                    <span className={messagesUsedRoblox >= (usage?.messageLimits?.roblox ?? 20) ? "text-destructive" : "text-muted-foreground"}>
+                      {messagesUsedRoblox} / {(usage?.messageLimits?.roblox ?? 20)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <MessageCircle className="h-3.5 w-3.5 text-cyan-500" />
+                      Mensajes (General)
+                    </span>
+                    <span className={messagesUsedGeneral >= (usage?.messageLimits?.general ?? 30) ? "text-destructive" : "text-muted-foreground"}>
+                      {messagesUsedGeneral} / {(usage?.messageLimits?.general ?? 30)}
+                    </span>
                   </div>
                 </div>
               </div>
