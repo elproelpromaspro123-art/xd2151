@@ -240,10 +240,10 @@ export function checkIpRestrictions(ip: string): { allowed: boolean; reason?: st
     }
   }
 
-  if (tracking.registeredUserIds.length >= 2) {
+  if (tracking.registeredUserIds.length >= 3) {
     return { 
       allowed: false, 
-      reason: "Ya se han registrado demasiadas cuentas desde esta IP. Solo se permiten 2 cuentas por IP." 
+      reason: "Ya se han registrado demasiadas cuentas desde esta IP. Solo se permiten 3 cuentas por IP." 
     };
   }
 
@@ -478,7 +478,7 @@ export async function registerUser(
     id: userId,
     email: email.toLowerCase(),
     passwordHash: hashPassword(password),
-    isEmailVerified: false,
+    isEmailVerified: true, // Verificación deshabilitada - siempre true
     isPremium,
     createdAt: now,
     lastLoginAt: now,
@@ -489,21 +489,6 @@ export async function registerUser(
   data.users[userId] = user;
   saveUsersData(data);
   trackIpRegistration(ip, userId);
-
-  const code = generateVerificationCode();
-  const verificationData = loadVerificationData();
-  verificationData.codes[email.toLowerCase()] = {
-    code,
-    email: email.toLowerCase(),
-    expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    type: "email_verification",
-  };
-  saveVerificationData(verificationData);
-
-  const emailSent = await sendVerificationEmail(email, code);
-  if (!emailSent) {
-    console.error("Failed to send verification email");
-  }
 
   return { success: true, userId };
 }
@@ -587,10 +572,7 @@ export function loginUser(
     return { success: false, error: "Correo o contrasena incorrectos" };
   }
 
-  if (!user.isEmailVerified) {
-    return { success: false, error: "Debes verificar tu correo antes de iniciar sesion" };
-  }
-
+  // Verificación de email deshabilitada - permitir login directamente
   user.lastLoginAt = new Date().toISOString();
   saveUsersData(data);
 
@@ -601,7 +583,7 @@ export function loginWithGoogle(
   googleId: string, 
   email: string, 
   ip: string
-): { success: boolean; user?: User; isNewUser?: boolean; requiresVerification?: boolean; error?: string } {
+): { success: boolean; user?: User; isNewUser?: boolean; error?: string } {
   const data = loadUsersData();
   
   let user = Object.values(data.users).find(u => u.googleId === googleId);
@@ -613,11 +595,6 @@ export function loginWithGoogle(
       user.googleId = googleId;
       user.lastLoginAt = new Date().toISOString();
       saveUsersData(data);
-      
-      // OBLIGATORIO: Verificar si el correo está verificado
-      if (!user.isEmailVerified) {
-        return { success: true, user, isNewUser: false, requiresVerification: true };
-      }
       return { success: true, user, isNewUser: false };
     }
 
@@ -634,7 +611,7 @@ export function loginWithGoogle(
       id: userId,
       email: email.toLowerCase(),
       passwordHash: "",
-      isEmailVerified: false, // Nuevo usuario siempre requiere verificación
+      isEmailVerified: true, // Verificación deshabilitada - siempre true
       isPremium,
       googleId,
       createdAt: now,
@@ -647,19 +624,12 @@ export function loginWithGoogle(
     saveUsersData(data);
     trackIpRegistration(ip, userId);
 
-    // OBLIGATORIO: Nuevo usuario siempre requiere verificación
-    return { success: true, user, isNewUser: true, requiresVerification: true };
+    return { success: true, user, isNewUser: true };
   }
 
   user.lastLoginAt = new Date().toISOString();
   saveUsersData(data);
   
-  // OBLIGATORIO: Verificar si el correo está verificado antes de permitir login
-  if (!user.isEmailVerified) {
-    return { success: true, user, isNewUser: false, requiresVerification: true };
-  }
-  
-  // Solo permitir login si el correo está verificado
   return { success: true, user, isNewUser: false };
 }
 

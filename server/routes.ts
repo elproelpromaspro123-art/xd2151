@@ -304,6 +304,39 @@ function getUserIdFromRequest(req: Request): string | null {
   return session.userId;
 }
 
+// Verificar Cloudflare Turnstile
+async function verifyTurnstile(token: string): Promise<boolean> {
+  const secretKey = process.env.Secret_Key;
+  
+  if (!secretKey) {
+    console.error("Cloudflare Turnstile secret key not configured");
+    return false;
+  }
+
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        secret: secretKey,
+        response: token,
+      }),
+    });
+
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error("Error verifying Turnstile:", error);
+    return false;
+  }
+}
+
 function estimateCompletionTime(messageLength: number, model: ModelKey): number {
   const modelInfo = AI_MODELS[model];
   const estimatedOutputTokens = Math.min(messageLength * 3, modelInfo.maxTokens);
@@ -593,10 +626,20 @@ export async function registerRoutes(
 
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, turnstileToken } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ error: "Correo y contraseña son requeridos" });
+      }
+
+      if (!turnstileToken) {
+        return res.status(400).json({ error: "Verificación de seguridad requerida" });
+      }
+
+      // Verificar Cloudflare Turnstile
+      const turnstileValid = await verifyTurnstile(turnstileToken);
+      if (!turnstileValid) {
+        return res.status(400).json({ error: "Verificación de seguridad fallida. Por favor intenta de nuevo." });
       }
 
       if (password.length < 6) {
@@ -632,60 +675,25 @@ export async function registerRoutes(
         return res.status(400).json({ error: result.error });
       }
 
-      // Verificar si el email se envió realmente
-      // registerUser ya intentó enviar el email, pero necesitamos verificar el código generado
-      const verificationData = loadVerificationData();
-      const verification = verificationData.codes[email.toLowerCase()];
-      
-      if (!verification) {
-        return res.status(500).json({ 
-          success: false,
-          error: "Error al generar código de verificación. Por favor intenta de nuevo.",
-          requiresVerification: true,
-          emailSent: false
-        });
+      // Crear sesión directamente (sin verificación de email)
+      const userAgent = req.headers["user-agent"];
+      const user = getUserById(result.userId!);
+      if (!user) {
+        return res.status(500).json({ error: "Error al crear usuario" });
       }
 
-      // Intentar enviar el email con timeout
-      let emailSent = false;
-      try {
-        const emailPromise = sendVerificationEmail(email, verification.code);
-        const timeoutPromise = new Promise<boolean>((resolve) => {
-          setTimeout(() => {
-            console.error("Email sending timeout after 30 seconds");
-            resolve(false);
-          }, 30000);
-        });
-        emailSent = await Promise.race([emailPromise, timeoutPromise]);
-        
-        if (emailSent) {
-          console.log(`Verification email successfully sent to ${email}`);
-        } else {
-          console.error(`Failed to send verification email to ${email}`);
-        }
-      } catch (error) {
-        console.error("Error sending verification email on register:", error);
-        emailSent = false;
-      }
+      const session = createSession(user.id, userAgent, ip);
 
-      // Si el email no se envió, retornar error
-      if (!emailSent) {
-        return res.status(500).json({ 
-          success: false,
-          error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo o contacta soporte.",
-          requiresVerification: true,
-          emailSent: false,
-          email: email
-        });
-      }
-
-      // Solo retornar éxito si el email se envió correctamente
       res.status(201).json({ 
         success: true, 
-        message: "Registro exitoso. Te hemos enviado un código de verificación a tu correo. Revisa también tu carpeta de spam.",
-        requiresVerification: true,
-        emailSent: true,
-        email: email
+        message: "Registro exitoso",
+        token: session.token,
+        user: {
+          id: user.id,
+          email: user.email,
+          isPremium: user.isPremium,
+          isEmailVerified: user.isEmailVerified,
+        }
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -795,12 +803,6 @@ export async function registerRoutes(
       const result = loginUser(email, password, ip);
 
       if (!result.success) {
-        if (result.error?.includes("verificar")) {
-          return res.status(403).json({ 
-            error: result.error,
-            code: "EMAIL_NOT_VERIFIED"
-          });
-        }
         return res.status(401).json({ error: result.error });
       }
 
@@ -870,85 +872,19 @@ export async function registerRoutes(
         return res.status(400).json({ error: result.error });
       }
 
-      // OBLIGATORIO: Verificar si el correo está verificado
-      // Si requiresVerification es true O si el usuario no está verificado, forzar verificación
-      if (result.requiresVerification || !result.user?.isEmailVerified) {
-        const code = generateVerificationCode();
-        const verificationData = loadVerificationData();
-        verificationData.codes[googleData.email.toLowerCase()] = {
-          code,
-          email: googleData.email.toLowerCase(),
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-          attempts: 0,
-        };
-        saveVerificationData(verificationData);
-
-        // Enviar email con timeout para evitar que se quede congelado
-        // IMPORTANTE: Solo retornar emailSent: true si realmente se envió
-        let emailSent = false;
-        try {
-          const emailPromise = sendVerificationEmail(googleData.email, code);
-          const timeoutPromise = new Promise<boolean>((resolve) => {
-            setTimeout(() => {
-              console.error("Email sending timeout after 30 seconds");
-              resolve(false);
-            }, 30000); // 30 segundos timeout (coincide con connectionTimeout)
-          });
-          emailSent = await Promise.race([emailPromise, timeoutPromise]);
-          
-          if (emailSent) {
-            console.log(`Verification email successfully sent to ${googleData.email}`);
-          } else {
-            console.error(`Failed to send verification email to ${googleData.email}`);
-          }
-        } catch (error) {
-          console.error("Error sending verification email:", error);
-          emailSent = false;
-        }
-
-        // Si el email no se envió, retornar error
-        if (!emailSent) {
-          return res.status(500).json({
-            success: false,
-            requiresVerification: true,
-            email: googleData.email,
-            emailSent: false,
-            error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo o contacta soporte.",
-            message: "Error al enviar el código. Intenta de nuevo."
-          });
-        }
-
-        // Solo retornar éxito si el email se envió correctamente
-        return res.status(200).json({
-          success: false,
-          requiresVerification: true,
-          email: googleData.email,
-          emailSent: true,
-          message: "Se ha enviado un código de verificación a tu correo. Debes verificar tu correo antes de continuar."
-        });
-      }
-
-      // Solo crear sesión si el correo está verificado
-      if (!result.user || !result.user.isEmailVerified) {
-        return res.status(403).json({ 
-          error: "Debes verificar tu correo electrónico antes de iniciar sesión",
-          requiresVerification: true,
-          email: googleData.email
-        });
-      }
-
+      // Verificación de email deshabilitada - crear sesión directamente
       const userAgent = req.headers["user-agent"];
-      const session = createSession(result.user.id, userAgent, ip);
+      const session = createSession(result.user!.id, userAgent, ip);
 
       res.json({
         success: true,
         token: session.token,
         isNewUser: result.isNewUser,
         user: {
-          id: result.user.id,
-          email: result.user.email,
-          isPremium: result.user.isPremium,
-          isEmailVerified: result.user.isEmailVerified,
+          id: result.user!.id,
+          email: result.user!.email,
+          isPremium: result.user!.isPremium,
+          isEmailVerified: result.user!.isEmailVerified,
         }
       });
     } catch (error) {
@@ -997,6 +933,11 @@ export async function registerRoutes(
   app.get("/api/auth/google-client-id", async (_req: Request, res: Response) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     res.json({ clientId: clientId || null, configured: !!clientId });
+  });
+
+  app.get("/api/auth/turnstile-site-key", async (_req: Request, res: Response) => {
+    const siteKey = process.env.Site_Key;
+    res.json({ siteKey: siteKey || null, configured: !!siteKey });
   });
 
   app.post("/api/auth/change-password", async (req: Request, res: Response) => {

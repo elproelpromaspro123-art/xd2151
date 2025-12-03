@@ -24,15 +24,27 @@ interface AuthPageProps {
   onLoginSuccess: (token: string, user: any) => void;
 }
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: HTMLElement, options: any) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
+
 export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
-  const [mode, setMode] = useState<"login" | "register" | "verify">("login");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null);
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -45,10 +57,74 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         }
       })
       .catch(console.error);
+
+    fetch("/api/auth/turnstile-site-key")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.siteKey) {
+          setTurnstileSiteKey(data.siteKey);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
-    if (googleClientId && mode !== "verify") {
+    // Resetear token cuando cambia el modo
+    setTurnstileToken(null);
+  }, [mode]);
+
+  useEffect(() => {
+    // Cargar Cloudflare Turnstile
+    if (turnstileSiteKey && mode === "register") {
+      // Limpiar widget anterior si existe
+      if (turnstileWidgetId && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId);
+        setTurnstileWidgetId(null);
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        // Esperar un momento para que el DOM esté listo
+        setTimeout(() => {
+          const widgetElement = document.getElementById("turnstile-widget");
+          if (window.turnstile && turnstileSiteKey && widgetElement) {
+            const widgetId = window.turnstile.render(widgetElement, {
+              sitekey: turnstileSiteKey,
+              theme: "dark",
+              callback: (token: string) => {
+                setTurnstileToken(token);
+              },
+              "error-callback": () => {
+                setTurnstileToken(null);
+              },
+              "expired-callback": () => {
+                setTurnstileToken(null);
+              },
+            });
+            setTurnstileWidgetId(widgetId);
+          }
+        }, 100);
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        if (turnstileWidgetId && window.turnstile) {
+          window.turnstile.remove(turnstileWidgetId);
+          setTurnstileWidgetId(null);
+        }
+        const existingScript = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+      };
+    }
+  }, [turnstileSiteKey, mode]);
+
+  useEffect(() => {
+    if (googleClientId) {
       const script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
@@ -63,7 +139,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         }
       };
     }
-  }, [googleClientId, mode]);
+  }, [googleClientId]);
 
   const initializeGoogleSignIn = () => {
     if (window.google && googleClientId) {
@@ -96,28 +172,6 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       });
 
       const data = await res.json();
-
-      if (data.requiresVerification) {
-        setEmail(data.email);
-        setMode("verify");
-        
-        // SOLO mostrar éxito si el email realmente se envió
-        if (data.emailSent === true) {
-          toast({
-            title: "Código enviado",
-            description: "Hemos enviado un código de verificación a tu correo. Revisa también la carpeta de spam.",
-            variant: "default",
-          });
-        } else {
-          // Si el email NO se envió, mostrar error
-          toast({
-            title: "Error al enviar código",
-            description: data.error || data.message || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
 
       if (!res.ok) {
         throw new Error(data.error || "Error en autenticación con Google");
@@ -163,12 +217,26 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       return;
     }
 
+    // Verificar token de Turnstile
+    if (!turnstileToken) {
+      toast({
+        title: "Error",
+        description: "Por favor completa la verificación de seguridad",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          password,
+          turnstileToken: turnstileToken
+        }),
       });
 
       const data = await res.json();
@@ -177,28 +245,25 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         throw new Error(data.error || "Error al registrar");
       }
 
-      // SOLO mostrar éxito si el email realmente se envió
-      if (data.emailSent === true) {
-        toast({
-          title: "Registro exitoso",
-          description: "Te hemos enviado un código de verificación. Revisa tu correo (también la carpeta de spam).",
-          variant: "default",
-        });
-        setMode("verify");
-      } else {
-        // Si el email NO se envió, mostrar error
-        toast({
-          title: "Error al enviar código",
-          description: data.error || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Registro exitoso",
+        description: "Tu cuenta ha sido creada exitosamente",
+        variant: "default",
+      });
+
+      // Iniciar sesión automáticamente
+      onLoginSuccess(data.token, data.user);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+      // Resetear Turnstile en caso de error
+      if (turnstileWidgetId && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId);
+        setTurnstileToken(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -218,10 +283,6 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.code === "EMAIL_NOT_VERIFIED") {
-          setMode("verify");
-          throw new Error(data.error);
-        }
         throw new Error(data.error || "Error al iniciar sesión");
       }
 
@@ -242,80 +303,6 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
     }
   };
 
-  const handleVerifyEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: verificationCode }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al verificar correo");
-      }
-
-      toast({
-        title: "Correo verificado",
-        description: "Ahora puedes iniciar sesión",
-      });
-
-      setMode("login");
-      setVerificationCode("");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al reenviar código");
-      }
-
-      // SOLO mostrar éxito si el email realmente se envió
-      if (data.emailSent === true) {
-        toast({
-          title: "Código reenviado",
-          description: "Revisa tu correo (también la carpeta de spam)",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Error al reenviar código",
-          description: data.error || "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -341,81 +328,10 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
             <p className="text-muted-foreground mt-2">
               {mode === "login" && "Inicia sesión para guardar tus conversaciones"}
               {mode === "register" && "Crea una cuenta para empezar"}
-              {mode === "verify" && "Verifica tu correo electrónico"}
             </p>
           </div>
 
-          {mode === "verify" ? (
-            <form onSubmit={handleVerifyEmail} className="space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-blue-200">
-                      {email ? (
-                        <>Se enviará un código de verificación a <strong>{email}</strong></>
-                      ) : (
-                        "Ingresa tu correo para recibir el código de verificación"
-                      )}
-                    </p>
-                    <p className="text-xs text-blue-300/70 mt-1">
-                      Si no lo encuentras en tu bandeja de entrada, revisa la carpeta de spam o correo no deseado.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="code">Código de verificación</Label>
-                <Input
-                  id="code"
-                  type="text"
-                  placeholder="123456"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="text-center text-2xl tracking-widest"
-                  maxLength={6}
-                  required
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading || verificationCode.length !== 6}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verificando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Verificar correo
-                  </>
-                )}
-              </Button>
-
-              <div className="text-center space-y-2">
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={isLoading}
-                  className="text-sm text-primary hover:underline disabled:opacity-50"
-                >
-                  Reenviar código
-                </button>
-                <p className="text-sm text-muted-foreground">
-                  <button
-                    type="button"
-                    onClick={() => setMode("login")}
-                    className="text-primary hover:underline"
-                  >
-                    Volver al inicio de sesión
-                  </button>
-                </p>
-              </div>
-            </form>
-          ) : (
-            <>
-              <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
+          <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Correo electrónico</Label>
                   <div className="relative">
@@ -491,6 +407,12 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   </>
                 )}
 
+                {mode === "register" && (
+                  <div className="flex justify-center">
+                    <div id="turnstile-widget"></div>
+                  </div>
+                )}
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -539,8 +461,6 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   </>
                 )}
               </p>
-            </>
-          )}
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
