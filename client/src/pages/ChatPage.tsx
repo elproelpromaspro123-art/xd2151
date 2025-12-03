@@ -17,6 +17,14 @@ import { Sparkles, Zap, Crown, Clock, LogOut, User as UserIcon, Settings, Gamepa
 import type { Conversation, Message, AIModel, ChatMode } from "@shared/schema";
 import type { User } from "@/lib/auth";
 import { getToken } from "@/lib/auth";
+import { ArtifactPanel } from "@/components/chat/ArtifactPanel";
+
+interface ArtifactState {
+  isOpen: boolean;
+  content: string;
+  language: string;
+  title?: string;
+}
 
 interface UsageInfo {
   aiUsageCount: number;
@@ -65,9 +73,27 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
   const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
   const [currentModelName, setCurrentModelName] = useState<string>("");
   const [chatMode, setChatMode] = useState<ChatMode>("roblox");
+  const [artifactState, setArtifactState] = useState<ArtifactState>({ isOpen: false, content: "", language: "text" });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const extractLatestCodeBlock = (text: string) => {
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
+    let match;
+    let lastMatch = null;
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      lastMatch = match;
+    }
+    if (lastMatch) {
+      return {
+        language: lastMatch[1] || 'text',
+        code: lastMatch[2],
+        isComplete: !!lastMatch[3]
+      };
+    }
+    return null;
+  };
 
   const { data: usage } = useQuery<UsageInfo>({
     queryKey: ["/api/usage"],
@@ -228,6 +254,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
               if (parsed.content) {
                 fullMessage += parsed.content;
                 setStreamingMessage(fullMessage);
+                
+                // Artifact Detection Logic
+                const codeBlock = extractLatestCodeBlock(fullMessage);
+                if (codeBlock && codeBlock.code.length > 50) { // Only open for non-trivial code
+                   setArtifactState({
+                     isOpen: true,
+                     content: codeBlock.code,
+                     language: codeBlock.language,
+                     title: "Creando artefacto..."
+                   });
+                }
               }
               
               if (parsed.error) {
@@ -383,11 +420,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
   const handleNewChat = () => {
     setCurrentConversationId(null);
     setSidebarOpen(false);
+    setArtifactState({ isOpen: false, content: "", language: "text" });
   };
 
   const handleSelectConversation = (id: string) => {
     setCurrentConversationId(id);
     setSidebarOpen(false);
+    setArtifactState({ isOpen: false, content: "", language: "text" });
   };
 
   const handleSuggestionClick = (prompt: string) => {
@@ -440,7 +479,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         chatMode={chatMode}
       />
 
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-1 min-w-0 overflow-hidden relative">
+        <div className={`flex-col h-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-[45%] border-r border-border/40' : 'flex w-full'}`}>
         <header className={`flex items-center justify-between px-4 py-3 border-b ${
           chatMode === 'general'
             ? 'border-indigo-200/50 dark:border-indigo-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md shadow-sm'
@@ -555,6 +595,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     key={message.id}
                     message={message}
                     chatMode={chatMode}
+                    onOpenArtifact={(content, language) => setArtifactState({
+                      isOpen: true,
+                      content,
+                      language,
+                      title: "Artifact"
+                    })}
                     onRegenerate={
                       index === messages.length - 1 && message.role === "assistant"
                         ? handleRegenerate
@@ -578,6 +624,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     }}
                     chatMode={chatMode}
                     isStreaming={true}
+                    onOpenArtifact={(content, language) => setArtifactState({
+                      isOpen: true,
+                      content,
+                      language,
+                      title: "Generating Artifact..."
+                    })}
                   />
                 )}
 
@@ -605,6 +657,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             onChatModeChange={setChatMode}
           />
         </div>
+        </div>
+        {artifactState.isOpen && (
+            <div className="w-full lg:w-[55%] h-full bg-background animate-in slide-in-from-right-5 duration-300 shadow-xl z-10 border-l border-border/40">
+              <ArtifactPanel 
+               content={artifactState.content}
+               language={artifactState.language}
+               title={artifactState.title}
+               onClose={() => setArtifactState(prev => ({ ...prev, isOpen: false }))}
+             />
+           </div>
+        )}
       </div>
     </div>
   );

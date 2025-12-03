@@ -5,9 +5,13 @@ import { MessageContent } from "./MessageContent";
 
 interface MessageBubbleProps {
   message: Message;
+  chatMode?: "roblox" | "general";
+  onRegenerate?: () => void;
+  isStreaming?: boolean;
+  onOpenArtifact?: (code: string, language: string) => void;
 }
 
-export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, chatMode, onRegenerate, isStreaming, onOpenArtifact }: MessageBubbleProps) {
   const isUser = message.role === "user";
   
   let textContent = message.content;
@@ -55,7 +59,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
              <div className="whitespace-pre-wrap text-sm leading-relaxed">{textContent}</div>
           </div>
         ) : (
-          <MessageContent content={textContent} />
+          <MessageContent content={textContent} isStreaming={isStreaming} chatMode={chatMode} onOpenArtifact={onOpenArtifact} />
         )}
       </div>
     </div>
