@@ -12,7 +12,7 @@ import type {
 const DATA_DIR = process.env.DATA_DIR || "./data";
 const STORAGE_FILE = path.join(DATA_DIR, "storage.json");
 const USAGE_EXPIRY_DAYS = 7;
-const USAGE_RESET_MS = 7 * 24 * 60 * 60 * 1000; // 7 days rolling window
+const USAGE_RESET_MS = 3 * 24 * 60 * 60 * 1000; // 3 days rolling window
 
 interface StorageData {
   conversations: Record<string, Conversation>;

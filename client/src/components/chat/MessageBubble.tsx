@@ -9,9 +9,13 @@ interface MessageBubbleProps {
   onRegenerate?: () => void;
   isStreaming?: boolean;
   onOpenArtifact?: (code: string, language: string) => void;
+  artifactState?: {
+    isOpen: boolean;
+    content: string;
+  };
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, chatMode, onRegenerate, isStreaming, onOpenArtifact }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, chatMode, onRegenerate, isStreaming, onOpenArtifact, artifactState }: MessageBubbleProps) {
   const isUser = message.role === "user";
   
   let textContent = message.content;
@@ -59,7 +63,13 @@ export const MessageBubble = memo(function MessageBubble({ message, chatMode, on
              <div className="whitespace-pre-wrap text-sm leading-relaxed">{textContent}</div>
           </div>
         ) : (
-          <MessageContent content={textContent} isStreaming={isStreaming} chatMode={chatMode} onOpenArtifact={onOpenArtifact} />
+          <MessageContent 
+            content={textContent} 
+            isStreaming={isStreaming} 
+            chatMode={chatMode} 
+            onOpenArtifact={onOpenArtifact} 
+            artifactState={artifactState}
+          />
         )}
       </div>
     </div>

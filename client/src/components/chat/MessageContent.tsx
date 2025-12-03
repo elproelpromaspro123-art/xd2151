@@ -7,9 +7,13 @@ interface MessageContentProps {
   isStreaming?: boolean;
   chatMode?: "roblox" | "general";
   onOpenArtifact?: (code: string, language: string) => void;
+  artifactState?: {
+    isOpen: boolean;
+    content: string;
+  };
 }
 
-export function MessageContent({ content, isStreaming = false, chatMode = "roblox", onOpenArtifact }: MessageContentProps) {
+export function MessageContent({ content, isStreaming = false, chatMode = "roblox", onOpenArtifact, artifactState }: MessageContentProps) {
   return (
     <div className={`prose-chat ${isStreaming ? "cursor-blink" : ""}`}>
       <ReactMarkdown
@@ -30,7 +34,15 @@ export function MessageContent({ content, isStreaming = false, chatMode = "roblo
             const language = match ? match[1] : "text";
             const codeString = String(children).replace(/\n$/, "");
 
-            return <CodeBlock language={language} code={codeString} chatMode={chatMode} onOpenArtifact={onOpenArtifact} />;
+            return (
+              <CodeBlock 
+                language={language} 
+                code={codeString} 
+                chatMode={chatMode} 
+                onOpenArtifact={onOpenArtifact} 
+                isArtifactOpen={artifactState?.isOpen && artifactState?.content === codeString}
+              />
+            );
           },
           pre({ children }) {
             return <>{children}</>;
