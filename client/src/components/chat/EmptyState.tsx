@@ -1,6 +1,6 @@
-import { Sparkles, Palette, Code2, Layers } from "lucide-react";
+import { Sparkles, Palette, Code2, Layers, Brain, Calculator, BookOpen, Lightbulb } from "lucide-react";
 
-const suggestions = [
+const robloxSuggestions = [
   {
     icon: Palette,
     title: "Menú Principal Premium",
@@ -23,12 +23,37 @@ const suggestions = [
   },
 ];
 
+const generalSuggestions = [
+  {
+    icon: Brain,
+    title: "Explicación Compleja",
+    prompt: "Explícame la teoría de la relatividad de forma sencilla y con ejemplos cotidianos.",
+  },
+  {
+    icon: Calculator,
+    title: "Resolver Problema",
+    prompt: "Ayúdame a resolver este problema matemático paso a paso y explica la lógica detrás.",
+  },
+  {
+    icon: BookOpen,
+    title: "Resumen de Texto",
+    prompt: "Haz un resumen conciso de los puntos clave del siguiente texto...",
+  },
+  {
+    icon: Lightbulb,
+    title: "Idea Creativa",
+    prompt: "Dame 5 ideas creativas para una campaña de marketing digital enfocada en tecnología.",
+  },
+];
+
 interface EmptyStateProps {
   onSuggestionClick: (prompt: string) => void;
   chatMode?: "roblox" | "general";
 }
 
 export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStateProps) {
+  const suggestions = chatMode === 'general' ? generalSuggestions : robloxSuggestions;
+
   return (
     <div className={`flex-1 flex flex-col items-center justify-center px-4 py-8 animate-fade-in ${
       chatMode === 'general' ? 'bg-gradient-to-b from-white/30 via-indigo-50/20 to-blue-50/30' : ''

@@ -415,7 +415,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
   };
 
   return (
-    <div className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 text-slate-900' : 'bg-background'}`} data-testid="chat-page">
+    <div 
+      className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 text-slate-900' : 'bg-background'}`} 
+      data-testid="chat-page"
+      style={chatMode === 'general' ? { '--glow-color': '226 70% 55%' } as React.CSSProperties : undefined}
+    >
       <ChatSidebar
         conversations={sortedConversations}
         currentConversationId={currentConversationId}

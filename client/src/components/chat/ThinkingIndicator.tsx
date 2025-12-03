@@ -38,7 +38,7 @@ export function ThinkingIndicator({ reasoning, chatMode = "roblox" }: ThinkingIn
         <div className={`mt-2 pl-6 border-l-2 transition-colors ${
           chatMode === 'general' ? 'border-indigo-200/50' : 'border-blue-500/30'
         }`}>
-          <p className={`text-xs whitespace-pre-wrap leading-relaxed transition-colors ${
+          <p className={`text-xs whitespace-pre-wrap leading-relaxed transition-colors break-words max-w-full overflow-hidden ${
             chatMode === 'general' ? 'text-slate-600' : 'text-muted-foreground'
           }`}>
             {reasoning}
