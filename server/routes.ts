@@ -1409,7 +1409,25 @@ export async function registerRoutes(
 
       const apiKey = process.env.OPENROUTER_API_KEY;
       if (!apiKey) {
-        res.write(`data: ${JSON.stringify({ error: "API key not configured" })}\n\n`);
+        let fallbackContent = "";
+        if (chatMode === "roblox") {
+          fallbackContent = `No tengo acceso al proveedor de IA en este entorno, pero aquí tienes una respuesta básica basada en tu mensaje:\n\n- Entendí: "${message.trim()}"\n- Puedo generarte pasos y estructura en texto.\n\nSi configuras la clave OPENROUTER_API_KEY, podré darte código Luau y respuestas completas.`;
+        } else {
+          fallbackContent = `No tengo acceso al proveedor de IA en este entorno, pero puedo ayudarte igualmente con una guía inicial basada en tu mensaje: "${message.trim()}".\n\nConfigura la variable OPENROUTER_API_KEY para habilitar respuestas de modelos como Grok o Nova.`;
+        }
+
+        if (userId) {
+          createUserMessage(userId, conversationId, "assistant", fallbackContent);
+        } else {
+          await storage.createMessage({
+            id: randomUUID(),
+            conversationId,
+            role: "assistant",
+            content: fallbackContent,
+          });
+        }
+
+        res.write(`data: ${JSON.stringify({ content: fallbackContent })}\n\n`);
         res.write("data: [DONE]\n\n");
         return res.end();
       }

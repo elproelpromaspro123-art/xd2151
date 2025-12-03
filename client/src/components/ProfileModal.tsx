@@ -142,16 +142,16 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className={`sm:max-w-[425px] transition-colors ${
         chatMode === 'general'
-          ? 'bg-gradient-to-b from-white/95 to-indigo-50/40 border-indigo-200/30'
+          ? (isDarkMode ? 'bg-background border-border' : 'bg-gradient-to-b from-white/95 to-indigo-50/40 border-indigo-200/30')
           : ''
       }`}>
         <DialogHeader>
           <DialogTitle className={`flex items-center gap-2 transition-colors ${
             chatMode === 'general'
-              ? 'text-indigo-900'
+              ? (isDarkMode ? 'text-foreground' : 'text-indigo-900')
               : ''
           }`}>
-            <User className={`h-5 w-5 ${chatMode === 'general' ? 'text-indigo-600' : ''}`} />
+            <User className={`h-5 w-5 ${chatMode === 'general' ? (isDarkMode ? 'text-foreground' : 'text-indigo-600') : ''}`} />
             Mi Cuenta
           </DialogTitle>
           <DialogDescription className="sr-only">
