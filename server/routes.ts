@@ -67,7 +67,7 @@ const AI_MODELS = {
     name: "Amazon Nova 2 Lite",
     description: "Texto e imágenes - Mejor para uso general",
     supportsImages: true,
-    supportsReasoning: false,
+    supportsReasoning: true,
     isPremiumOnly: true,
     maxTokens: 8000,
     avgTokensPerSecond: 55,
