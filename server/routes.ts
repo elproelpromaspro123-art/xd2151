@@ -775,7 +775,9 @@ export async function registerRoutes(
         return res.status(400).json({ error: result.error });
       }
 
-      if (result.requiresVerification) {
+      // OBLIGATORIO: Verificar si el correo está verificado
+      // Si requiresVerification es true O si el usuario no está verificado, forzar verificación
+      if (result.requiresVerification || !result.user?.isEmailVerified) {
         const code = generateVerificationCode();
         const verificationData = loadVerificationData();
         verificationData.codes[googleData.email.toLowerCase()] = {
@@ -786,7 +788,18 @@ export async function registerRoutes(
         };
         saveVerificationData(verificationData);
 
-        const emailSent = await sendVerificationEmail(googleData.email, code);
+        // Enviar email con timeout para evitar que se quede congelado
+        let emailSent = false;
+        try {
+          const emailPromise = sendVerificationEmail(googleData.email, code);
+          const timeoutPromise = new Promise<boolean>((resolve) => {
+            setTimeout(() => resolve(false), 15000); // 15 segundos timeout
+          });
+          emailSent = await Promise.race([emailPromise, timeoutPromise]);
+        } catch (error) {
+          console.error("Error sending verification email:", error);
+          emailSent = false;
+        }
 
         return res.status(200).json({
           success: false,
@@ -794,23 +807,32 @@ export async function registerRoutes(
           email: googleData.email,
           emailSent,
           message: emailSent 
-            ? "Se ha enviado un código de verificación a tu correo"
+            ? "Se ha enviado un código de verificación a tu correo. Debes verificar tu correo antes de continuar."
             : "Error al enviar el código. Intenta de nuevo."
         });
       }
 
+      // Solo crear sesión si el correo está verificado
+      if (!result.user || !result.user.isEmailVerified) {
+        return res.status(403).json({ 
+          error: "Debes verificar tu correo electrónico antes de iniciar sesión",
+          requiresVerification: true,
+          email: googleData.email
+        });
+      }
+
       const userAgent = req.headers["user-agent"];
-      const session = createSession(result.user!.id, userAgent, ip);
+      const session = createSession(result.user.id, userAgent, ip);
 
       res.json({
         success: true,
         token: session.token,
         isNewUser: result.isNewUser,
         user: {
-          id: result.user!.id,
-          email: result.user!.email,
-          isPremium: result.user!.isPremium,
-          isEmailVerified: result.user!.isEmailVerified,
+          id: result.user.id,
+          email: result.user.email,
+          isPremium: result.user.isPremium,
+          isEmailVerified: result.user.isEmailVerified,
         }
       });
     } catch (error) {

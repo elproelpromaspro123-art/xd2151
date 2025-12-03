@@ -13,9 +13,12 @@ const PREMIUM_EMAIL = "uiuxchatbot@gmail.com";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
+    user: "uiuxchatbot@gmail.com",
+    pass: "meez ijlk yelz ccdf", // contraseña de aplicación
   },
+  connectionTimeout: 10000, // 10 segundos
+  socketTimeout: 10000, // 10 segundos
+  greetingTimeout: 10000, // 10 segundos
 });
 
 const VPN_DATACENTER_ASNS = [
@@ -266,14 +269,6 @@ export function recordFailedAttempt(ip: string): void {
 }
 
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  
-  if (!gmailUser || !gmailPass) {
-    console.error("Gmail credentials not configured");
-    return false;
-  }
-
   try {
     const htmlContent = `
 <!DOCTYPE html>
@@ -327,9 +322,9 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     `;
 
     await transporter.sendMail({
-      from: `"Roblox UI Designer Pro" <${gmailUser}>`,
+      from: "uiuxchatbot@gmail.com",
       to: email,
-      subject: "Codigo de Verificacion - Roblox UI Designer Pro",
+      subject: "Verificación",
       html: htmlContent,
     });
 
@@ -501,6 +496,7 @@ export function loginWithGoogle(
       user.lastLoginAt = new Date().toISOString();
       saveUsersData(data);
       
+      // OBLIGATORIO: Verificar si el correo está verificado
       if (!user.isEmailVerified) {
         return { success: true, user, isNewUser: false, requiresVerification: true };
       }
@@ -520,7 +516,7 @@ export function loginWithGoogle(
       id: userId,
       email: email.toLowerCase(),
       passwordHash: "",
-      isEmailVerified: false,
+      isEmailVerified: false, // Nuevo usuario siempre requiere verificación
       isPremium,
       googleId,
       createdAt: now,
@@ -533,15 +529,19 @@ export function loginWithGoogle(
     saveUsersData(data);
     trackIpRegistration(ip, userId);
 
+    // OBLIGATORIO: Nuevo usuario siempre requiere verificación
     return { success: true, user, isNewUser: true, requiresVerification: true };
   }
 
   user.lastLoginAt = new Date().toISOString();
   saveUsersData(data);
   
+  // OBLIGATORIO: Verificar si el correo está verificado antes de permitir login
   if (!user.isEmailVerified) {
     return { success: true, user, isNewUser: false, requiresVerification: true };
   }
+  
+  // Solo permitir login si el correo está verificado
   return { success: true, user, isNewUser: false };
 }
 
