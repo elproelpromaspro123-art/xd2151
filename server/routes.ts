@@ -68,7 +68,7 @@ const AI_MODELS = {
     description: "Texto e imágenes - Mejor para uso general",
     supportsImages: true,
     supportsReasoning: false,
-    isPremiumOnly: false,
+    isPremiumOnly: true,
     maxTokens: 8000,
     avgTokensPerSecond: 55,
     category: "general",
