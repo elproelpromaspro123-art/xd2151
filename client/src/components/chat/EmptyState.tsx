@@ -25,16 +25,23 @@ const suggestions = [
 
 interface EmptyStateProps {
   onSuggestionClick: (prompt: string) => void;
+  chatMode?: "roblox" | "general";
 }
 
-export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
+export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStateProps) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 animate-fade-in">
-      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 animated-border-strong animated-border-pulse">
+    <div className={`flex-1 flex flex-col items-center justify-center px-4 py-8 animate-fade-in ${
+      chatMode === 'general' ? 'bg-gradient-to-b from-white/30 via-indigo-50/20 to-blue-50/30' : ''
+    }`}>
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 animated-border-strong animated-border-pulse ${
+        chatMode === 'general'
+          ? 'bg-gradient-to-br from-indigo-100 to-blue-100'
+          : 'bg-primary/10'
+      }`}>
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className="w-8 h-8 text-primary"
+          className={`w-8 h-8 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`}
           stroke="currentColor"
           strokeWidth="1.5"
         >
@@ -46,11 +53,13 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
         </svg>
       </div>
 
-      <h1 className="text-2xl font-semibold text-foreground mb-2 text-center">
-        Roblox UI/UX Designer
+      <h1 className={`text-2xl font-semibold mb-2 text-center ${chatMode === 'general' ? 'text-slate-900' : 'text-foreground'}`}>
+        {chatMode === 'general' ? 'Asistente Pro' : 'Roblox UI/UX Designer'}
       </h1>
-      <p className="text-muted-foreground text-center mb-8 max-w-md">
-        Generador de interfaces premium con IA especializada en diseño UI/UX para Roblox Studio. Describe tu idea y obtén código Luau profesional.
+      <p className={`text-center mb-8 max-w-md ${chatMode === 'general' ? 'text-slate-600' : 'text-muted-foreground'}`}>
+        {chatMode === 'general' 
+          ? '¿En qué puedo ayudarte hoy? Soy tu asistente inteligente para cualquier tema.' 
+          : 'Generador de interfaces premium con IA especializada en diseño UI/UX para Roblox Studio. Describe tu idea y obtén código Luau profesional.'}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
@@ -58,15 +67,23 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
           <button
             key={index}
             onClick={() => onSuggestionClick(suggestion.prompt)}
-            className="group flex items-start gap-3 p-4 rounded-lg bg-card text-left transition-all animated-border"
+            className={`group flex items-start gap-3 p-4 rounded-lg text-left transition-all animated-border ${
+              chatMode === 'general'
+                ? 'bg-white/60 hover:bg-indigo-50/60 border border-indigo-200/20'
+                : 'bg-card'
+            }`}
             data-testid={`button-suggestion-${index}`}
           >
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-              <suggestion.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+              chatMode === 'general'
+                ? 'bg-indigo-100 group-hover:bg-indigo-200 text-indigo-600 group-hover:text-indigo-700'
+                : 'bg-secondary group-hover:bg-primary/10 text-muted-foreground group-hover:text-primary'
+            }`}>
+              <suggestion.icon className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-foreground mb-1">{suggestion.title}</h3>
-              <p className="text-xs text-muted-foreground line-clamp-2">{suggestion.prompt}</p>
+              <h3 className={`text-sm font-medium mb-1 ${chatMode === 'general' ? 'text-slate-900' : 'text-foreground'}`}>{suggestion.title}</h3>
+              <p className={`text-xs line-clamp-2 ${chatMode === 'general' ? 'text-slate-600' : 'text-muted-foreground'}`}>{suggestion.prompt}</p>
             </div>
           </button>
         ))}

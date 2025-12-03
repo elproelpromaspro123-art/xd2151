@@ -465,7 +465,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             )}
 
             {isPremium && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 text-amber-500 rounded-full text-xs font-medium">
+              <div className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                chatMode === 'general'
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'bg-amber-500/10 text-amber-500'
+              }`}>
                 <Crown className="h-3.5 w-3.5" />
                 Premium
               </div>
@@ -477,7 +481,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             </div>
             
             <UpgradeModal usage={usage || null}>
-              <Button variant="outline" size="sm" className="gap-2 animated-border">
+              <Button variant="outline" size="sm" className={`gap-2 animated-border ${
+                chatMode === 'general'
+                  ? 'border-indigo-300/30 text-indigo-600 hover:bg-indigo-50'
+                  : ''
+              }`}>
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">{isPremium ? "Premium" : "Mejorar"}</span>
               </Button>
@@ -513,7 +521,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
         <div className={`flex-1 overflow-hidden ${chatMode === 'general' ? 'bg-gradient-to-b from-white/50 to-indigo-50/30' : ''}`}>
           {showEmptyState ? (
-            <EmptyState onSuggestionClick={handleSuggestionClick} />
+            <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
           ) : (
             <ScrollArea className="h-full">
               <div className={`max-w-4xl mx-auto py-4 ${chatMode === 'general' ? 'px-4' : ''}`}>
@@ -521,6 +529,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                   <MessageBubble
                     key={message.id}
                     message={message}
+                    chatMode={chatMode}
                     onRegenerate={
                       index === messages.length - 1 && message.role === "assistant"
                         ? handleRegenerate
@@ -542,6 +551,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                       content: streamingMessage,
                       createdAt: new Date().toISOString(),
                     }}
+                    chatMode={chatMode}
                     isStreaming={true}
                   />
                 )}
@@ -554,20 +564,22 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
           )}
         </div>
 
-        <ChatInput
-          onSend={handleSendMessage}
-          isLoading={isStreaming}
-          disabled={messageRemaining <= 0}
-          webSearchRemaining={Math.max(0, webSearchRemaining)}
-          models={modelsData?.models || []}
-          selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
-          useReasoning={useReasoning}
-          onReasoningChange={setUseReasoning}
-          isPremium={isPremium}
-          chatMode={chatMode}
-          onChatModeChange={setChatMode}
-        />
+        <div className={`border-t ${ chatMode === 'general' ? 'border-indigo-200/30 bg-gradient-to-r from-white/50 via-indigo-50/40 to-blue-50/30' : 'border-border/50 bg-background/50' }`}>
+          <ChatInput
+            onSend={handleSendMessage}
+            isLoading={isStreaming}
+            disabled={messageRemaining <= 0}
+            webSearchRemaining={Math.max(0, webSearchRemaining)}
+            models={modelsData?.models || []}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            useReasoning={useReasoning}
+            onReasoningChange={setUseReasoning}
+            isPremium={isPremium}
+            chatMode={chatMode}
+            onChatModeChange={setChatMode}
+          />
+        </div>
       </div>
     </div>
   );

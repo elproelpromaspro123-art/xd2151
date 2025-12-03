@@ -15,9 +15,10 @@ interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
   onRegenerate?: () => void;
+  chatMode?: "roblox" | "general";
 }
 
-export function MessageBubble({ message, isStreaming = false, onRegenerate }: MessageBubbleProps) {
+export function MessageBubble({ message, isStreaming = false, onRegenerate, chatMode = "roblox" }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
@@ -39,11 +40,15 @@ export function MessageBubble({ message, isStreaming = false, onRegenerate }: Me
       data-testid={`message-bubble-${message.role}-${message.id}`}
     >
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1 animated-border-pulse">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 animated-border-pulse ${
+          chatMode === 'general'
+            ? 'bg-gradient-to-br from-indigo-100 to-blue-100'
+            : 'bg-primary/10'
+        }`}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            className="w-5 h-5 text-primary"
+            className={`w-5 h-5 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`}
             stroke="currentColor"
             strokeWidth="1.5"
           >
@@ -65,6 +70,8 @@ export function MessageBubble({ message, isStreaming = false, onRegenerate }: Me
           className={`relative rounded-lg px-4 py-3 ${
             isUser
               ? "bg-primary text-primary-foreground animated-border"
+              : chatMode === 'general'
+              ? 'bg-white/70 border border-indigo-200/30 text-slate-900 animated-border'
               : "bg-card animated-border"
           }`}
         >
