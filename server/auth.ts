@@ -434,22 +434,6 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     return false;
   }
 }
-    `;
-
-    await transporter.sendMail({
-      from: `"Roblox UI Designer Pro" <${gmailUser}>`,
-      to: email,
-      subject: "Verificación - Roblox UI Designer Pro",
-      html: htmlContent,
-    });
-
-    console.log(`Verification email sent successfully to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-    return false;
-  }
-}
 
 export async function registerUser(
   email: string, 
