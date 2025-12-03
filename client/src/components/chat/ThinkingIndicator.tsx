@@ -6,9 +6,9 @@ interface ThinkingIndicatorProps {
   chatMode?: "roblox" | "general";
 }
 
-export function ThinkingIndicator({ reasoning, chatMode = "roblox" }: ThinkingIndicatorProps) {
+export function ThinkingIndicator({ reasoning, modelName, chatMode = "roblox" }: ThinkingIndicatorProps) {
   return (
-    <div className={`px-4 py-3 mb-2 mx-4 rounded-lg border transition-colors ${
+    <div className={`px-4 py-3 mb-2 mx-4 rounded-lg border transition-colors overflow-hidden ${
       chatMode === 'general'
         ? 'bg-gradient-to-r from-indigo-500/5 to-blue-500/5 border-indigo-200/30'
         : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20'

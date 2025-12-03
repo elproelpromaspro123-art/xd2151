@@ -458,8 +458,8 @@ INSTRUCCIONES IMPORTANTES:
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.APP_URL || "https://roblox-ui-designer.onrender.com",
-        "X-Title": "Roblox UI Designer Pro",
+        "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "https://roblox-ui-designer.onrender.com",
+        "X-Title": process.env.OPENROUTER_X_TITLE || "Roblox UI Designer Pro",
       },
       body: JSON.stringify(requestBody),
     });

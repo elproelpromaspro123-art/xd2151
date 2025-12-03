@@ -232,12 +232,16 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span>Modelo DeepSeek R1T2 (Programación)</span>
+                </li>
+                <li className="flex items-start gap-2 text-sm">
+                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <span>Reinicio de límites cada domingo</span>
                 </li>
               </ul>
             </div>
             
-            <div className={`relative p-5 rounded-xl border-2 ${isPremium ? 'border-amber-500 bg-amber-500/5' : 'border-border bg-card'}`}>
+            <div className={`relative p-5 rounded-xl border-2 ${isPremium ? 'border-amber-500 bg-amber-500/5 shadow-lg shadow-amber-500/20' : 'border-border bg-card'}`}>
               <div className={`absolute -top-3 left-4 px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-medium rounded flex items-center gap-1`}>
                 <Crown className="h-3 w-3" />
                 {isPremium ? 'ACTIVO' : 'PREMIUM'}
@@ -265,18 +269,36 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex items-center gap-1.5">
-                    <span>Grok 4.1 Fast</span>
-                    <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded text-[10px] font-medium">NUEVO</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>Grok 4.1 Fast</span>
+                      <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded text-[10px] font-medium">REASONING</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Texto, imágenes y razonamiento</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
-                  <Image className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>Subida de imágenes</span>
+                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>Gemini 2.0 Flash Exp</span>
+                      <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded text-[10px] font-medium">NUEVO</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Texto e imágenes, modelo experimental</span>
+                  </div>
+                </li>
+                <li className="flex items-start gap-2 text-sm">
+                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>Amazon Nova 2 Lite</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Texto e imágenes, uso general</span>
+                  </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Brain className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>Modo Reasoning avanzado</span>
+                  <span>Modo Reasoning "Grandes Ligas"</span>
                 </li>
               </ul>
               

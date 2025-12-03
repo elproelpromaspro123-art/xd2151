@@ -140,18 +140,20 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className={`sm:max-w-[425px] transition-colors ${
+      <DialogContent className={`sm:max-w-[425px] transition-all duration-300 ${
         chatMode === 'general'
-          ? (isDarkMode ? 'bg-background border-border' : 'bg-gradient-to-b from-white/95 to-indigo-50/40 border-indigo-200/30')
-          : ''
-      }`}>
-        <DialogHeader>
-          <DialogTitle className={`flex items-center gap-2 transition-colors ${
+          ? (isDarkMode ? 'bg-background/95 backdrop-blur-xl border-border' : 'bg-gradient-to-br from-white/95 to-indigo-50/80 backdrop-blur-xl border-indigo-200/30 shadow-indigo-500/10')
+          : 'bg-card/95 backdrop-blur-xl border-border'
+      } shadow-2xl`}>
+        <DialogHeader className="pb-4 border-b border-border/50">
+          <DialogTitle className={`flex items-center gap-3 text-xl transition-colors ${
             chatMode === 'general'
               ? (isDarkMode ? 'text-foreground' : 'text-indigo-900')
               : ''
           }`}>
-            <User className={`h-5 w-5 ${chatMode === 'general' ? (isDarkMode ? 'text-foreground' : 'text-indigo-600') : ''}`} />
+            <div className={`p-2 rounded-lg ${chatMode === 'general' ? 'bg-indigo-500/10' : 'bg-primary/10'}`}>
+              <User className={`h-5 w-5 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`} />
+            </div>
             Mi Cuenta
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -160,53 +162,81 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Correo electrónico</Label>
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-              <span className="text-sm">{user.email}</span>
-              {user.isEmailVerified && (
-                <span className="flex items-center gap-1 text-xs text-green-500">
-                  <Check className="h-3 w-3" />
-                  Verificado
-                </span>
-              )}
+          <div className="space-y-2.5">
+            <Label className="text-muted-foreground ml-1 text-xs uppercase tracking-wider font-semibold">Correo electrónico</Label>
+            <div className="flex items-center gap-3 p-3.5 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-full bg-background border border-border/50">
+                 <span className="text-xs font-bold text-muted-foreground">@</span>
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium block">{user.email}</span>
+                {user.isEmailVerified && (
+                  <span className="flex items-center gap-1 text-[10px] text-green-500 font-medium mt-0.5">
+                    <Check className="h-3 w-3" />
+                    Verificado
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Estado de la cuenta</Label>
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <div className="space-y-2.5">
+            <Label className="text-muted-foreground ml-1 text-xs uppercase tracking-wider font-semibold">Estado de la cuenta</Label>
+            <div className="flex items-center gap-3 p-3.5 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors">
               {user.isPremium ? (
-                <span className="flex items-center gap-2 text-sm text-amber-500 font-medium">
-                  <span className="px-2 py-0.5 bg-amber-500/10 rounded">Premium</span>
-                </span>
+                <>
+                  <div className="p-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    <User className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="flex items-center gap-2 text-sm text-amber-500 font-bold">
+                      PREMIUM
+                      <span className="px-2 py-0.5 bg-amber-500/10 rounded text-[10px] border border-amber-500/20">ACTIVO</span>
+                    </span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Tienes acceso a todas las funciones</p>
+                  </div>
+                </>
               ) : (
-                <span className="text-sm text-muted-foreground">Plan Gratuito</span>
+                <>
+                  <div className="p-2 rounded-full bg-muted border border-border/50">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-foreground">Plan Gratuito</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Funciones limitadas</p>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2">
-              {isDarkMode ? (
-                <Moon className="h-4 w-4 text-primary" />
-              ) : (
-                <Sun className="h-4 w-4 text-amber-500" />
-              )}
-              <Label htmlFor="theme-toggle" className="text-sm cursor-pointer">
-                Modo {isDarkMode ? "Oscuro" : "Claro"}
-              </Label>
+          <div className="flex items-center justify-between p-4 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => handleThemeChange(!isDarkMode)}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-orange-500/10 text-orange-500'}`}>
+                {isDarkMode ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </div>
+              <div className="flex flex-col">
+                <Label htmlFor="theme-toggle" className="text-sm font-medium cursor-pointer">
+                  Modo {isDarkMode ? "Oscuro" : "Claro"}
+                </Label>
+                <span className="text-xs text-muted-foreground">Cambia la apariencia de la interfaz</span>
+              </div>
             </div>
             <Switch
               id="theme-toggle"
               checked={isDarkMode}
               onCheckedChange={handleThemeChange}
+              className="data-[state=checked]:bg-primary"
             />
           </div>
 
-          <div className="border-t border-border pt-4">
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Lock className="h-4 w-4" />
+          <div className="border-t border-border/50 pt-6">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <Lock className="h-4 w-4 text-muted-foreground" />
               Cambiar Contraseña
             </h3>
             <form onSubmit={handleChangePassword} className="space-y-3">

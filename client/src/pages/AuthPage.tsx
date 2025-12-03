@@ -312,15 +312,15 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-background to-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
+        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-2xl ring-1 ring-white/10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 animated-border-strong">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-indigo-500/20 flex items-center justify-center mx-auto mb-6 animated-border-strong shadow-lg shadow-primary/5">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                className="w-8 h-8 text-primary"
+                className="w-10 h-10 text-primary drop-shadow-md"
                 stroke="currentColor"
                 strokeWidth="1.5"
               >
@@ -331,63 +331,63 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Roblox UI Designer Pro</h1>
-            <p className="text-muted-foreground mt-2">
-              {mode === "login" && "Inicia sesión para guardar tus conversaciones"}
-              {mode === "register" && "Crea una cuenta para empezar"}
+            <h1 className="text-3xl font-bold text-foreground tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Roblox UI Designer Pro</h1>
+            <p className="text-muted-foreground mt-3 text-base font-medium">
+              {mode === "login" && "Bienvenido de nuevo, creador"}
+              {mode === "register" && "Únete a la élite del diseño en Roblox"}
             </p>
           </div>
 
-          <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
+          <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="email" className="ml-1">Correo electrónico</Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="tu@correo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-background/50 border-border/50 focus:bg-background transition-all duration-300"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="password"className="ml-1">Contraseña</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10"
+                      className="pl-10 pr-10 bg-background/50 border-border/50 focus:bg-background transition-all duration-300"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-1">
                   <input
                     id="remember"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded border-border/50 bg-background/50 text-primary focus:ring-primary"
                   />
-                  <label htmlFor="remember" className="text-sm text-muted-foreground">Recordarme</label>
+                  <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer select-none">Recordarme</label>
                 </div>
 
                 {mode === "register" && (
