@@ -84,9 +84,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
   const { data: messages = [] } = useQuery<Message[]>({
     queryKey: ["/api/conversations", currentConversationId, "messages"],
-    return (
-      <div className={`${chatMode === 'general' ? 'flex h-screen w-full bg-gradient-to-r from-sky-50 to-indigo-50 text-slate-900' : 'flex h-screen w-full bg-background'} `} data-testid="chat-page">
-        <ChatSidebar
+  });
   const deleteConversationMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/conversations/${id}`);
@@ -96,75 +94,31 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/usage"] });
       if (currentConversationId === deletedId) {
         setCurrentConversationId(null);
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm lg:px-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animated-border-strong">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="w-4 h-4 text-primary"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-sm font-semibold text-foreground" data-testid="text-header-title">
-                  Roblox UI/UX Designer Pro
-                </h1>
-                <p className="text-xs text-muted-foreground">Especializado en diseño de interfaces premium</p>
-              </div>
-            </div>
+      }
+    },
+  });
 
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                <Zap className="h-3.5 w-3.5 text-primary" />
-                <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
-              </div>
+  const deleteAllConversationsMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", "/api/conversations");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/usage"] });
+      setCurrentConversationId(null);
+    },
+  });
 
-              {user && (
-                <ProfileModal user={user}>
-                  <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-                    <UserIcon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline max-w-[100px] truncate">{user.email}</span>
-                    <Settings className="h-3 w-3 opacity-50" />
-                  </Button>
-                </ProfileModal>
-              )}
+  const handleSendMessage = async (content: string, useWebSearch = false, imageBase64?: string) => {
+    let conversationId = currentConversationId;
 
-              {isPremium && (
-                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 text-amber-500 rounded-full text-xs font-medium">
-                  <Crown className="h-3.5 w-3.5" />
-                  Premium
-                </div>
-              )}
-
-              <UpgradeModal usage={usage || null}>
-                <Button variant="outline" size="sm" className="gap-2 animated-border">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="hidden sm:inline">{isPremium ? "Premium" : "Mejorar"}</span>
-                </Button>
-              </UpgradeModal>
-
-              {onLogout && (
-                <LogoutConfirmDialog onConfirm={onLogout}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </LogoutConfirmDialog>
-              )}
-            </div>
-          </header>
+    if (!conversationId) {
+      try {
+        const created = await apiRequest("POST", "/api/conversations", { title: content?.slice(0, 50) || "Chat" });
+        conversationId = created.id;
+        setCurrentConversationId(conversationId);
+      } catch (e) {
+        toast({ title: "Error", description: "No se pudo crear la conversación.", variant: "destructive" });
         return;
       }
     }
@@ -462,15 +416,9 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
       <div className="flex flex-col flex-1 min-w-0">
         <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm lg:px-6">
-            <div className="flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-primary" />
-              <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
-            </div>
-                fill="none"
-                className="w-4 h-4 text-primary"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animated-border-strong">
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-primary" stroke="currentColor" strokeWidth="1.5">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -484,8 +432,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
               </h1>
               <p className="text-xs text-muted-foreground">Especializado en diseño de interfaces premium</p>
             </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground ml-4">
+              <Zap className="h-3.5 w-3.5 text-primary" />
+              <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
+            </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {user && (
               <ProfileModal user={user}>
