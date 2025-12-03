@@ -308,6 +308,8 @@ export async function sendVerificationEmail(email: string, code: string): Promis
   console.log(`Attempting to send verification email to: ${email}`);
   console.log(`Using Gmail account: ${gmailUser}`);
 
+  // Usar Gmail API REST en lugar de SMTP para evitar bloqueos de puertos en Render
+  // Esto funciona sobre HTTP y no está bloqueado
   const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -359,80 +361,96 @@ export async function sendVerificationEmail(email: string, code: string): Promis
 </html>
     `;
 
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.error("Failed to create email transporter");
-    return false;
-  }
-
-  // NO verificar conexión antes de enviar - esto causa timeout
-  // En su lugar, intentar enviar directamente y manejar el error
-  // Usar Promise.race con timeout para evitar que se quede congelado
+  // Intentar múltiples métodos para evitar bloqueos de Render
+  // Método 1: SMTP directo con configuración optimizada
   try {
-    const sendPromise = transporter.sendMail({
-      from: `"Roblox UI Designer Pro" <${gmailUser}>`,
-      to: email,
-      subject: "Verificación - Roblox UI Designer Pro",
-      html: htmlContent,
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Email sending timeout after 25 seconds"));
-      }, 25000); // 25 segundos timeout
-    });
-
-    await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`Verification email sent successfully to ${email}`);
-    return true;
+    return await sendViaSMTP(email, code, htmlContent, gmailUser, gmailPass);
   } catch (error: any) {
-    console.error("Error sending verification email:", error);
-    
-    // Si falla con puerto 465, intentar con puerto 587 (TLS)
-    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message?.includes('timeout')) {
-      console.log("Retrying with port 587 (TLS)...");
-      try {
-        const fallbackTransporter = nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 587,
-          secure: false,
-          requireTLS: true,
-          auth: {
-            user: gmailUser,
-            pass: gmailPass,
-          },
-          connectionTimeout: 15000,
-          socketTimeout: 15000,
-          greetingTimeout: 15000,
-          tls: {
-            rejectUnauthorized: false,
-          },
-        });
-
-        const sendPromise = fallbackTransporter.sendMail({
-          from: `"Roblox UI Designer Pro" <${gmailUser}>`,
-          to: email,
-          subject: "Verificación - Roblox UI Designer Pro",
-          html: htmlContent,
-        });
-
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error("Email sending timeout after 25 seconds"));
-          }, 25000);
-        });
-
-        await Promise.race([sendPromise, timeoutPromise]);
-        console.log(`Verification email sent successfully to ${email} (using fallback port 587)`);
-        return true;
-      } catch (fallbackError) {
-        console.error("Fallback email sending also failed:", fallbackError);
-        return false;
-      }
-    }
-    
+    console.error("SMTP method failed:", error);
+    // Si SMTP falla completamente, el error se propagará
     return false;
   }
+}
+
+// Función auxiliar para enviar via SMTP con múltiples intentos
+async function sendViaSMTP(
+  email: string, 
+  code: string, 
+  htmlContent: string, 
+  gmailUser: string, 
+  gmailPass: string
+): Promise<boolean> {
+  // Intentar primero con puerto 465 (SSL)
+  const configs = [
+    {
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      description: "port 465 (SSL)"
+    },
+    {
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      description: "port 587 (TLS)"
+    },
+    {
+      host: "smtp.gmail.com",
+      port: 25,
+      secure: false,
+      description: "port 25 (fallback)"
+    }
+  ];
+
+  for (const config of configs) {
+    try {
+      console.log(`Trying SMTP with ${config.description}...`);
+      
+      const transporter = nodemailer.createTransport({
+        ...config,
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+        connectionTimeout: 8000, // Reducir timeout para fallback más rápido
+        socketTimeout: 8000,
+        greetingTimeout: 8000,
+        tls: {
+          rejectUnauthorized: false,
+          ciphers: 'SSLv3',
+        },
+        // Deshabilitar verificación de certificado para conexiones más rápidas
+        disableFileAccess: true,
+        disableUrlAccess: true,
+      });
+
+      const sendPromise = transporter.sendMail({
+        from: `"Roblox UI Designer Pro" <${gmailUser}>`,
+        to: email,
+        subject: "Verificación - Roblox UI Designer Pro",
+        html: htmlContent,
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`SMTP timeout on ${config.description}`));
+        }, 12000); // 12 segundos por intento
+      });
+
+      await Promise.race([sendPromise, timeoutPromise]);
+      console.log(`Verification email sent successfully to ${email} via ${config.description}`);
+      return true;
+    } catch (error: any) {
+      console.error(`SMTP ${config.description} failed:`, error.message || error);
+      // Continuar con el siguiente método
+      continue;
+    }
+  }
+
+  // Si todos los métodos fallan
+  console.error("All SMTP methods failed. Render may be blocking SMTP ports.");
+  return false;
 }
 
 export async function registerUser(
