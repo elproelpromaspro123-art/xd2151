@@ -124,11 +124,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       }
     }
 
+    let contentToSave = content;
+    if (imageBase64) {
+      contentToSave = JSON.stringify([
+        { type: "text", text: content },
+        { type: "image_url", image_url: { url: imageBase64 } }
+      ]);
+    }
+
     const tempUserMessage: Message = {
       id: `temp-${Date.now()}`,
       conversationId: conversationId,
       role: "user",
-      content,
+      content: contentToSave,
       createdAt: new Date().toISOString(),
     };
 
@@ -416,7 +424,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
   return (
     <div 
-      className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 text-slate-900' : 'bg-background'}`} 
+      className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-indigo-950/30 dark:to-blue-950/20 text-slate-900 dark:text-slate-100' : 'bg-background'}`} 
       data-testid="chat-page"
       style={chatMode === 'general' ? { '--glow-color': '226 70% 55%' } as React.CSSProperties : undefined}
     >
@@ -435,16 +443,16 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       <div className="flex flex-col flex-1 min-w-0">
         <header className={`flex items-center justify-between px-4 py-3 border-b ${
           chatMode === 'general'
-            ? 'border-indigo-200/50 bg-white/40 backdrop-blur-md shadow-sm'
+            ? 'border-indigo-200/50 dark:border-indigo-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md shadow-sm'
             : 'border-border/50 bg-background/80 backdrop-blur-sm'
         } lg:px-6`}>
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center animated-border-strong ${
               chatMode === 'general'
-                ? 'bg-gradient-to-br from-indigo-100 to-blue-100'
+                ? 'bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/50 dark:to-blue-900/50'
                 : 'bg-primary/10'
             }`}>
-              <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`} stroke="currentColor" strokeWidth="1.5">
+              <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 ${chatMode === 'general' ? 'text-indigo-600 dark:text-indigo-400' : 'text-primary'}`} stroke="currentColor" strokeWidth="1.5">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -453,19 +461,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
               </svg>
             </div>
             <div>
-              <h1 className={`text-sm font-semibold ${chatMode === 'general' ? 'text-slate-900' : 'text-foreground'}`} data-testid="text-header-title">
+              <h1 className={`text-sm font-semibold ${chatMode === 'general' ? 'text-slate-900 dark:text-slate-100' : 'text-foreground'}`} data-testid="text-header-title">
                 {chatMode === 'general' ? 'Asistente Pro' : 'Roblox UI/UX Designer Pro'}
               </h1>
-              <p className={`text-xs ${chatMode === 'general' ? 'text-slate-600' : 'text-muted-foreground'}`}>
+              <p className={`text-xs ${chatMode === 'general' ? 'text-slate-600 dark:text-slate-400' : 'text-muted-foreground'}`}>
                 {chatMode === 'general' ? 'Tu asistente inteligente multipropósito' : 'Especializado en diseño de interfaces premium'}
               </p>
             </div>
             <div className={`hidden sm:flex items-center gap-2 text-xs ml-4 ${
               chatMode === 'general'
-                ? 'text-slate-600'
+                ? 'text-slate-600 dark:text-slate-400'
                 : 'text-muted-foreground'
             }`}>
-              <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-indigo-500' : 'text-primary'}`} />
+              <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-indigo-500 dark:text-indigo-400' : 'text-primary'}`} />
               <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
             </div>
           </div>
@@ -536,7 +544,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
           </div>
         )}
 
-        <div className={`flex-1 overflow-hidden ${chatMode === 'general' ? 'bg-gradient-to-b from-white/50 to-indigo-50/30' : ''}`}>
+        <div className={`flex-1 overflow-hidden ${chatMode === 'general' ? 'bg-gradient-to-b from-white/50 to-indigo-50/30 dark:from-slate-950/50 dark:to-indigo-950/20' : ''}`}>
           {showEmptyState ? (
             <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
           ) : (

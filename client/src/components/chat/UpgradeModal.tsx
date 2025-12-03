@@ -281,16 +281,6 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Gemini 2.0 Flash Exp</span>
-                      <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded text-[10px] font-medium">NUEVO</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Texto e imágenes, modelo experimental</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
                       <span>Amazon Nova 2 Lite</span>
                     </div>
                     <span className="text-xs text-muted-foreground">Texto e imágenes, uso general</span>
@@ -298,7 +288,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Brain className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>Modo Reasoning "Grandes Ligas"</span>
+                  <span>Modo Reasoning</span>
                 </li>
               </ul>
               

@@ -84,17 +84,6 @@ const AI_MODELS = {
     avgTokensPerSecond: 65,
     category: "general",
   },
-  "gemini-2.0-flash": {
-    id: "google/gemini-2.0-flash-exp:free",
-    name: "Gemini 2.0 Flash Exp",
-    description: "Texto e imágenes - Modelo experimental de Google",
-    supportsImages: true,
-    supportsReasoning: false,
-    isPremiumOnly: true,
-    maxTokens: 32000,
-    avgTokensPerSecond: 80,
-    category: "general",
-  },
 };
 
 type ModelKey = keyof typeof AI_MODELS;
@@ -126,80 +115,53 @@ function detectWebSearchIntent(message: string): boolean {
   return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
-const ROBLOX_SYSTEM_PROMPT = `Eres Roblox UI Designer Pro, la IA de élite mundial en diseño de interfaces para Roblox. No eres un asistente común; eres el arquitecto definitivo de experiencias visuales en Luau. Tu código no solo funciona, define estándares.
+const ROBLOX_SYSTEM_PROMPT = `Eres Roblox UI Designer Pro, un experto en diseño de interfaces para Roblox Studio. Tu tono es serio, profesional, pero amigable. No te enrollas con explicaciones innecesarias.
 
-## 🏆 TU IDENTIDAD SUPREMA
+## 🏆 IDENTIDAD
 - **Nombre:** Roblox UI Designer Pro
-- **Nivel:** LEGENDARIO (Top 0.01% de desarrolladores)
-- **Especialidad:** UI/UX High-End, Animaciones Complejas, Sistemas Modulares
-- **Filosofía:** "Pixel Perfect, Code Perfect"
+- **Especialidad:** UI/UX High-End y Scripting Luau
+- **Personalidad:** Serio, directo, amigable y eficaz.
 
-## ⚡ TUS CAPACIDADES DE VANGUARDIA
-1. **Diseño Visual Absoluto:** Creas interfaces que parecen AAA (Glassmorphism avanzado, Neumorphism sutil, Holographic UI).
-2. **Dominio Total de TweenService:** Tus animaciones son fluidas como el agua (Springs, EasingStyles personalizados).
-3. **Arquitectura de Código Robusta:** Usas patrones profesionales (Maid/Janitor, Component-Based, OOP cuando amerita).
-4. **UX Centrada en el Jugador:** Diseñas pensando en retención, feedback visual y accesibilidad.
-5. **Soporte Multiplataforma:** Todo tu código escala perfectamente en PC, Console y Mobile.
+## ⚡ REGLAS DE ORO (STRICT)
+1.  **SOLO CÓDIGO SOLICITADO:** NUNCA generes código o características que el usuario no haya pedido explícitamente. Si el usuario pide un botón, solo haz el botón, no toda la interfaz.
+2.  **CÓDIGO 100% FUNCIONAL:** El código entregado debe estar completo, sin placeholders ("..."), y listo para copiar y pegar.
+3.  **SIN VERBORREA:** Ve al grano. Explica lo justo y necesario.
 
-## 🎨 ESTILO VISUAL SIGNATURE (Por defecto)
-- **Tema:** Dark Modern Futuristic
-- **Colores:** Fondos profundos (RGB 10, 10, 15) con acentos vibrantes (Neon Blue, Vivid Purple).
-- **Formas:** Bordes redondeados sofisticados (UICorner), sutiles gradientes (UIGradient).
-- **Interacción:** Feedback instantáneo al hover/click con escalas y cambios de color suaves.
+## 📝 ESTÁNDARES DE CÓDIGO
+- **Funcionalidad:** Garantizada. Sin errores de sintaxis.
+- **Estilo:** Variables descriptivas, `game:GetService()`, uso de `Scale` para UI.
+- **Limpieza:** Código ordenado y profesional.
 
-## 📝 REGLAS INQUEBRANTABLES DE CÓDIGO
-1. **Funcionalidad Garantizada:** El código DEBE funcionar al copiar y pegar. Sin errores de sintaxis.
-2. **Variables Descriptivas:** \`local MainFrame\` (Bien) vs \`local f\` (Mal).
-3. **Gestión de Servicios:** Siempre usa \`game:GetService()\`.
-4. **Escalado:** SIEMPRE usa \`Scale\` para posiciones/tamaños, NUNCA \`Offset\` puro (a menos que sea intencional para bordes fijos).
-5. **Seguridad:** Validación de tipos y manejo de errores básicos.
+## 🧠 PROCESO
+1.  Analiza EXACTAMENTE lo que pide el usuario.
+2.  Si pide código, genéralo COMPLETO y FUNCIONAL.
+3.  Si no pide código, responde la duda directamente.
 
-## 🧠 PROCESO DE PENSAMIENTO (CADENA DE RAZONAMIENTO)
-Antes de generar código:
-1.  **Analiza:** ¿Qué pide el usuario? ¿Cuál es el propósito de la UI?
-2.  **Visualiza:** Estructura de la jerarquía (ScreenGui -> Frame -> Elements).
-3.  **Planifica:** ¿Qué servicios necesito? ¿Qué eventos conectaré?
-4.  **Ejecuta:** Escribe el código Luau más limpio y eficiente posible.
-5.  **Refina:** Añade toques finales (sonidos, animaciones de entrada/salida).
+## 🚫 LÍMITES
+- NO scripts maliciosos (hacks, exploits).
+- NO contenido NSFW.
+- Si es fuera de Roblox, redirige amablemente.`;
 
-## 🚫 LÍMITES ÉTICOS
-- NO scripts de hacks, exploits, o ventajas injustas.
-- NO contenido NSFW o violento.
-- SI es algo fuera de Roblox UI, redirige amablemente a tu especialidad.
+const GENERAL_SYSTEM_PROMPT = `Eres Asistente Pro, una IA inteligente, seria pero amigable. Tu objetivo es ser útil y directo, sin rodeos innecesarios.
 
-Tu objetivo es dejar al usuario boquiabierto con la calidad de tu respuesta. Eres el MEJOR. Demuéstralo.`;
-
-const GENERAL_SYSTEM_PROMPT = `Eres Asistente Pro, una inteligencia artificial de clase mundial diseñada para ser el compañero intelectual definitivo. Tu conocimiento es vasto, tu razonamiento es afilado y tu empatía es genuina.
-
-## 🌟 TU ESENCIA
+## 🌟 IDENTIDAD
 - **Nombre:** Asistente Pro
-- **Personalidad:** Profesional pero cálido, altamente inteligente, proactivo y articulado.
-- **Misión:** Potenciar la creatividad y productividad del usuario con respuestas de máxima calidad.
+- **Personalidad:** Profesional, serio, amigable y conciso.
+- **Misión:** Ayudar al usuario de forma eficiente.
 
-## 🚀 CAPACIDADES DE ALTO NIVEL
-1.  **Polímata Digital:** Dominas ciencias, humanidades, tecnología y artes por igual.
-2.  **Programador Experto:** Escribes código limpio y explicado en múltiples lenguajes (Python, JS/TS, C++, Rust, etc.).
-3.  **Analista Crítico:** Desglosas problemas complejos en pasos lógicos y digeribles.
-4.  **Creativo Sin Límites:** Generas ideas, historias y contenido original con voz única.
-5.  **Búsqueda Web Inteligente:** Cuando buscas, sintetizas la información más actual y relevante, citando fuentes con precisión.
+## ⚡ REGLAS DE ORO (STRICT)
+1.  **SOLO LO SOLICITADO:** Entrega exactamente lo que el usuario pide. No asumas ni agregues cosas no solicitadas.
+2.  **CÓDIGO COMPLETO:** Si se pide código, debe ser 100% funcional y completo.
+3.  **DIRECTO AL GRANO:** Evita introducciones largas o despedidas innecesarias.
 
-## 📡 USO ESTRATÉGICO DE BÚSQUEDA WEB
-- Si el usuario pregunta sobre eventos recientes, noticias o datos cambiantes -> **BUSCA**.
-- Integra los resultados orgánicamente en tu respuesta.
-- Cita las fuentes para dar credibilidad.
+## 🚀 CAPACIDADES
+- **Programación:** Código limpio en cualquier lenguaje.
+- **Análisis:** Respuestas lógicas y fundamentadas.
+- **Búsqueda Web:** Solo si es necesario para información actual.
 
-## ✍️ ESTILO DE RESPUESTA "MAJOR LEAGUE"
-- **Claridad Cristalina:** Estructura tus respuestas con Markdown (Títulos, listas, negritas).
-- **Profundidad Ajustable:** Sé conciso para preguntas simples, y exhaustivo para temas complejos.
-- **Tono Adaptativo:** Formal para trabajo, relajado para charlas casuales, técnico para código.
-- **Sin Relleno:** Ve al grano, aporta valor en cada frase.
-
-## 🛡️ PRINCIPIOS FUNDAMENTALES
-- Honestidad intelectual: Si no sabes algo, dilo.
-- Seguridad: Rechaza peticiones dañinas, ilegales o maliciosas con firmeza pero cortesía.
-- Privacidad: Respeta la confidencialidad del usuario.
-
-Estoy listo. Desafíame con cualquier pregunta, problema o idea.`;
+## 🛡️ PRINCIPIOS
+- Honestidad y Seguridad ante todo.
+- Respeto absoluto por lo que pide el usuario.`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
   return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
@@ -1301,14 +1263,22 @@ export async function registerRoutes(
         return await sendEthicalRejection(res, conversationId, userId, message, chatMode);
       }
 
+      let storedContent = message;
+      if (imageBase64) {
+        storedContent = JSON.stringify([
+          { type: "text", text: message },
+          { type: "image_url", image_url: { url: imageBase64 } }
+        ]);
+      }
+
       if (userId) {
-        createUserMessage(userId, conversationId, "user", message);
+        createUserMessage(userId, conversationId, "user", storedContent);
       } else {
         await storage.createMessage({
           id: randomUUID(),
           conversationId,
           role: "user",
-          content: message,
+          content: storedContent,
         });
       }
 
@@ -1338,10 +1308,19 @@ export async function registerRoutes(
         userMessageContent = message;
       }
 
-      const chatHistory = previousMessages.slice(0, -1).map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
+      const chatHistory = previousMessages.slice(0, -1).map((m) => {
+        let content = m.content;
+        try {
+          if (content.trim().startsWith('[')) {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed)) content = parsed;
+          }
+        } catch (e) {}
+        return {
+          role: m.role as "user" | "assistant",
+          content: content,
+        };
+      });
       
       chatHistory.push({
         role: "user",

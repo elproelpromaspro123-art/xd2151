@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Check, Copy } from "lucide-react";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Check, Copy, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CodeBlockProps {
@@ -11,16 +11,16 @@ interface CodeBlockProps {
 }
 
 const customTheme = {
-  ...oneDark,
+  ...vscDarkPlus,
   'code[class*="language-"]': {
-    ...oneDark['code[class*="language-"]'],
+    ...vscDarkPlus['code[class*="language-"]'],
     background: "transparent",
-    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-    fontSize: "13px",
+    fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+    fontSize: "14px",
     lineHeight: "1.6",
   },
   'pre[class*="language-"]': {
-    ...oneDark['pre[class*="language-"]'],
+    ...vscDarkPlus['pre[class*="language-"]'],
     background: "transparent",
     margin: 0,
     padding: 0,
@@ -40,53 +40,37 @@ export function CodeBlock({ language, code, chatMode = "roblox" }: CodeBlockProp
     }
   };
 
-  const displayLanguage = language === "lua" || language === "luau" ? "Luau" : language.toUpperCase();
+  const displayLanguage = language === "lua" || language === "luau" ? "Luau" : language;
 
   return (
-    <div className={`group relative rounded-lg overflow-visible my-3 transition-colors ${
-      chatMode === 'general' ? 'animated-border-general' : 'animated-border'
-    }`}>
-      <div className={`flex items-center justify-between px-4 py-2 border-b rounded-t-lg transition-colors ${
-        chatMode === 'general'
-          ? 'bg-indigo-50/60 border-indigo-200/30'
-          : 'bg-card/80 border-border/50'
-      }`}>
-        <span className={`text-xs font-medium uppercase tracking-wider transition-colors ${
-          chatMode === 'general'
-            ? 'text-indigo-700'
-            : 'text-muted-foreground'
-        }`}>
-          {displayLanguage}
-        </span>
+    <div className="rounded-xl overflow-hidden border border-border/40 bg-[#1e1e1e] my-4 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d] border-b border-white/5">
+        <div className="flex items-center gap-2">
+          {/* Optional icon based on language could go here */}
+          <span className="text-xs font-medium text-gray-400 lowercase font-mono">
+            {displayLanguage}
+          </span>
+        </div>
         <Button
           size="sm"
           variant="ghost"
           onClick={handleCopy}
-          className={`h-7 px-2 text-xs gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${
-            chatMode === 'general'
-              ? 'text-indigo-600 hover:bg-indigo-100/40'
-              : ''
-          }`}
-          data-testid="button-copy-code"
+          className="h-7 px-2 text-xs gap-1.5 text-gray-400 hover:text-white hover:bg-white/10"
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-green-500" />
-              <span className="text-green-500">Copiado</span>
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-500">Copied</span>
             </>
           ) : (
             <>
               <Copy className="h-3.5 w-3.5" />
-              <span>Copiar</span>
+              <span>Copy code</span>
             </>
           )}
         </Button>
       </div>
-      <div className={`p-4 overflow-x-auto rounded-b-lg transition-colors ${
-        chatMode === 'general'
-          ? 'bg-slate-900/80 border border-t-0 border-indigo-200/20'
-          : 'bg-[#1a1a1f]'
-      }`}>
+      <div className="p-4 overflow-x-auto relative">
         <SyntaxHighlighter
           language={language === "luau" ? "lua" : language}
           style={customTheme}
@@ -95,13 +79,8 @@ export function CodeBlock({ language, code, chatMode = "roblox" }: CodeBlockProp
             margin: 0,
             padding: 0,
           }}
-          showLineNumbers={code.split("\n").length > 3}
-          lineNumberStyle={{
-            color: "hsl(240 4% 35%)",
-            fontSize: "12px",
-            paddingRight: "16px",
-            minWidth: "2.5em",
-          }}
+          showLineNumbers={false} // Claude typically doesn't show line numbers by default for cleaner look
+          wrapLines={true}
         >
           {code}
         </SyntaxHighlighter>

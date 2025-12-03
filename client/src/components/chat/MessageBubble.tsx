@@ -1,129 +1,63 @@
-import { useState } from "react";
-import { Check, Copy, RefreshCw, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { memo } from "react";
+import { cn } from "@/lib/utils";
+import { Message } from "@shared/schema";
 import { MessageContent } from "./MessageContent";
-
-interface Message {
-  id: string;
-  conversationId: string;
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-}
 
 interface MessageBubbleProps {
   message: Message;
-  isStreaming?: boolean;
-  onRegenerate?: () => void;
-  chatMode?: "roblox" | "general";
 }
 
-export function MessageBubble({ message, isStreaming = false, onRegenerate, chatMode = "roblox" }: MessageBubbleProps) {
-  const [copied, setCopied] = useState(false);
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  
+  let textContent = message.content;
+  let imageUrl: string | undefined;
 
-  const handleCopy = async () => {
+  if (isUser) {
     try {
-      await navigator.clipboard.writeText(message.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
+      if (typeof message.content === 'string' && message.content.trim().startsWith('[')) {
+        const parsed = JSON.parse(message.content);
+        if (Array.isArray(parsed)) {
+          const textPart = parsed.find((p: any) => p.type === "text");
+          const imagePart = parsed.find((p: any) => p.type === "image_url");
+          if (textPart) textContent = textPart.text || "";
+          if (imagePart) imageUrl = imagePart.image_url?.url;
+        }
+      }
+    } catch (e) {
+      // Fallback to original content if parsing fails
+      textContent = message.content;
     }
-  };
+  }
 
   return (
     <div
-      className={`group flex gap-3 px-4 py-4 message-fade-in ${
+      className={cn(
+        "flex w-full mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300",
         isUser ? "justify-end" : "justify-start"
-      }`}
-      data-testid={`message-bubble-${message.role}-${message.id}`}
-    >
-      {!isUser && (
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 animated-border-pulse ${
-          chatMode === 'general'
-            ? 'bg-gradient-to-br from-indigo-100 to-blue-100'
-            : 'bg-primary/10'
-        }`}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className={`w-5 h-5 ${chatMode === 'general' ? 'text-indigo-600' : 'text-primary'}`}
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-            />
-          </svg>
-        </div>
       )}
-
+    >
       <div
-        className={`flex flex-col gap-2 ${
-          isUser ? "items-end max-w-[70%]" : "items-start max-w-[85%]"
-        }`}
+        className={cn(
+          "max-w-[85%] lg:max-w-[75%] rounded-2xl px-5 py-4 shadow-sm transition-all hover:shadow-md",
+          isUser
+            ? "bg-primary text-primary-foreground rounded-br-none"
+            : "bg-card border border-border/50 rounded-bl-none"
+        )}
       >
-        <div
-          className={`relative rounded-lg px-4 py-3 ${
-            isUser
-              ? "bg-primary text-primary-foreground animated-border"
-              : chatMode === 'general'
-              ? 'bg-white/70 border border-indigo-200/30 text-slate-900 animated-border'
-              : "bg-card animated-border"
-          }`}
-        >
-          {isUser ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-          ) : (
-            <MessageContent content={message.content} isStreaming={isStreaming} chatMode={chatMode} />
-          )}
-        </div>
-
-        {!isUser && !isStreaming && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCopy}
-              className="h-7 px-2 text-xs gap-1"
-              data-testid="button-copy-message"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-3 w-3 text-green-500" />
-                  <span className="text-green-500">Copiado</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3 w-3" />
-                  <span>Copiar</span>
-                </>
-              )}
-            </Button>
-            {onRegenerate && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onRegenerate}
-                className="h-7 px-2 text-xs gap-1"
-                data-testid="button-regenerate"
-              >
-                <RefreshCw className="h-3 w-3" />
-                <span>Regenerar</span>
-              </Button>
-            )}
+        {isUser ? (
+          <div className="flex flex-col gap-3">
+             {imageUrl && (
+               <div className="rounded-lg overflow-hidden bg-black/10 border border-white/10">
+                 <img src={imageUrl} alt="Uploaded" className="max-w-full h-auto max-h-[300px] object-contain" />
+               </div>
+             )}
+             <div className="whitespace-pre-wrap text-sm leading-relaxed">{textContent}</div>
           </div>
+        ) : (
+          <MessageContent content={textContent} />
         )}
       </div>
-
-      {isUser && (
-        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-1 animated-border">
-          <User className="w-4 h-4 text-foreground" />
-        </div>
-      )}
     </div>
   );
-}
+});
