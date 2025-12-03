@@ -1224,7 +1224,7 @@ export async function registerRoutes(
       const result = chatRequestSchema.safeParse(req.body);
 
       if (!result.success) {
-        return res.status(400).json({ error: "Invalid request" });
+        return res.status(400).json({ error: "Invalid request", details: result.error.errors });
       }
 
       const { conversationId, message, useWebSearch: requestedWebSearch, model = "kat-coder-pro", useReasoning = false, imageBase64, chatMode = "roblox" } = result.data;

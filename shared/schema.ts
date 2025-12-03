@@ -116,7 +116,7 @@ export const chatRequestSchema = z.object({
   useWebSearch: z.boolean().optional(),
   model: z.string().optional(),
   useReasoning: z.boolean().optional(),
-  imageBase64: z.string().optional(),
+  imageBase64: z.string().nullable().optional(),
   chatMode: z.enum(["roblox", "general"]).optional(),
 });
 
