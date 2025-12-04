@@ -108,6 +108,9 @@ export interface AIModel {
   avgTokensPerSecond: number;
   available: boolean;
   category?: "programming" | "general";
+  isRateLimited?: boolean;
+  remainingTime?: number; // En milisegundos hasta que esté disponible
+  resetTime?: number; // Unix timestamp cuando estará disponible
 }
 
 export const chatRequestSchema = z.object({

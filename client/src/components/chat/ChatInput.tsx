@@ -328,7 +328,21 @@ export function ChatInput({
                                         <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                                             Free
                                         </div>
-                                        {freeModels.map(model => (
+                                        {freeModels.map(model => {
+                                            const formattedTime = model.remainingTime 
+                                                ? (() => {
+                                                    const totalSeconds = Math.ceil(model.remainingTime / 1000);
+                                                    const minutes = Math.floor(totalSeconds / 60);
+                                                    const seconds = totalSeconds % 60;
+                                                    if (minutes === 0) return `${seconds}s`;
+                                                    if (minutes < 60) return `${minutes}m ${seconds}s`;
+                                                    const hours = Math.floor(minutes / 60);
+                                                    const remainingMinutes = minutes % 60;
+                                                    return `${hours}h ${remainingMinutes}m`;
+                                                })()
+                                                : '';
+                                            
+                                            return (
                                             <DropdownMenuItem
                                                 key={model.key}
                                                 onClick={() => {
@@ -345,7 +359,12 @@ export function ChatInput({
                                                 <div className="flex items-center gap-2 w-full">
                                                     <span className="font-medium text-sm flex-1">{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {model.key === "qwen-coder" && (
+                                                        {model.isRateLimited && (
+                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                No disponible ({formattedTime})
+                                                            </span>
+                                                        )}
+                                                        {!model.isRateLimited && model.key === "qwen-coder" && (
                                                             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 70%
                                                             </span>
@@ -364,7 +383,8 @@ export function ChatInput({
                                                 </div>
                                                 <span className="text-[10px] text-muted-foreground">{model.description}</span>
                                             </DropdownMenuItem>
-                                        ))}
+                                            );
+                                        })}
                                     </>
                                 )}
 
@@ -374,7 +394,21 @@ export function ChatInput({
                                         <div className="px-2 py-1.5 text-[10px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1">
                                             <Sparkles className="h-3 w-3" /> Premium
                                         </div>
-                                        {premiumModels.map(model => (
+                                        {premiumModels.map(model => {
+                                            const formattedTime = model.remainingTime 
+                                                ? (() => {
+                                                    const totalSeconds = Math.ceil(model.remainingTime / 1000);
+                                                    const minutes = Math.floor(totalSeconds / 60);
+                                                    const seconds = totalSeconds % 60;
+                                                    if (minutes === 0) return `${seconds}s`;
+                                                    if (minutes < 60) return `${minutes}m ${seconds}s`;
+                                                    const hours = Math.floor(minutes / 60);
+                                                    const remainingMinutes = minutes % 60;
+                                                    return `${hours}h ${remainingMinutes}m`;
+                                                })()
+                                                : '';
+                                            
+                                            return (
                                             <DropdownMenuItem
                                                 key={model.key}
                                                 onClick={() => {
@@ -391,7 +425,12 @@ export function ChatInput({
                                                 <div className="flex items-center gap-2 w-full">
                                                     <span className="font-medium text-sm flex-1">{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {model.key === "qwen-coder" && (
+                                                        {model.isRateLimited && (
+                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                No disponible ({formattedTime})
+                                                            </span>
+                                                        )}
+                                                        {!model.isRateLimited && model.key === "qwen-coder" && (
                                                             <span className="px-2 py-0.5 bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 95%
                                                             </span>
@@ -410,7 +449,8 @@ export function ChatInput({
                                                 </div>
                                                 <span className="text-[10px] text-muted-foreground">{model.description}</span>
                                             </DropdownMenuItem>
-                                        ))}
+                                            );
+                                        })}
                                     </>
                                 )}
                             </DropdownMenuContent>

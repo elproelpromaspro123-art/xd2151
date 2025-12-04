@@ -45,6 +45,11 @@ import {
     canSendMessage,
     canUseWebSearch,
 } from "./usageTracking";
+import {
+    recordRateLimitError,
+    getModelAvailabilityStatus,
+    formatRemainingTime,
+} from "./providerLimits";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -479,6 +484,7 @@ async function streamGeminiCompletion(
             let errorMessage = "Error al conectar con Gemini. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
+                recordRateLimitError(model, "gemini");
             } else if (response.status === 503) {
                 errorMessage = "El servicio de Gemini no está disponible en este momento. Intenta de nuevo más tarde.";
             } else if (response.status === 401 || response.status === 403) {
@@ -704,6 +710,7 @@ async function streamChatCompletion(
             let errorMessage = "Error al conectar con la IA. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Limite de tasa alcanzado. Espera un momento e intenta de nuevo.";
+                recordRateLimitError(model, "openrouter");
             } else if (response.status === 503) {
                 errorMessage = "El servicio de IA no está disponible en este momento. Intenta de nuevo más tarde.";
             } else if (response.status === 401 || response.status === 403) {
@@ -881,10 +888,10 @@ async function streamGroqCompletion(
                 requestBody.reasoning_effort = isPremium ? "high" : "medium";
             } else if (modelId.includes('qwen3-32b')) {
                 // Qwen3-32B: usar thinking mode con parámetros optimizados
+                requestBody.reasoning_effort = "default"; // Enable reasoning
                 requestBody.reasoning_format = "parsed"; // Mostrar razonamiento separado
                 requestBody.temperature = 0.6; // Temperatura baja para thinking mode
-                requestBody.top_k = 20;
-                requestBody.top_p = 0.95;
+                requestBody.top_p = 0.95; // Nucleus sampling
             } else {
                 requestBody.include_reasoning = true;
             }
@@ -907,6 +914,7 @@ async function streamGroqCompletion(
             let errorMessage = "Error al conectar con Groq. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
+                recordRateLimitError(model, "groq");
             } else if (response.status === 401 || response.status === 403) {
                 errorMessage = "Error de autenticación con Groq. Por favor verifica tu API key.";
             } else if (response.status === 503) {
@@ -1056,17 +1064,25 @@ export function registerRoutes(
             const userId = getUserIdFromRequest(req);
             const isPremium = userId ? await isUserPremium(userId) : false;
 
-            const models = Object.entries(AI_MODELS).map(([key, model]) => ({
-                key,
-                id: model.id,
-                name: model.name,
-                description: model.description,
-                supportsImages: model.supportsImages,
-                supportsReasoning: model.supportsReasoning,
-                isPremiumOnly: model.isPremiumOnly,
-                category: model.category,
-                available: !model.isPremiumOnly || isPremium,
-            }));
+            const models = Object.entries(AI_MODELS).map(([key, model]) => {
+                const isAccessible = !model.isPremiumOnly || isPremium;
+                const rateLimitStatus = getModelAvailabilityStatus(key);
+                
+                return {
+                    key,
+                    id: model.id,
+                    name: model.name,
+                    description: model.description,
+                    supportsImages: model.supportsImages,
+                    supportsReasoning: model.supportsReasoning,
+                    isPremiumOnly: model.isPremiumOnly,
+                    category: model.category,
+                    available: isAccessible && rateLimitStatus.isAvailable,
+                    isRateLimited: !rateLimitStatus.isAvailable,
+                    remainingTime: rateLimitStatus.remainingTime,
+                    resetTime: rateLimitStatus.resetTime,
+                };
+            });
 
             res.status(200).json({ models, isPremium });
         } catch (error) {
