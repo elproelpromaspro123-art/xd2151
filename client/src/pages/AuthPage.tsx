@@ -455,7 +455,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
               <div 
                 id="google-signin-button" 
-                className="flex justify-center w-full overflow-hidden rounded-lg"
+                className="flex justify-center w-full"
                 style={{ outline: 'none', border: 'none', padding: 0, margin: 0 }}
               ></div>
 

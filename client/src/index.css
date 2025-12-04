@@ -805,15 +805,17 @@
   #google-signin-button {
     display: flex !important;
     justify-content: center !important;
-    width: 100% !important;
+    align-items: center !important;
+    width: auto !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
   }
 
   #google-signin-button > div {
-    width: 100% !important;
+    width: auto !important;
     display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
     padding: 0 !important;
     margin: 0 !important;
   }
@@ -821,15 +823,17 @@
   #google-signin-button > div > div {
     display: flex !important;
     justify-content: center !important;
-    width: 100% !important;
+    align-items: center !important;
+    width: auto !important;
     padding: 0 !important;
     margin: 0 !important;
   }
 
   #google-signin-button > div > div > div {
-    width: 100% !important;
+    width: auto !important;
     display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
     padding: 0 !important;
     margin: 0 !important;
   }
