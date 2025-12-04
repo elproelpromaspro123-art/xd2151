@@ -66,33 +66,21 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo/Icon */}
       <div className="relative mb-8">
-        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${
-          chatMode === 'general'
-            ? 'bg-gradient-to-br from-blue-100 to-indigo-100'
-            : 'bg-gradient-to-br from-primary/20 to-primary/5'
-        }`}>
-          <Zap className={`w-10 h-10 ${
-            chatMode === 'general' ? 'text-blue-600' : 'text-primary'
-          }`} />
+        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5`}>
+          <Zap className={`w-10 h-10 text-primary`} />
         </div>
-        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
-          chatMode === 'general' ? 'bg-blue-600' : 'bg-primary'
-        }`}>
+        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center bg-primary`}>
           <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>
       </div>
 
       {/* Title */}
-      <h1 className={`text-2xl sm:text-3xl font-bold mb-3 text-center ${
-        chatMode === 'general' ? 'text-slate-900' : 'text-white'
-      }`}>
+      <h1 className={`text-2xl sm:text-3xl font-bold mb-3 text-center text-foreground`}>
         {chatMode === 'general' ? '¿En qué puedo ayudarte?' : 'Roblox UI Designer'}
       </h1>
       
       {/* Subtitle */}
-      <p className={`text-center mb-6 max-w-md ${
-        chatMode === 'general' ? 'text-slate-500' : 'text-zinc-400'
-      }`}>
+      <p className={`text-center mb-6 max-w-md text-muted-foreground`}>
         {chatMode === 'general' 
           ? 'Pregunta lo que quieras. Estoy aquí para ayudarte.' 
           : 'Describe tu interfaz ideal y obtén código Luau profesional.'}
@@ -115,24 +103,16 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
           <button
             key={index}
             onClick={() => onSuggestionClick(suggestion.prompt)}
-            className={`group flex items-start gap-3 p-4 rounded-xl text-left transition-all duration-200 ${
-              chatMode === 'general'
-                ? 'bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-200/50'
-                : 'bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600'
-            }`}
+            className={`group flex items-start gap-3 p-4 rounded-xl text-left transition-all duration-200 bg-card hover:bg-card/80 border border-card-border hover:border-primary/30 shadow-sm hover:shadow-md`}
           >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${suggestion.gradient} text-white shadow-lg`}>
               <suggestion.icon className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className={`text-sm font-semibold mb-0.5 ${
-                chatMode === 'general' ? 'text-slate-900' : 'text-white'
-              }`}>
+              <h3 className={`text-sm font-semibold mb-0.5 text-card-foreground`}>
                 {suggestion.title}
               </h3>
-              <p className={`text-xs line-clamp-2 ${
-                chatMode === 'general' ? 'text-slate-500' : 'text-zinc-400'
-              }`}>
+              <p className={`text-xs line-clamp-2 text-muted-foreground`}>
                 {suggestion.prompt}
               </p>
             </div>
@@ -141,9 +121,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
       </div>
 
       {/* Footer hint */}
-      <p className={`mt-10 text-xs text-center max-w-sm ${
-        chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'
-      }`}>
+      <p className={`mt-10 text-xs text-center max-w-sm text-muted-foreground/70`}>
         Escribe un mensaje o selecciona una sugerencia para comenzar
         {chatMode === 'roblox' && (
           <span className="block mt-1 text-primary/60">

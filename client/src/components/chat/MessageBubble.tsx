@@ -89,19 +89,14 @@ export const MessageBubble = memo(function MessageBubble({
       <div className={cn(
         "absolute -top-8 right-0 flex items-center gap-0.5 px-1 py-0.5 rounded-lg transition-all duration-200",
         isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none",
-        chatMode === 'general'
-          ? "bg-white/90 border border-slate-200/80 shadow-sm"
-          : "bg-zinc-800/90 border border-zinc-700/50"
+        "bg-background/90 border border-border shadow-sm"
       )}>
         <Button
           variant="ghost"
           size="icon"
           onClick={handleCopy}
           className={cn(
-            "h-6 w-6",
-            chatMode === 'general'
-              ? "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+            "h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
           )}
           title="Copiar"
         >
@@ -114,10 +109,7 @@ export const MessageBubble = memo(function MessageBubble({
             size="icon"
             onClick={handleStartEdit}
             className={cn(
-              "h-6 w-6",
-              chatMode === 'general'
-                ? "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                : "text-zinc-400 hover:text-primary hover:bg-primary/10"
+              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
             )}
             title="Editar y reenviar"
           >
@@ -131,10 +123,7 @@ export const MessageBubble = memo(function MessageBubble({
             size="icon"
             onClick={onRegenerate}
             className={cn(
-              "h-6 w-6",
-              chatMode === 'general'
-                ? "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                : "text-zinc-400 hover:text-primary hover:bg-primary/10"
+              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
             )}
             title={isUser ? "Regenerar desde aquí" : "Regenerar respuesta"}
           >
@@ -154,33 +143,26 @@ export const MessageBubble = memo(function MessageBubble({
         <div className="flex gap-3 max-w-[90%] lg:max-w-[85%] flex-row-reverse">
           <div className={cn(
             "flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center",
-            chatMode === 'general'
-              ? "bg-blue-600 text-white"
-              : "bg-primary text-primary-foreground"
+            "bg-primary text-primary-foreground"
           )}>
             <User className="h-4 w-4" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className={cn(
-              "text-xs font-medium mb-1.5 text-right",
-              chatMode === 'general' ? "text-slate-600" : "text-zinc-400"
+              "text-xs font-medium mb-1.5 text-right text-muted-foreground"
             )}>
               Editando mensaje
             </div>
 
             <div className={cn(
-              "rounded-2xl rounded-tr-md p-3",
-              chatMode === 'general'
-                ? "bg-blue-50 border border-blue-200"
-                : "bg-primary/10 border border-primary/30"
+              "rounded-2xl rounded-tr-md p-3 bg-primary/10 border border-primary/30"
             )}>
               <Textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 className={cn(
-                  "min-h-[80px] resize-none border-0 bg-transparent focus-visible:ring-0 p-0",
-                  chatMode === 'general' ? "text-slate-900" : "text-foreground"
+                  "min-h-[80px] resize-none border-0 bg-transparent focus-visible:ring-0 p-0 text-foreground"
                 )}
                 placeholder="Edita tu mensaje..."
                 autoFocus
@@ -231,12 +213,8 @@ export const MessageBubble = memo(function MessageBubble({
         <div className={cn(
           "flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center",
           isUser
-            ? chatMode === 'general'
-              ? "bg-blue-600 text-white"
-              : "bg-primary text-primary-foreground"
-            : chatMode === 'general'
-              ? "bg-slate-100 text-slate-600"
-              : "bg-zinc-800 text-zinc-400"
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
         )}>
           {isUser ? (
             <User className="h-4 w-4" />
@@ -249,10 +227,8 @@ export const MessageBubble = memo(function MessageBubble({
         <div className="flex-1 min-w-0">
           {/* Role label */}
           <div className={cn(
-            "text-xs font-medium mb-1.5",
-            isUser
-              ? chatMode === 'general' ? "text-slate-600 text-right" : "text-zinc-400 text-right"
-              : chatMode === 'general' ? "text-slate-600" : "text-zinc-400"
+            "text-xs font-medium mb-1.5 text-muted-foreground",
+            isUser && "text-right"
           )}>
             {isUser ? "Tú" : "Asistente"}
           </div>
@@ -262,12 +238,8 @@ export const MessageBubble = memo(function MessageBubble({
             className={cn(
               "rounded-2xl px-4 py-3 transition-all",
               isUser
-                ? chatMode === 'general'
-                  ? "bg-blue-600 text-white rounded-tr-md"
-                  : "bg-primary text-primary-foreground rounded-tr-md"
-                : chatMode === 'general'
-                  ? "bg-white border border-slate-200/80 shadow-sm rounded-tl-md text-slate-900"
-                  : "bg-zinc-800/80 border border-zinc-700/50 rounded-tl-md"
+                ? "bg-primary text-primary-foreground rounded-tr-md"
+                : "bg-card border border-card-border shadow-sm rounded-tl-md text-card-foreground"
             )}
           >
             {isUser ? (
