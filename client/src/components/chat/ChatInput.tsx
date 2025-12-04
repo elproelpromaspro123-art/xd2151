@@ -13,6 +13,7 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import type { AIModel } from "@shared/schema";
+import { useModelAvailability } from "@/hooks/useModelAvailability";
 
 interface PastedChip {
     id: string;
@@ -68,7 +69,10 @@ export function ChatInput({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const selectedModelInfo = models.find(m => m.key === selectedModel);
+    // Real-time model availability updates
+    const livesModels = useModelAvailability(models);
+
+    const selectedModelInfo = livesModels.find(m => m.key === selectedModel);
     const modelSupportsImages = selectedModelInfo?.supportsImages === true;
     const modelAvailable = selectedModelInfo?.available !== false;
     const canUploadImage = modelSupportsImages && modelAvailable;

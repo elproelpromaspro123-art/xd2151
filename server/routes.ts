@@ -49,7 +49,14 @@ import {
     recordRateLimitError,
     getModelAvailabilityStatus,
     formatRemainingTime,
+    getRateLimitInfo,
+    getAllRateLimitedModels,
 } from "./providerLimits";
+import {
+    notifyRateLimitUpdate,
+    subscribeToRateLimits,
+    startRateLimitBroadcaster,
+} from "./rateLimitStream";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -484,7 +491,40 @@ async function streamGeminiCompletion(
             let errorMessage = "Error al conectar con Gemini. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
-                recordRateLimitError(model, "gemini");
+                
+                // Capturar headers de rate limit para información en tiempo real
+                const responseHeaders: Record<string, any> = {};
+                const headerNames = [
+                    'retry-after',
+                    'x-ratelimit-limit-requests',
+                    'x-ratelimit-limit-tokens',
+                    'x-ratelimit-remaining-requests',
+                    'x-ratelimit-remaining-tokens',
+                    'x-ratelimit-reset-requests',
+                    'x-ratelimit-reset-tokens',
+                ];
+                
+                headerNames.forEach(name => {
+                    const value = response.headers.get(name);
+                    if (value) {
+                        responseHeaders[name] = value;
+                    }
+                });
+
+                const retryAfter = response.headers.get("retry-after");
+                let retryAfterSeconds: number | undefined;
+                if (retryAfter) {
+                    retryAfterSeconds = parseInt(retryAfter, 10);
+                    if (isNaN(retryAfterSeconds)) {
+                        retryAfterSeconds = 60; // Default 60s
+                    }
+                }
+                
+                // Gemini resets daily at midnight PT, but we use retry-after if available
+                recordRateLimitError(model, "gemini", responseHeaders, retryAfterSeconds);
+                notifyRateLimitUpdate(model);
+                
+                console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s`);
             } else if (response.status === 503) {
                 errorMessage = "El servicio de Gemini no está disponible en este momento. Intenta de nuevo más tarde.";
             } else if (response.status === 401 || response.status === 403) {
@@ -710,7 +750,35 @@ async function streamChatCompletion(
             let errorMessage = "Error al conectar con la IA. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Limite de tasa alcanzado. Espera un momento e intenta de nuevo.";
-                recordRateLimitError(model, "openrouter");
+                
+                // Capturar headers de rate limit para información en tiempo real
+                const responseHeaders: Record<string, any> = {};
+                const headerNames = [
+                    'retry-after',
+                    'x-ratelimit-limit-requests',
+                    'x-ratelimit-limit-tokens',
+                    'x-ratelimit-remaining-requests',
+                    'x-ratelimit-remaining-tokens',
+                    'x-ratelimit-reset-requests',
+                    'x-ratelimit-reset-tokens',
+                ];
+                
+                headerNames.forEach(name => {
+                    const value = response.headers.get(name);
+                    if (value) {
+                        responseHeaders[name] = value;
+                    }
+                });
+                
+                // Extraer retry-after del header si está disponible
+                const retryAfter = response.headers.get("retry-after");
+                const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+                
+                // Registrar error con headers reales
+                recordRateLimitError(model, "openrouter", responseHeaders, retryAfterSeconds);
+                notifyRateLimitUpdate(model);
+                
+                console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s`);
             } else if (response.status === 503) {
                 errorMessage = "El servicio de IA no está disponible en este momento. Intenta de nuevo más tarde.";
             } else if (response.status === 401 || response.status === 403) {
@@ -914,7 +982,50 @@ async function streamGroqCompletion(
             let errorMessage = "Error al conectar con Groq. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
-                recordRateLimitError(model, "groq");
+                
+                // Capturar headers de rate limit para información en tiempo real
+                const responseHeaders: Record<string, any> = {};
+                const headerNames = [
+                    'retry-after',
+                    'x-ratelimit-limit-requests',
+                    'x-ratelimit-limit-tokens',
+                    'x-ratelimit-remaining-requests',
+                    'x-ratelimit-remaining-tokens',
+                    'x-ratelimit-reset-requests',
+                    'x-ratelimit-reset-tokens',
+                ];
+                
+                headerNames.forEach(name => {
+                    const value = response.headers.get(name);
+                    if (value) {
+                        responseHeaders[name] = value;
+                    }
+                });
+
+                // Groq incluye retry-after en el header con segundos o duración
+                const retryAfter = response.headers.get("retry-after");
+                let retryAfterSeconds: number | undefined;
+                if (retryAfter) {
+                    // Puede ser segundos (número) o una duración (ej: "2m59.56s")
+                    if (/^\d+$/.test(retryAfter)) {
+                        retryAfterSeconds = parseInt(retryAfter, 10);
+                    } else {
+                        // Parsear formato de duración (minutos/segundos)
+                        const minuteMatch = retryAfter.match(/(\d+)m/);
+                        const secondMatch = retryAfter.match(/(\d+(?:\.\d+)?)s/);
+                        const minutes = minuteMatch ? parseInt(minuteMatch[1], 10) : 0;
+                        const seconds = secondMatch ? Math.ceil(parseFloat(secondMatch[1])) : 0;
+                        retryAfterSeconds = minutes * 60 + seconds;
+                    }
+                }
+                
+                // Registrar error con headers reales del provider
+                recordRateLimitError(model, "groq", responseHeaders, retryAfterSeconds);
+                
+                // Notificar a clientes suscriptos sobre la actualización en tiempo real
+                notifyRateLimitUpdate(model);
+                
+                console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s. Headers:`, responseHeaders);
             } else if (response.status === 401 || response.status === 403) {
                 errorMessage = "Error de autenticación con Groq. Por favor verifica tu API key.";
             } else if (response.status === 503) {
@@ -1088,6 +1199,44 @@ export function registerRoutes(
         } catch (error) {
             console.error("Error fetching models:", error);
             res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    // Endpoint para obtener información actual de rate limits
+    app.get("/api/rate-limits", async (req: Request, res: Response) => {
+        try {
+            const { model } = req.query;
+
+            if (model && typeof model === 'string') {
+                // Información de un modelo específico
+                const limitInfo = getRateLimitInfo(model);
+                res.status(200).json(limitInfo);
+            } else {
+                // Información de todos los modelos limitados
+                const limited = getAllRateLimitedModels();
+                res.status(200).json({ models: limited, timestamp: Date.now() });
+            }
+        } catch (error) {
+            console.error("Error fetching rate limits:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    // Endpoint SSE para suscribirse a actualizaciones en tiempo real de rate limits
+    app.get("/api/rate-limits/stream", (req: Request, res: Response) => {
+        try {
+            const { model } = req.query;
+            const modelKey = model && typeof model === 'string' ? model : undefined;
+
+            // Suscribir a actualizaciones en tiempo real
+            subscribeToRateLimits(res, modelKey);
+
+            console.log(`[Rate Limit Stream] Client subscribed${modelKey ? ` for model ${modelKey}` : ' to all'}`);
+        } catch (error) {
+            console.error("Error in rate limit stream:", error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: "Error al suscribirse a actualizaciones" });
+            }
         }
     });
 
@@ -1969,4 +2118,9 @@ export function registerRoutes(
             }
         }
     });
+
+    // Iniciar el broadcaster de rate limits en tiempo real
+    // Se ejecuta una sola vez cuando el servidor inicia
+    console.log("[Rate Limit Broadcaster] Starting real-time rate limit updates");
+    startRateLimitBroadcaster();
 }

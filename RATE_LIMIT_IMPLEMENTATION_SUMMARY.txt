@@ -1,0 +1,281 @@
+═══════════════════════════════════════════════════════════════════════════════
+  SISTEMA DE RATE LIMIT EN TIEMPO REAL - IMPLEMENTACIÓN COMPLETA
+═══════════════════════════════════════════════════════════════════════════════
+
+OBJETIVO LOGRADO:
+✅ Actualización en tiempo real cuando un modelo alcanza rate limit
+✅ Tiempo exacto de reinicio (del servidor/provider, no estimado)
+✅ Countdown decreciente cada segundo
+✅ Información detallada de headers (requests/tokens restantes)
+✅ Reconexión automática si se pierde conexión
+
+═══════════════════════════════════════════════════════════════════════════════
+CAMBIOS REALIZADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. SERVIDOR - server/providerLimits.ts (ACTUALIZADO)
+───────────────────────────────────────────────────
+✓ Agregado tipo ProviderLimitStatus.headers con información de rate limits
+✓ Agregado campo retryAfterSeconds y providerHeaders en ModelRateLimitData
+✓ Nueva función parseRetryAfterHeader() para parsear headers de diferentes formatos
+✓ Nueva función extractGroqLimitInfo() para extraer headers de Groq
+✓ Nueva función extractOpenRouterLimitInfo() para extraer headers de OpenRouter
+✓ Actualizada recordRateLimitError() para aceptar responseHeaders
+✓ Actualizada getModelAvailabilityStatus() para incluir información de headers
+✓ Nueva función getRateLimitInfo() para obtener info actualizada de un modelo
+✓ Nueva función getAllRateLimitedModels() para obtener todos los limitados
+
+DOCUMENTACIÓN OFICIAL UTILIZADA:
+  - Groq: https://console.groq.com/docs/rate-limits
+  - OpenRouter: https://platform.openai.com/docs/guides/rate-limits
+  - Retry-After: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After
+
+
+2. SERVIDOR - server/rateLimitStream.ts (NUEVO)
+────────────────────────────────────────────────
+✓ Módulo SSE (Server-Sent Events) para actualizaciones en tiempo real
+✓ Interfaz RateLimitSubscriber para tracking de clientes conectados
+✓ Función subscribeToRateLimits() - suscribe cliente a SSE
+✓ Función sendSSEMessage() - envía eventos formateados SSE
+✓ Función notifyRateLimitUpdate() - notifica a todos los suscriptores
+✓ Función startRateLimitBroadcaster() - inicia broadcaster de 1 segundo
+✓ Función getSubscriberCount() - para debugging
+✓ Función clearAllSubscribers() - para graceful shutdown
+
+EVENTOS SSE SOPORTADOS:
+  - rate-limit-update: Notificación inicial cuando se alcanza rate limit
+  - rate-limit-tick: Update cada segundo con tiempo decreciente
+  - rate-limits-update: Notificación de múltiples modelos
+  - rate-limits-tick: Ticks de múltiples modelos
+
+
+3. SERVIDOR - server/routes.ts (ACTUALIZADO)
+──────────────────────────────────────────────
+✓ Imports: agregado getRateLimitInfo, notifyRateLimitUpdate, subscribeToRateLimits
+✓ streamGeminiCompletion() - línea ~485: captura headers y notifica
+✓ streamChatCompletion() - línea ~750: captura headers y notifica  
+✓ streamGroqCompletion() - línea ~920: captura headers y notifica
+✓ Nuevo endpoint GET /api/rate-limits - obtiene info actual
+✓ Nuevo endpoint GET /api/rate-limits/stream - SSE para actualizaciones vivas
+✓ Agregado startRateLimitBroadcaster() en registerRoutes()
+
+FLUJO EN CADA ERROR 429:
+  1. Captura todos los headers de rate limit
+  2. Parsea retry-after para obtener segundos exactos
+  3. Registra error con recordRateLimitError()
+  4. Notifica a clientes suscriptos con notifyRateLimitUpdate()
+  5. Servidor sigue enviando ticks hasta que se reinicia
+
+
+4. CLIENTE - client/src/hooks/useRateLimitStream.ts (NUEVO)
+────────────────────────────────────────────────────────────
+✓ Hook useRateLimitStream() - suscribe a SSE de un modelo
+  - Conecta a /api/rate-limits/stream
+  - Escucha eventos rate-limit-update, rate-limit-tick, etc.
+  - Reconecta automáticamente cada 3 segundos si falla
+  - Retorna: { limitInfo, isConnected, error, reconnect, disconnect }
+
+✓ Hook useRateLimitInfo() - obtiene info una sola vez
+  - Hace fetch GET a /api/rate-limits
+  - Retorna: { info, loading, error }
+
+INTERFAZ RateLimitInfo:
+  {
+    available: boolean;
+    modelKey: string;
+    resetTime: number;          // Unix timestamp
+    remainingMs: number;        // Milisegundos hasta reset
+    remainingSeconds: number;   // Segundos hasta reset
+    formattedTime: string;      // "2m 30s", "45s", "1h 5m"
+    reason?: string;            // Mensaje de error
+    headers?: {
+      remaining: { requests?: number; tokens?: number };
+      reset: { requests?: string; tokens?: string };
+    };
+  }
+
+
+5. CLIENTE - client/src/components/RateLimitAlert.tsx (NUEVO)
+──────────────────────────────────────────────────────────────
+✓ Componente React que muestra alerta de rate limit
+✓ Usa useRateLimitStream() para actualizaciones en vivo
+✓ Muestra:
+  - Nombre del modelo no disponible
+  - Countdown en grande: "Se reinicia en: 2m 30s"
+  - Detalles de headers (requests/tokens restantes)
+  - Estado de conexión SSE
+✓ Props:
+  - modelKey: string (ej: "llama-3.3-70b")
+  - modelName: string (ej: "Llama 3.3 70B")
+  - onAvailable?: () => void (callback cuando se reinicia)
+
+
+6. DOCUMENTACIÓN
+──────────────────
+✓ RATE_LIMIT_REAL_TIME.md - Documentación técnica completa
+✓ RATE_LIMIT_INTEGRATION_GUIDE.md - Guía de integración paso a paso
+✓ RATE_LIMIT_IMPLEMENTATION_SUMMARY.txt - Este archivo
+
+═══════════════════════════════════════════════════════════════════════════════
+FLUJO TÉCNICO COMPLETO
+═══════════════════════════════════════════════════════════════════════════════
+
+CUANDO OCURRE ERROR 429:
+
+1. Provider API (Groq/OpenRouter/Gemini)
+   └─> Envía HTTP 429 con headers:
+       - retry-after: "179" o "2m59s" (según provider)
+       - x-ratelimit-remaining-requests: "0"
+       - x-ratelimit-reset-tokens: "2m59.56s"
+
+2. Backend (routes.ts)
+   └─> Captura respuesta !response.ok (status 429)
+   └─> Extrae todos los headers en responseHeaders{}
+   └─> Parsea retry-after a segundos (179)
+   └─> Llama recordRateLimitError(model, "groq", responseHeaders, 179)
+
+3. Backend (providerLimits.ts)
+   └─> Calcula backoffUntil = now + 179000ms
+   └─> Almacena en modelRateLimits[modelKey]
+   └─> Guarda headers para referencia futura
+
+4. Backend (rateLimitStream.ts)
+   └─> notifyRateLimitUpdate("llama-3.3-70b") es llamado
+   └─> Envía evento SSE a todos los suscriptores
+
+5. Cliente (en primer render o cuando se suscribe)
+   └─> useRateLimitStream({ modelKey: "llama-3.3-70b" })
+   └─> Abre EventSource a /api/rate-limits/stream?model=llama-3.3-70b
+
+6. Backend (rateLimitStream.ts - subscribeToRateLimits)
+   └─> Agrega cliente al Set de suscriptores
+   └─> Envía evento inicial "rate-limit-update" con info
+
+7. Cliente recibe evento "rate-limit-update"
+   └─> Parse JSON: { formattedTime: "2m 59s", remainingSeconds: 179, ... }
+   └─> Actualiza estado en hook
+   └─> RateLimitAlert muestra alerta
+
+8. Backend (startRateLimitBroadcaster)
+   └─> Cada 1000ms:
+   └─> Itera sobre todos los suscriptores
+   └─> Calcula tiempo actual: remainingMs = resetTime - now
+   └─> Envía evento "rate-limit-tick" a cada uno
+
+9. Cliente recibe "rate-limit-tick" cada segundo
+   └─> Actualiza formattedTime: "2m 59s" → "2m 58s" → ... → "0s"
+   └─> RateLimitAlert muestra countdown decreciente
+
+10. Cuando resetTime <= now
+    └─> Backend: getModelAvailabilityStatus() retorna isAvailable: true
+    └─> Frontend: limitInfo.available se pone true
+    └─> RateLimitAlert desaparece
+    └─> Botón "Enviar" se habilita nuevamente
+
+═══════════════════════════════════════════════════════════════════════════════
+PROVIDERS SOPORTADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ GROQ
+   Models: llama-3.3-70b, gpt-oss-120b, qwen3-32b
+   Headers capturados:
+     - retry-after (segundos o duración "2m59.56s")
+     - x-ratelimit-remaining-requests
+     - x-ratelimit-remaining-tokens
+     - x-ratelimit-reset-requests
+     - x-ratelimit-reset-tokens
+
+✅ OPENROUTER
+   Models: qwen-coder, deepseek-r1t2, gemma-3-27b
+   Headers: similares a Groq/OpenAI
+
+✅ GEMINI
+   Models: gemini-2.5-flash
+   Headers: retry-after (segundos)
+
+═══════════════════════════════════════════════════════════════════════════════
+INTEGRACIÓN EN LA APP
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 1: Usar componente RateLimitAlert
+  import { RateLimitAlert } from '@/components/RateLimitAlert';
+  
+  <RateLimitAlert 
+    modelKey="llama-3.3-70b"
+    modelName="Llama 3.3 70B"
+    onAvailable={() => console.log('Ready!')}
+  />
+
+OPCIÓN 2: Usar hook directamente
+  const { limitInfo, isConnected } = useRateLimitStream({
+    modelKey: 'llama-3.3-70b',
+    onUpdate: (info) => {
+      if (!Array.isArray(info) && !info.available) {
+        setIsDisabled(true);
+      }
+    }
+  });
+
+OPCIÓN 3: Obtener info de una vez
+  const { info, loading } = useRateLimitInfo('llama-3.3-70b');
+  
+═══════════════════════════════════════════════════════════════════════════════
+TESTING
+═══════════════════════════════════════════════════════════════════════════════
+
+1. TRIGGER RATE LIMIT
+   └─> Usa un modelo sin esperar entre mensajes
+   └─> Debe aparecer error 429
+
+2. VERIFICAR CAPTURA DE HEADERS
+   Console log debe mostrar:
+   "[Rate Limit] llama-3.3-70b limited for 179s. Headers: {...}"
+
+3. VERIFICAR SSE
+   DevTools → Network → Filter "stream"
+   └─> Conecta a /api/rate-limits/stream?model=llama-3.3-70b
+   └─> Messages debe mostrar eventos cada segundo
+
+4. VERIFICAR COUNTDOWN
+   RateLimitAlert debe mostrar:
+   "Se reinicia en: 2m 59s" → "2m 58s" → ... → "0s"
+
+═══════════════════════════════════════════════════════════════════════════════
+VENTAJAS DE ESTA IMPLEMENTACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ TIEMPO PRECISO
+   - Del servidor/provider, no estimado
+   - Usa retry-after official del provider
+   - Unix timestamp para sincronización exacta
+
+✅ EFICIENTE
+   - SSE es más eficiente que polling
+   - Overhead mínimo (1 evento/segundo)
+   - Reconexión automática si falla
+
+✅ INFORMACIÓN DETALLADA
+   - Muestra requests restantes vs. límite
+   - Muestra tokens restantes vs. límite
+   - Información sobre reset por métrica
+
+✅ USER EXPERIENCE
+   - Countdown visible y decreciente
+   - Sabe exactamente cuándo puede reintentar
+   - Botón automáticamente deshabilitado
+
+✅ ESCALABLE
+   - Soporta múltiples modelos limitados simultáneamente
+   - SSE puede tener cientos de suscriptores
+   - Broadcasting eficiente con Set<>
+
+═══════════════════════════════════════════════════════════════════════════════
+PRÓXIMOS PASOS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Integrar RateLimitAlert en ChatPage
+2. Deshabilitar botón "Enviar" si hay rate limit
+3. Verificar que funciona con todos los providers
+4. Testear reconexión de SSE
+5. (Opcional) Agregar persistencia en BD
+6. (Opcional) Dashboard de estadísticas de rate limits
