@@ -201,8 +201,8 @@ const AI_MODELS = {
         // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
         // Free: no disponible (premium only)
         // Premium: usar 95% para margen de seguridad
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
+        freeContextTokens: 995746,
+        freeOutputTokens: 62259,
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
     },
