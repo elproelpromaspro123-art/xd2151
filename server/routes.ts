@@ -541,29 +541,20 @@ async function streamGeminiCompletion(
         // Agregar thinking si está soportado (Gemini 3 Pro Preview tiene pensamiento mejorado)
         // Para Gemini 3 Pro Preview, usar presupuesto adaptativo según plan
         if (useReasoning && modelInfo.supportsReasoning) {
-            // Free: 8K tokens de thinking, Premium: 15K tokens
             const budgetTokens = isPremium ? 15000 : 8000;
-            requestBody.generationConfig.thinkingConfig = {
-                thinkingBudget: budgetTokens,
+            requestBody.thinkingConfig = {
+                budgetTokens: budgetTokens,
                 includeThoughts: true
             };
         }
 
         // Optimizaciones específicas para Gemini 3 Pro Preview
         if (model === "gemini-3-pro-preview") {
-            // Habilitar capacidades avanzadas de búsqueda y ejecución de código
             requestBody.tools = [
-                {
-                    googleSearch: {}
-                },
-                {
-                    codeExecution: {
-                        language: "PYTHON"
-                    }
-                }
+                { google_search: {} },
+                { code_execution: {} }
             ];
-            
-            // Configurar búsqueda con estructura
+
             requestBody.toolConfig = {
                 functionCallingConfig: {
                     mode: "ANY",
