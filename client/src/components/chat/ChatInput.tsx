@@ -69,8 +69,10 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedModelInfo = models.find(m => m.key === selectedModel);
-  const canUploadImage = selectedModelInfo?.supportsImages && (isPremium || !selectedModelInfo?.isPremiumOnly);
-  const canUseReasoning = selectedModelInfo?.supportsReasoning && (isPremium || !selectedModelInfo?.isPremiumOnly);
+  const modelSupportsImages = selectedModelInfo?.supportsImages === true;
+  const modelAvailable = selectedModelInfo?.available !== false;
+  const canUploadImage = modelSupportsImages && modelAvailable;
+  const canUseReasoning = selectedModelInfo?.supportsReasoning === true && modelAvailable;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -239,11 +241,7 @@ export function ChatInput({
               : "Describe tu interfaz de Roblox..."}
             disabled={isLoading || disabled}
             rows={1}
-            className={`w-full resize-none bg-transparent px-4 py-3.5 pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[52px] max-h-[200px] ${
-              chatMode === 'general' 
-                ? 'text-slate-900 placeholder:text-slate-400' 
-                : 'text-white placeholder:text-zinc-500'
-            }`}
+            className="w-full resize-none bg-transparent px-4 py-3.5 pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[52px] max-h-[200px] text-foreground placeholder:text-muted-foreground"
           />
           
           {/* Action buttons */}

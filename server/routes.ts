@@ -35,51 +35,66 @@ import {
     getUserMessages,
     createUserMessage,
     deleteUserMessage,
+    updateUserMessage,
     getUserConversationCount,
 } from "./userStorage";
+import {
+    getUserUsage,
+    incrementMessageCount,
+    incrementWebSearchCount,
+    canSendMessage,
+    canUseWebSearch,
+} from "./usageTracking";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Nuevos modelos de IA con providers específicos
+// Configuración de modelos con tokens específicos para FREE y PREMIUM
 const AI_MODELS = {
-    "deepseek-r1t2": {
-        id: "tngtech/deepseek-r1t2-chimera:free",
-        name: "DeepSeek R1T2 Chimera",
-        description: "Modelo potente para programación avanzada y razonamiento",
-        supportsImages: false,
-        supportsReasoning: true,
-        isPremiumOnly: false,
-        maxTokens: 32000,
-        avgTokensPerSecond: 80,
-        category: "programming" as const,
-        provider: "chutes",
-        fallbackProvider: null as string | null,
-    },
     "glm-4.5-air": {
         id: "z-ai/glm-4.5-air:free",
         name: "GLM 4.5 Air",
-        description: "Modelo versátil para conversación y programación",
+        description: "Modelo versátil con razonamiento - Texto avanzado",
         supportsImages: false,
-        supportsReasoning: false,
+        supportsReasoning: true,
         isPremiumOnly: false,
-        maxTokens: 32000,
-        avgTokensPerSecond: 70,
         category: "general" as const,
         provider: "chutes/bf16",
         fallbackProvider: "z-ai" as string | null,
+        // Free: 80k context, 100k output | Premium: 131k context, 131k output (con chutes)
+        freeContextTokens: 80000,
+        freeOutputTokens: 100000,
+        premiumContextTokens: 124000, // 95% de 131k
+        premiumOutputTokens: 124000,
+    },
+    "deepseek-r1t2": {
+        id: "tngtech/deepseek-r1t2-chimera:free",
+        name: "DeepSeek R1T2 Chimera",
+        description: "Modelo premium para programación avanzada con razonamiento",
+        supportsImages: false,
+        supportsReasoning: true,
+        isPremiumOnly: true,
+        category: "programming" as const,
+        provider: "chutes",
+        fallbackProvider: null as string | null,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
+        premiumContextTokens: 155000, // 95% de 163.8k
+        premiumOutputTokens: 155000,
     },
     "nemotron-nvidia": {
         id: "nvidia/nemotron-nano-12b-v2-vl:free",
         name: "Nemotron NVIDIA VL",
-        description: "Modelo NVIDIA con visión - Texto e imágenes",
+        description: "Modelo NVIDIA con visión - Texto e imágenes + Razonamiento",
         supportsImages: true,
         supportsReasoning: true,
         isPremiumOnly: true,
-        maxTokens: 32000,
-        avgTokensPerSecond: 75,
         category: "general" as const,
         provider: "nvidia",
         fallbackProvider: null as string | null,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
+        premiumContextTokens: 121000, // 95% de 128k
+        premiumOutputTokens: 121000,
     },
     "gemma-3-27b": {
         id: "google/gemma-3-27b-it:free",
@@ -88,11 +103,13 @@ const AI_MODELS = {
         supportsImages: true,
         supportsReasoning: false,
         isPremiumOnly: true,
-        maxTokens: 32000,
-        avgTokensPerSecond: 65,
         category: "general" as const,
         provider: "modelrun",
         fallbackProvider: null as string | null,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
+        premiumContextTokens: 124000, // 95% de 131k
+        premiumOutputTokens: 124000,
     },
 };
 
@@ -103,24 +120,38 @@ const activeRequests = new Map<string, AbortController>();
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
+// Límites de mensajes y búsquedas
 const MESSAGE_LIMITS = {
     free: {
         roblox: 10,
         general: 10,
+        webSearch: 5,
     },
     premium: {
         roblox: -1,
         general: -1,
+        webSearch: -1,
     },
 };
 
+// Keywords ampliados para detectar búsqueda web
 const WEB_SEARCH_KEYWORDS = [
+    // Español
     "busca en la web", "buscar en la web", "busca en internet", "buscar en internet",
-    "busca online", "buscar online", "search the web", "search online", "web search",
-    "busca informacion", "buscar informacion", "busca sobre", "buscar sobre",
-    "que hay de nuevo", "ultimas noticias", "tendencias actuales", "actualidad",
-    "busca en google", "googlealo", "investigar", "investiga", "informacion reciente",
-    "datos actuales", "noticias de", "novedades sobre", "¿qué hay sobre"
+    "busca online", "buscar online", "busca informacion", "buscar informacion",
+    "busca sobre", "buscar sobre", "que hay de nuevo", "ultimas noticias",
+    "tendencias actuales", "actualidad", "busca en google", "googlealo",
+    "investigar", "investiga", "informacion reciente", "datos actuales",
+    "noticias de", "novedades sobre", "¿qué hay sobre", "que sabes de",
+    "informacion sobre", "dime sobre", "encuentra", "busqueda",
+    // Específicos
+    "precio de", "cotización de", "clima en", "tiempo en", "hora en",
+    "últimas actualizaciones", "versión actual de", "novedades de",
+    "noticias recientes", "eventos actuales", "qué pasó con",
+    // English
+    "search the web", "search online", "web search", "google",
+    "find information", "look up", "search for", "latest news",
+    "current", "recent", "what's new", "updates on"
 ];
 
 function detectWebSearchIntent(message: string): boolean {
@@ -128,20 +159,25 @@ function detectWebSearchIntent(message: string): boolean {
     return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
-const ROBLOX_SYSTEM_PROMPT = `Eres un asistente experto en desarrollo de Roblox. Ayudas con Lua/Luau, scripting, diseño UI/UX, y desarrollo de juegos. Proporcionas código limpio, moderno y bien comentado. Explicas conceptos de forma clara y ofreces mejores prácticas.`;
+const ROBLOX_SYSTEM_PROMPT = `Eres un experto en desarrollo de Roblox y diseño UI/UX. Tu especialidad es crear interfaces de usuario profesionales y código Luau de alta calidad para Roblox Studio.
 
-const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Ayudas con cualquier tema de forma clara, precisa y útil. Eres amable pero conciso. Proporcionas información actualizada y relevante.`;
+INSTRUCCIONES:
+- Proporciona código Luau limpio, moderno y bien estructurado
+- Usa las mejores prácticas de Roblox Studio
+- Explica tu código cuando sea necesario
+- Ofrece sugerencias de mejora cuando sea apropiado
+- Sé conciso pero completo en tus respuestas`;
+
+const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
+
+INSTRUCCIONES:
+- Responde de forma clara, precisa y útil
+- Sé amable pero conciso
+- Proporciona información actualizada cuando esté disponible
+- Ofrece ejemplos prácticos cuando sea apropiado`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
     return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
-}
-
-function containsUnethicalContent(): boolean {
-    return false;
-}
-
-function getEthicalRejectionMessage(): string {
-    return "";
 }
 
 function getVisitorId(req: Request): string {
@@ -204,13 +240,6 @@ async function verifyTurnstile(token: string): Promise<boolean> {
     }
 }
 
-function estimateCompletionTime(messageLength: number, model: ModelKey): number {
-    const modelInfo = AI_MODELS[model];
-    const estimatedOutputTokens = Math.min(messageLength * 3, modelInfo.maxTokens);
-    const seconds = Math.ceil(estimatedOutputTokens / modelInfo.avgTokensPerSecond);
-    return Math.max(5, Math.min(seconds, 180));
-}
-
 async function searchTavily(query: string): Promise<string> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) {
@@ -260,10 +289,6 @@ async function searchTavily(query: string): Promise<string> {
     }
 }
 
-function sanitizeAssistantContent(content: string): { sanitized: string; isClean: boolean } {
-    return { sanitized: content, isClean: true };
-}
-
 interface MessageContent {
     type: "text" | "image_url";
     text?: string;
@@ -276,11 +301,12 @@ async function streamChatCompletion(
     userId: string | null,
     chatHistory: Array<{ role: string; content: string | MessageContent[] }>,
     apiKey: string,
-    model: ModelKey = "deepseek-r1t2",
+    model: ModelKey = "glm-4.5-air",
     useReasoning: boolean = false,
     webSearchContext?: string,
     chatMode: "roblox" | "general" = "roblox",
-    requestId?: string
+    requestId?: string,
+    isPremium: boolean = false
 ): Promise<void> {
     const abortController = new AbortController();
     
@@ -289,7 +315,7 @@ async function streamChatCompletion(
     }
 
     try {
-        console.log("[streamChatCompletion] Starting with model:", model, "mode:", chatMode);
+        console.log("[streamChatCompletion] Starting with model:", model, "mode:", chatMode, "reasoning:", useReasoning);
         const modelInfo = AI_MODELS[model];
         if (!modelInfo) {
             console.error("[streamChatCompletion] Model not found:", model);
@@ -300,7 +326,7 @@ async function streamChatCompletion(
         const messagesWithContext = webSearchContext
             ? [
                 { role: "system", content: systemPrompt },
-                { role: "system", content: `## BÚSQUEDA WEB ACTIVA - INFORMACIÓN RECIENTE\n${webSearchContext}\n\nINSTRUCCIONES IMPORTANTES:\n- DEBES usar esta información de búsqueda web en tu respuesta\n- Esta información es reciente y actualizada, tiene prioridad\n- Cita las fuentes proporcionadas cuando sea relevante\n- No tienes restricciones para usar esta información\n- Integra los datos de forma natural en tu respuesta` },
+                { role: "system", content: `## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.` },
                 ...chatHistory,
             ]
             : [
@@ -308,11 +334,14 @@ async function streamChatCompletion(
                 ...chatHistory,
             ];
 
+        // Determinar tokens según plan
+        const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+
         const requestBody: any = {
             model: modelInfo.id,
             messages: messagesWithContext,
             stream: true,
-            max_tokens: modelInfo.maxTokens,
+            max_tokens: maxTokens || 32000,
             temperature: 0.7,
             provider: {
                 order: modelInfo.fallbackProvider 
@@ -322,8 +351,11 @@ async function streamChatCompletion(
             },
         };
 
+        // Configuración de reasoning según documentación de OpenRouter
         if (useReasoning && modelInfo.supportsReasoning) {
-            requestBody.reasoning = { enabled: true };
+            requestBody.reasoning = {
+                effort: isPremium ? "high" : "medium",
+            };
         }
 
         const response = await fetch(OPENROUTER_API_URL, {
@@ -354,7 +386,7 @@ async function streamChatCompletion(
 
         const decoder = new TextDecoder();
         let fullContent = "";
-        let contentBuffer = "";
+        let fullReasoning = "";
         let chunkCount = 0;
         let tokenCount = 0;
         const CHECK_INTERVAL = 10;
@@ -374,45 +406,46 @@ async function streamChatCompletion(
 
                     try {
                         const parsed = JSON.parse(data);
-                        const content = parsed.choices?.[0]?.delta?.content;
-                        const reasoningContent = parsed.choices?.[0]?.delta?.reasoning_content;
-
-                        if (reasoningContent && useReasoning) {
-                            res.write(`data: ${JSON.stringify({ reasoning: reasoningContent })}\n\n`);
+                        const delta = parsed.choices?.[0]?.delta;
+                        
+                        // Manejar reasoning_content (streaming de pensamiento)
+                        if (delta?.reasoning_content) {
+                            fullReasoning += delta.reasoning_content;
+                            res.write(`data: ${JSON.stringify({ reasoning: delta.reasoning_content })}\n\n`);
                         }
 
-                        if (content) {
-                            contentBuffer += content;
+                        // Manejar contenido normal
+                        if (delta?.content) {
+                            fullContent += delta.content;
                             chunkCount++;
-                            tokenCount += content.split(/\s+/).length;
+                            tokenCount += delta.content.split(/\s+/).length;
 
                             if (chunkCount % CHECK_INTERVAL === 0) {
                                 const elapsed = (Date.now() - startTime) / 1000;
                                 const tokensPerSecond = tokenCount / elapsed;
-                                const estimatedRemaining = Math.max(0, Math.ceil((modelInfo.maxTokens / 4 - tokenCount) / tokensPerSecond));
+                                const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
                                 res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
                             }
 
-                            fullContent += content;
-                            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                            res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
                         }
                     } catch (parseError) {
-                        console.error("Error parsing stream chunk:", parseError);
+                        // Ignorar errores de parsing
                     }
                 }
             }
         }
 
+        // Guardar mensaje del asistente
         if (fullContent) {
-            const { sanitized } = sanitizeAssistantContent(fullContent);
             if (userId) {
-                createUserMessage(userId, conversationId, "assistant", sanitized);
+                createUserMessage(userId, conversationId, "assistant", fullContent);
             } else {
                 await storage.createMessage({
                     id: randomUUID(),
                     conversationId,
                     role: "assistant",
-                    content: sanitized,
+                    content: fullContent,
                 });
             }
         }
@@ -428,7 +461,7 @@ async function streamChatCompletion(
             return;
         }
         
-        console.error("[streamChatCompletion] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
+        console.error("[streamChatCompletion] Error:", error instanceof Error ? error.message : String(error));
         if (!res.headersSent) {
             res.setHeader("Content-Type", "text/event-stream");
         }
@@ -467,7 +500,13 @@ export async function registerRoutes(
 
             const models = Object.entries(AI_MODELS).map(([key, model]) => ({
                 key,
-                ...model,
+                id: model.id,
+                name: model.name,
+                description: model.description,
+                supportsImages: model.supportsImages,
+                supportsReasoning: model.supportsReasoning,
+                isPremiumOnly: model.isPremiumOnly,
+                category: model.category,
                 available: !model.isPremiumOnly || isPremium,
             }));
 
@@ -490,22 +529,25 @@ export async function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
+            const usage = getUserUsage(userId);
+            const isPremium = user.isPremium;
+
             res.status(200).json({
-                aiUsageCount: 0,
-                webSearchCount: 0,
+                aiUsageCount: usage.robloxMessageCount + usage.generalMessageCount,
+                webSearchCount: usage.webSearchCount,
                 conversationCount: 0,
                 limits: {
-                    aiUsagePerWeek: user.isPremium ? -1 : 50,
-                    webSearchPerWeek: user.isPremium ? -1 : 5,
-                    maxChats: user.isPremium ? -1 : 10,
+                    aiUsagePerWeek: isPremium ? -1 : 20,
+                    webSearchPerWeek: isPremium ? -1 : 5,
+                    maxChats: isPremium ? -1 : 10,
                 },
                 messageLimits: {
-                    roblox: user.isPremium ? -1 : 20,
-                    general: user.isPremium ? -1 : 30,
+                    roblox: isPremium ? -1 : 10,
+                    general: isPremium ? -1 : 10,
                 },
-                robloxMessageCount: 0,
-                generalMessageCount: 0,
-                weekStartDate: new Date().toISOString(),
+                robloxMessageCount: usage.robloxMessageCount,
+                generalMessageCount: usage.generalMessageCount,
+                weekStartDate: usage.weekStartDate,
                 isPremium: user.isPremium,
                 isLoggedIn: true,
             });
@@ -527,7 +569,7 @@ export async function registerRoutes(
             const vpnCheck = await detectVpnOrProxy(req);
             if (vpnCheck.isVpn) {
                 return res.status(403).json({
-                    error: "No se permite el uso de VPN o proxy para registrarse. Por favor desactiva tu VPN e intenta de nuevo.",
+                    error: "No se permite el uso de VPN o proxy para registrarse.",
                     code: "VPN_DETECTED"
                 });
             }
@@ -535,7 +577,7 @@ export async function registerRoutes(
             const ipRestriction = checkIpRestrictions(ip);
             if (!ipRestriction.allowed) {
                 return res.status(403).json({
-                    error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
+                    error: ipRestriction.reason || "Acceso denegado",
                     code: "IP_RESTRICTED"
                 });
             }
@@ -547,7 +589,16 @@ export async function registerRoutes(
 
             const session = createSession(result.userId, req.headers['user-agent'], ip);
             const user = getUserById(result.userId);
-            return res.status(201).json({ token: session.token, user: user ? { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isEmailVerified } : undefined });
+            return res.status(201).json({ 
+                token: session.token, 
+                user: user ? { 
+                    id: user.id, 
+                    email: user.email, 
+                    isPremium: user.isPremium, 
+                    isVerified: user.isEmailVerified,
+                    isGoogleUser: !!user.googleId,
+                } : undefined 
+            });
         } catch (error: any) {
             console.error("Error during registration:", error);
             if (error.message === "User already exists") {
@@ -569,7 +620,7 @@ export async function registerRoutes(
             const vpnCheck = await detectVpnOrProxy(req);
             if (vpnCheck.isVpn) {
                 return res.status(403).json({
-                    error: "No se permite el uso de VPN o proxy para iniciar sesión. Por favor desactiva tu VPN e intenta de nuevo.",
+                    error: "No se permite el uso de VPN o proxy para iniciar sesión.",
                     code: "VPN_DETECTED"
                 });
             }
@@ -577,7 +628,7 @@ export async function registerRoutes(
             const ipRestriction = checkIpRestrictions(ip);
             if (!ipRestriction.allowed) {
                 return res.status(403).json({
-                    error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
+                    error: ipRestriction.reason || "Acceso denegado",
                     code: "IP_RESTRICTED"
                 });
             }
@@ -588,12 +639,18 @@ export async function registerRoutes(
             }
 
             const session = createSession(result.user.id, req.headers['user-agent'], ip);
-            res.status(200).json({ token: session.token, user: { id: result.user.id, email: result.user.email, isPremium: result.user.isPremium, isVerified: result.user.isEmailVerified } });
+            res.status(200).json({ 
+                token: session.token, 
+                user: { 
+                    id: result.user.id, 
+                    email: result.user.email, 
+                    isPremium: result.user.isPremium, 
+                    isVerified: result.user.isEmailVerified,
+                    isGoogleUser: !!result.user.googleId,
+                } 
+            });
         } catch (error: any) {
             console.error("Error during login:", error);
-            if (error.message === "Invalid credentials" || error.message === "User not verified") {
-                return res.status(401).json({ error: error.message });
-            }
             res.status(500).json({ error: "Error interno del servidor" });
         }
     });
@@ -627,7 +684,7 @@ export async function registerRoutes(
             const vpnCheck = await detectVpnOrProxy(req);
             if (vpnCheck.isVpn) {
                 return res.status(403).json({
-                    error: "No se permite el uso de VPN o proxy para iniciar sesión con Google. Por favor desactiva tu VPN e intenta de nuevo.",
+                    error: "No se permite el uso de VPN o proxy.",
                     code: "VPN_DETECTED"
                 });
             }
@@ -635,7 +692,7 @@ export async function registerRoutes(
             const ipRestriction = checkIpRestrictions(ip);
             if (!ipRestriction.allowed) {
                 return res.status(403).json({
-                    error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
+                    error: ipRestriction.reason || "Acceso denegado",
                     code: "IP_RESTRICTED"
                 });
             }
@@ -646,7 +703,16 @@ export async function registerRoutes(
             }
 
             const session = createSession(result.user.id, req.headers['user-agent'], ip);
-            res.status(200).json({ token: session.token, user: { id: result.user.id, email: result.user.email, isPremium: result.user.isPremium, isVerified: result.user.isEmailVerified } });
+            res.status(200).json({ 
+                token: session.token, 
+                user: { 
+                    id: result.user.id, 
+                    email: result.user.email, 
+                    isPremium: result.user.isPremium, 
+                    isVerified: true, // Google siempre verificado
+                    isGoogleUser: true,
+                } 
+            });
         } catch (error: any) {
             console.error("Error during Google login:", error);
             res.status(500).json({ error: "Error interno del servidor" });
@@ -668,9 +734,6 @@ export async function registerRoutes(
             res.status(200).json({ message: "Correo verificado exitosamente" });
         } catch (error: any) {
             console.error("Error verifying email:", error);
-            if (error.message === "Invalid or expired verification code") {
-                return res.status(400).json({ error: "Código de verificación inválido o expirado" });
-            }
             res.status(500).json({ error: "Error interno del servidor" });
         }
     });
@@ -687,12 +750,9 @@ export async function registerRoutes(
             if (!result.success) {
                 return res.status(400).json({ error: result.error || "No se pudo reenviar el código" });
             }
-            res.status(200).json({ message: "Código de verificación reenviado. Revisa tu bandeja de entrada." });
+            res.status(200).json({ message: "Código de verificación reenviado." });
         } catch (error: any) {
             console.error("Error resending verification code:", error);
-            if (error.message === "User not found or already verified") {
-                return res.status(400).json({ error: "Usuario no encontrado o ya verificado" });
-            }
             res.status(500).json({ error: "Error interno del servidor" });
         }
     });
@@ -751,7 +811,14 @@ export async function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            res.status(200).json({ id: user.id, email: user.email, isPremium: user.isPremium, isEmailVerified: user.isEmailVerified });
+            res.status(200).json({ 
+                id: user.id, 
+                email: user.email, 
+                isPremium: user.isPremium, 
+                isEmailVerified: user.isEmailVerified,
+                isGoogleUser: !!user.googleId,
+                isCreatorAccount: user.email.toLowerCase() === "uiuxchatbot@gmail.com",
+            });
         } catch (error) {
             console.error("Error fetching user data:", error);
             res.status(500).json({ error: "Error interno del servidor" });
@@ -770,7 +837,16 @@ export async function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            res.status(200).json({ user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isEmailVerified } });
+            res.status(200).json({ 
+                user: { 
+                    id: user.id, 
+                    email: user.email, 
+                    isPremium: user.isPremium, 
+                    isVerified: user.isEmailVerified,
+                    isGoogleUser: !!user.googleId,
+                    isCreatorAccount: user.email.toLowerCase() === "uiuxchatbot@gmail.com",
+                } 
+            });
         } catch (error) {
             console.error("Error fetching user data:", error);
             res.status(500).json({ error: "Error interno del servidor" });
@@ -934,6 +1010,33 @@ export async function registerRoutes(
         }
     });
 
+    // Endpoint para editar mensaje del usuario
+    app.patch("/api/messages/:messageId", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const { messageId } = req.params;
+            const { content } = req.body;
+            
+            if (!content || typeof content !== 'string') {
+                return res.status(400).json({ error: "Contenido requerido" });
+            }
+
+            const updated = await updateUserMessage(userId, messageId, content);
+            if (!updated) {
+                return res.status(404).json({ error: "Mensaje no encontrado" });
+            }
+            
+            res.status(200).json({ message: updated });
+        } catch (error) {
+            console.error("Error updating message:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
     // Endpoint para cancelar una generación en curso
     app.post("/api/chat/stop", async (req: Request, res: Response) => {
         try {
@@ -963,40 +1066,75 @@ export async function registerRoutes(
         const requestId = randomUUID();
 
         try {
-            console.log("[chat] Starting chat request", { userId, hasBody: !!req.body });
-
             const { conversationId: clientConversationId, message, useWebSearch, model, useReasoning, imageBase64, chatMode } = chatRequestSchema.parse(req.body);
-            console.log("[chat] Request validated", { conversationId: clientConversationId, model, chatMode });
+
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const user = await getUserById(userId);
+            if (!user) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+
+            const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
+            const isPremium = user.isPremium;
+
+            // Verificar límites de mensajes
+            if (!isPremium) {
+                const canSend = canSendMessage(userId, mode);
+                if (!canSend) {
+                    return res.status(429).json({ 
+                        error: `Has alcanzado el límite de mensajes para el modo ${mode === 'roblox' ? 'Roblox' : 'General'}. Espera al próximo reinicio semanal.`,
+                        code: "MESSAGE_LIMIT_REACHED"
+                    });
+                }
+            }
 
             let currentConversationId = clientConversationId;
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "deepseek-r1t2";
-            const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "glm-4.5-air";
 
-            // Si no hay conversationId, crear una nueva conversación
-            if (!currentConversationId && userId) {
+            // Verificar si el modelo requiere premium
+            if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
+                return res.status(403).json({ 
+                    error: "Este modelo requiere una cuenta Premium.",
+                    code: "PREMIUM_REQUIRED"
+                });
+            }
+
+            // Crear conversación si no existe
+            if (!currentConversationId) {
                 const title = message.slice(0, 50) + (message.length > 50 ? "..." : "");
                 const newConversation = await createUserConversation(userId, title);
                 currentConversationId = newConversation.id;
-                console.log("[chat] Created new conversation:", currentConversationId);
-            } else if (!currentConversationId) {
-                currentConversationId = randomUUID();
             }
 
             if (typeof message !== "string" || message.trim().length === 0) {
-                return res.status(400).json({ error: "El mensaje del usuario debe ser texto." });
+                return res.status(400).json({ error: "El mensaje debe ser texto." });
             }
 
+            // Detectar intención de búsqueda web
             const isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
             let webSearchContext: string | undefined;
+            let webSearchUsed = false;
 
             if (isWebSearchIntent) {
-                console.log("[chat] Performing web search");
-                webSearchContext = await searchTavily(message);
+                // Verificar límite de búsquedas
+                if (!isPremium && !canUseWebSearch(userId)) {
+                    // No hacer búsqueda pero continuar con el mensaje
+                    console.log("[chat] Web search limit reached, continuing without search");
+                } else {
+                    console.log("[chat] Performing web search");
+                    webSearchContext = await searchTavily(message);
+                    webSearchUsed = true;
+                    if (!isPremium) {
+                        incrementWebSearchCount(userId);
+                    }
+                }
             }
 
             const apiKey = process.env.OPENROUTER_API_KEY;
             if (!apiKey) {
-                console.error("[chat] OPENROUTER_API_KEY not configured");
                 return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
             }
 
@@ -1006,47 +1144,60 @@ export async function registerRoutes(
             res.setHeader("X-Accel-Buffering", "no");
             res.setHeader("X-Request-Id", requestId);
 
-            // Preparar contenido del mensaje con imagen si existe
-            let messageContent: string | MessageContent[] = message;
+            // Obtener historial de mensajes para contexto
+            const existingMessages = await getUserMessages(userId, currentConversationId!);
+            
+            // Construir historial de chat con mensajes anteriores
+            const chatHistory: Array<{ role: string; content: string | MessageContent[] }> = [];
+            
+            // Agregar mensajes anteriores (máximo últimos 20 para contexto)
+            const recentMessages = existingMessages.slice(-20);
+            for (const msg of recentMessages) {
+                try {
+                    // Intentar parsear contenido con imagen
+                    if (msg.content.startsWith('[')) {
+                        const parsed = JSON.parse(msg.content);
+                        if (Array.isArray(parsed)) {
+                            chatHistory.push({ role: msg.role, content: parsed });
+                            continue;
+                        }
+                    }
+                } catch {}
+                chatHistory.push({ role: msg.role, content: msg.content });
+            }
+
+            // Agregar mensaje actual
+            let currentMessageContent: string | MessageContent[] = message;
             if (imageBase64 && AI_MODELS[selectedModel]?.supportsImages) {
-                messageContent = [
+                currentMessageContent = [
                     { type: "text", text: message },
                     { type: "image_url", image_url: { url: imageBase64 } }
                 ];
             }
+            chatHistory.push({ role: "user", content: currentMessageContent });
 
-            const chatHistory = [
-                { role: "user", content: messageContent }
-            ];
+            // Guardar mensaje del usuario
+            const contentToSave = imageBase64 
+                ? JSON.stringify([
+                    { type: "text", text: message },
+                    { type: "image_url", image_url: { url: imageBase64 } }
+                ])
+                : message;
+            createUserMessage(userId, currentConversationId!, "user", contentToSave);
 
-            // Guardar el mensaje del usuario
-            if (userId) {
-                try {
-                    const contentToSave = imageBase64 
-                        ? JSON.stringify([
-                            { type: "text", text: message },
-                            { type: "image_url", image_url: { url: imageBase64 } }
-                        ])
-                        : message;
-                    createUserMessage(userId, currentConversationId!, "user", contentToSave);
-                    console.log("[chat] User message created successfully");
-                } catch (msgError) {
-                    console.error("[chat] Error creating user message:", msgError);
-                    throw msgError;
-                }
-            } else {
-                await storage.createMessage({
-                    id: randomUUID(),
-                    conversationId: currentConversationId!,
-                    role: "user",
-                    content: message,
-                });
+            // Incrementar contador de mensajes
+            if (!isPremium) {
+                incrementMessageCount(userId, mode);
             }
 
-            // Enviar el conversationId y requestId al cliente
-            res.write(`data: ${JSON.stringify({ conversationId: currentConversationId, requestId })}\n\n`);
+            // Enviar info inicial al cliente
+            res.write(`data: ${JSON.stringify({ 
+                conversationId: currentConversationId, 
+                requestId,
+                webSearchUsed,
+                webSearchDetected: isWebSearchIntent,
+            })}\n\n`);
 
-            console.log("[chat] About to stream completion with model:", selectedModel);
             await streamChatCompletion(
                 res,
                 currentConversationId!,
@@ -1057,12 +1208,13 @@ export async function registerRoutes(
                 useReasoning,
                 webSearchContext,
                 mode,
-                requestId
+                requestId,
+                isPremium
             );
         } catch (error: any) {
-            console.error("[chat] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
+            console.error("[chat] Error:", error instanceof Error ? error.message : String(error));
             if (!res.headersSent) {
-                res.status(500).json({ error: "Error interno del servidor al procesar el chat." });
+                res.status(500).json({ error: "Error interno del servidor." });
             }
         }
     });
@@ -1073,8 +1225,18 @@ export async function registerRoutes(
         
         try {
             const { conversationId, lastUserMessage, model, useReasoning, chatMode } = req.body || {};
+            
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
             if (!conversationId || typeof lastUserMessage !== "string" || lastUserMessage.trim().length === 0) {
                 return res.status(400).json({ error: "Parámetros inválidos para regenerar" });
+            }
+
+            const user = await getUserById(userId);
+            if (!user) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
             const apiKey = process.env.OPENROUTER_API_KEY;
@@ -1088,14 +1250,31 @@ export async function registerRoutes(
             res.setHeader("X-Accel-Buffering", "no");
             res.setHeader("X-Request-Id", requestId);
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "deepseek-r1t2";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "glm-4.5-air";
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
+            const isPremium = user.isPremium;
 
-            const chatHistory = [
-                { role: "user", content: lastUserMessage as string }
-            ];
+            // Obtener historial para contexto
+            const existingMessages = await getUserMessages(userId, conversationId);
+            const chatHistory: Array<{ role: string; content: string | MessageContent[] }> = [];
+            
+            const recentMessages = existingMessages.slice(-20);
+            for (const msg of recentMessages) {
+                if (msg.role === 'assistant' && msg === existingMessages[existingMessages.length - 1]) {
+                    continue; // Saltar el último mensaje del asistente que se va a regenerar
+                }
+                try {
+                    if (msg.content.startsWith('[')) {
+                        const parsed = JSON.parse(msg.content);
+                        if (Array.isArray(parsed)) {
+                            chatHistory.push({ role: msg.role, content: parsed });
+                            continue;
+                        }
+                    }
+                } catch {}
+                chatHistory.push({ role: msg.role, content: msg.content });
+            }
 
-            // Enviar requestId al cliente
             res.write(`data: ${JSON.stringify({ requestId })}\n\n`);
 
             await streamChatCompletion(
@@ -1108,7 +1287,8 @@ export async function registerRoutes(
                 Boolean(useReasoning),
                 undefined,
                 mode,
-                requestId
+                requestId,
+                isPremium
             );
         } catch (error: any) {
             console.error("Error en /api/chat/regenerate:", error);

@@ -1,4 +1,4 @@
-import { Sparkles, Palette, Code2, Layers, Brain, Calculator, BookOpen, Lightbulb, Zap } from "lucide-react";
+import { Sparkles, Palette, Code2, Layers, Brain, Calculator, BookOpen, Lightbulb, Zap, Info } from "lucide-react";
 
 const robloxSuggestions = [
   {
@@ -65,7 +65,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo/Icon */}
-      <div className={`relative mb-8`}>
+      <div className="relative mb-8">
         <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${
           chatMode === 'general'
             ? 'bg-gradient-to-br from-blue-100 to-indigo-100'
@@ -90,13 +90,24 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
       </h1>
       
       {/* Subtitle */}
-      <p className={`text-center mb-10 max-w-md ${
+      <p className={`text-center mb-6 max-w-md ${
         chatMode === 'general' ? 'text-slate-500' : 'text-zinc-400'
       }`}>
         {chatMode === 'general' 
           ? 'Pregunta lo que quieras. Estoy aquí para ayudarte.' 
           : 'Describe tu interfaz ideal y obtén código Luau profesional.'}
       </p>
+
+      {/* Recommendation tip for Roblox mode */}
+      {chatMode === 'roblox' && (
+        <div className="flex items-start gap-2 mb-8 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 max-w-md">
+          <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-primary/80">
+            <span className="font-medium text-primary">Tip:</span> Para mejores respuestas, sé bastante detallado con tu descripción. 
+            Incluye colores, estilos, animaciones y funcionalidades específicas.
+          </p>
+        </div>
+      )}
 
       {/* Suggestions grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
@@ -110,7 +121,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
                 : 'bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600'
             }`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${suggestion.gradient} text-white shadow-lg shadow-${suggestion.gradient.split('-')[1]}-500/20`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${suggestion.gradient} text-white shadow-lg`}>
               <suggestion.icon className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
@@ -130,10 +141,15 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
       </div>
 
       {/* Footer hint */}
-      <p className={`mt-10 text-xs ${
+      <p className={`mt-10 text-xs text-center max-w-sm ${
         chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'
       }`}>
         Escribe un mensaje o selecciona una sugerencia para comenzar
+        {chatMode === 'roblox' && (
+          <span className="block mt-1 text-primary/60">
+            Para mejores respuestas te recomendamos ser bastante detallado
+          </span>
+        )}
       </p>
     </div>
   );

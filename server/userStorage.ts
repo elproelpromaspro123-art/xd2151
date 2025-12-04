@@ -161,6 +161,17 @@ export function deleteUserMessage(userId: string, messageId: string): boolean {
   return true;
 }
 
+export function updateUserMessage(userId: string, messageId: string, content: string): Message | null {
+  const data = loadUserData(userId);
+  const message = data.messages[messageId];
+  
+  if (!message) return null;
+  
+  message.content = content;
+  saveUserData(userId, data);
+  return message;
+}
+
 export function getUserConversationCount(userId: string): number {
   const data = loadUserData(userId);
   return Object.keys(data.conversations).length;

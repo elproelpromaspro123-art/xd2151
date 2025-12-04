@@ -3,12 +3,15 @@ import { cn } from "@/lib/utils";
 import { Message } from "@shared/schema";
 import { MessageContent } from "./MessageContent";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Copy, Check, User, Bot } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { RefreshCw, Copy, Check, User, Bot, Pencil, X, Send } from "lucide-react";
+import { getToken } from "@/lib/auth";
 
 interface MessageBubbleProps {
   message: Message;
   chatMode?: "roblox" | "general";
   onRegenerate?: () => void;
+  onEditAndResend?: (newContent: string) => void;
   isStreaming?: boolean;
   onOpenArtifact?: (code: string, language: string) => void;
   artifactState?: {
@@ -21,11 +24,15 @@ export const MessageBubble = memo(function MessageBubble({
   message, 
   chatMode = "roblox", 
   onRegenerate, 
+  onEditAndResend,
   isStreaming, 
   onOpenArtifact, 
   artifactState 
 }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [isHovered, setIsHovered] = useState(false);
   const isUser = message.role === "user";
   
   let textContent = message.content;
@@ -57,17 +64,169 @@ export const MessageBubble = memo(function MessageBubble({
     }
   };
 
+  const handleStartEdit = () => {
+    setEditContent(textContent);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent("");
+  };
+
+  const handleSubmitEdit = () => {
+    if (editContent.trim() && onEditAndResend) {
+      onEditAndResend(editContent.trim());
+      setIsEditing(false);
+      setEditContent("");
+    }
+  };
+
+  const ActionButtons = () => {
+    if (isStreaming) return null;
+    
+    return (
+      <div className={cn(
+        "absolute -top-8 right-0 flex items-center gap-0.5 px-1 py-0.5 rounded-lg transition-all duration-200",
+        isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none",
+        chatMode === 'general'
+          ? "bg-white/90 border border-slate-200/80 shadow-sm"
+          : "bg-zinc-800/90 border border-zinc-700/50"
+      )}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleCopy}
+          className={cn(
+            "h-6 w-6",
+            chatMode === 'general'
+              ? "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+          )}
+          title="Copiar"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        </Button>
+
+        {isUser && onEditAndResend && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleStartEdit}
+            className={cn(
+              "h-6 w-6",
+              chatMode === 'general'
+                ? "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                : "text-zinc-400 hover:text-primary hover:bg-primary/10"
+            )}
+            title="Editar y reenviar"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        )}
+
+        {onRegenerate && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onRegenerate}
+            className={cn(
+              "h-6 w-6",
+              chatMode === 'general'
+                ? "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                : "text-zinc-400 hover:text-primary hover:bg-primary/10"
+            )}
+            title={isUser ? "Regenerar desde aquí" : "Regenerar respuesta"}
+          >
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  if (isEditing && isUser) {
+    return (
+      <div className={cn(
+        "flex w-full mb-6 animate-in fade-in-0 duration-200",
+        "justify-end"
+      )}>
+        <div className="flex gap-3 max-w-[90%] lg:max-w-[85%] flex-row-reverse">
+          <div className={cn(
+            "flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center",
+            chatMode === 'general'
+              ? "bg-blue-600 text-white"
+              : "bg-primary text-primary-foreground"
+          )}>
+            <User className="h-4 w-4" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className={cn(
+              "text-xs font-medium mb-1.5 text-right",
+              chatMode === 'general' ? "text-slate-600" : "text-zinc-400"
+            )}>
+              Editando mensaje
+            </div>
+
+            <div className={cn(
+              "rounded-2xl rounded-tr-md p-3",
+              chatMode === 'general'
+                ? "bg-blue-50 border border-blue-200"
+                : "bg-primary/10 border border-primary/30"
+            )}>
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className={cn(
+                  "min-h-[80px] resize-none border-0 bg-transparent focus-visible:ring-0 p-0",
+                  chatMode === 'general' ? "text-slate-900" : "text-foreground"
+                )}
+                placeholder="Edita tu mensaje..."
+                autoFocus
+              />
+              <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border/30">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <X className="h-3 w-3" />
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSubmitEdit}
+                  disabled={!editContent.trim()}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <Send className="h-3 w-3" />
+                  Enviar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
         "flex w-full mb-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
         isUser ? "justify-end" : "justify-start"
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className={cn(
-        "flex gap-3 max-w-[90%] lg:max-w-[85%]",
+        "relative flex gap-3 max-w-[90%] lg:max-w-[85%]",
         isUser && "flex-row-reverse"
       )}>
+        <ActionButtons />
+
         {/* Avatar */}
         <div className={cn(
           "flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center",
@@ -107,7 +266,7 @@ export const MessageBubble = memo(function MessageBubble({
                   ? "bg-blue-600 text-white rounded-tr-md"
                   : "bg-primary text-primary-foreground rounded-tr-md"
                 : chatMode === 'general'
-                  ? "bg-white border border-slate-200/80 shadow-sm rounded-tl-md"
+                  ? "bg-white border border-slate-200/80 shadow-sm rounded-tl-md text-slate-900"
                   : "bg-zinc-800/80 border border-zinc-700/50 rounded-tl-md"
             )}
           >
@@ -134,55 +293,6 @@ export const MessageBubble = memo(function MessageBubble({
               />
             )}
           </div>
-
-          {/* Actions for assistant messages */}
-          {!isUser && !isStreaming && (
-            <div className={cn(
-              "flex items-center gap-1 mt-2 opacity-0 hover:opacity-100 transition-opacity",
-              "group-hover:opacity-100"
-            )}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                className={cn(
-                  "h-7 gap-1.5 text-xs",
-                  chatMode === 'general'
-                    ? "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-                )}
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    Copiar
-                  </>
-                )}
-              </Button>
-
-              {onRegenerate && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRegenerate}
-                  className={cn(
-                    "h-7 gap-1.5 text-xs",
-                    chatMode === 'general'
-                      ? "text-slate-400 hover:text-blue-600 hover:bg-blue-50"
-                      : "text-zinc-500 hover:text-primary hover:bg-primary/10"
-                  )}
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Regenerar
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

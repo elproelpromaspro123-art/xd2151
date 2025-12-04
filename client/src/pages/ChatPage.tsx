@@ -14,8 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
-    Sparkles, Zap, Crown, LogOut, User as UserIcon, Settings, 
-    Gamepad2, MessageCircle, StopCircle, RefreshCw, PanelLeftClose, PanelLeft
+    Sparkles, Zap, Crown, LogOut, User as UserIcon, 
+    Gamepad2, MessageCircle, StopCircle, PanelLeftClose, PanelLeft, Globe
 } from "lucide-react";
 import type { Conversation, Message, AIModel, ChatMode } from "@shared/schema";
 import type { User } from "@/lib/auth";
@@ -59,6 +59,22 @@ interface StreamProgress {
     estimatedSecondsRemaining: number;
 }
 
+interface ThemeSettings {
+    robloxDark: boolean;
+    generalDark: boolean;
+}
+
+function getThemeSettings(): ThemeSettings {
+    if (typeof window === "undefined") return { robloxDark: true, generalDark: false };
+    const stored = localStorage.getItem("themeSettings");
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch {}
+    }
+    return { robloxDark: true, generalDark: false };
+}
+
 interface ChatPageProps {
     user?: User | null;
     onLogout?: () => void;
@@ -71,17 +87,54 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const [isStreaming, setIsStreaming] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<string>("deepseek-r1t2");
+    const [selectedModel, setSelectedModel] = useState<string>("glm-4.5-air");
     const [useReasoning, setUseReasoning] = useState(false);
     const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
     const [currentModelName, setCurrentModelName] = useState<string>("");
     const [chatMode, setChatMode] = useState<ChatMode>("roblox");
     const [artifactState, setArtifactState] = useState<ArtifactState>({ isOpen: false, content: "", language: "text" });
     const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-    const [lastUserMessage, setLastUserMessage] = useState<string>("");
+    const [webSearchActive, setWebSearchActive] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
+
+    // Apply theme based on mode
+    useEffect(() => {
+        const settings = getThemeSettings();
+        const shouldBeDark = chatMode === 'roblox' ? settings.robloxDark : settings.generalDark;
+        const root = document.documentElement;
+        
+        if (shouldBeDark) {
+            root.classList.add("dark");
+            root.classList.remove("light");
+            root.style.colorScheme = "dark";
+        } else {
+            root.classList.remove("dark");
+            root.classList.add("light");
+            root.style.colorScheme = "light";
+        }
+    }, [chatMode]);
+
+    // Listen for theme settings changes
+    useEffect(() => {
+        const handleThemeChange = () => {
+            const settings = getThemeSettings();
+            const shouldBeDark = chatMode === 'roblox' ? settings.robloxDark : settings.generalDark;
+            const root = document.documentElement;
+            
+            if (shouldBeDark) {
+                root.classList.add("dark");
+                root.classList.remove("light");
+            } else {
+                root.classList.remove("dark");
+                root.classList.add("light");
+            }
+        };
+
+        window.addEventListener('themeSettingsChange', handleThemeChange);
+        return () => window.removeEventListener('themeSettingsChange', handleThemeChange);
+    }, [chatMode]);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -180,7 +233,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             setCurrentRequestId(null);
             toast({
                 title: "Generación detenida",
-                description: "Se ha cancelado la generación de la respuesta.",
+                description: "Se ha cancelado la generación.",
             });
         } catch (error) {
             console.error("Error stopping generation:", error);
@@ -188,7 +241,6 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     };
 
     const handleSendMessage = async (content: string, useWebSearch = false, imageBase64?: string) => {
-        setLastUserMessage(content);
         let conversationId = currentConversationId;
 
         let contentToSave = content;
@@ -219,6 +271,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         setStreamingReasoning("");
         setStreamProgress(null);
         setCurrentModelName("");
+        setWebSearchActive(useWebSearch);
 
         try {
             const token = getToken();
@@ -288,6 +341,10 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 setCurrentRequestId(parsed.requestId);
                             }
 
+                            if (parsed.webSearchUsed) {
+                                setWebSearchActive(true);
+                            }
+
                             if (parsed.cancelled) {
                                 setIsStreaming(false);
                                 return;
@@ -312,14 +369,14 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                         isOpen: true,
                                         content: codeBlock.code,
                                         language: codeBlock.language,
-                                        title: "Creando código..."
+                                        title: "Generando código..."
                                     });
                                 }
                             }
 
                             if (parsed.error) {
                                 toast({
-                                    title: parsed.code === "AI_LIMIT_REACHED" || parsed.code === "PREMIUM_REQUIRED"
+                                    title: parsed.code === "MESSAGE_LIMIT_REACHED" || parsed.code === "PREMIUM_REQUIRED"
                                         ? "Límite alcanzado"
                                         : "Error",
                                     description: parsed.error,
@@ -342,7 +399,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         } catch (error) {
             toast({
                 title: "Error",
-                description: "No se pudo enviar el mensaje. Por favor, intenta de nuevo.",
+                description: "No se pudo enviar el mensaje.",
                 variant: "destructive",
             });
         } finally {
@@ -351,29 +408,46 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             setStreamingReasoning("");
             setStreamProgress(null);
             setCurrentRequestId(null);
+            setWebSearchActive(false);
         }
     };
 
-    const handleRegenerate = async () => {
+    const handleRegenerate = async (fromMessageIndex?: number) => {
         if (!currentConversationId) return;
 
-        const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+        let lastUserMsg: Message | undefined;
+        
+        if (fromMessageIndex !== undefined) {
+            // Regenerar desde un mensaje específico del usuario
+            lastUserMsg = messages[fromMessageIndex];
+        } else {
+            // Regenerar el último mensaje del asistente
+            lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+        }
+
         if (!lastUserMsg) return;
 
-        const lastAssistantMessage = messages[messages.length - 1];
-        if (lastAssistantMessage?.role === "assistant") {
-            try {
-                const token = getToken();
-                const headers: Record<string, string> = {};
-                if (token) {
-                    headers["Authorization"] = `Bearer ${token}`;
-                }
-                await fetch(`/api/messages/${lastAssistantMessage.id}`, {
-                    method: "DELETE",
-                    headers,
-                });
-            } catch (e) {
-                console.error("Error deleting last message:", e);
+        // Si regeneramos desde un mensaje del usuario, eliminar todos los mensajes posteriores
+        if (fromMessageIndex !== undefined) {
+            const messagesToDelete = messages.slice(fromMessageIndex + 1);
+            for (const msg of messagesToDelete) {
+                try {
+                    const token = getToken();
+                    const headers: Record<string, string> = {};
+                    if (token) headers["Authorization"] = `Bearer ${token}`;
+                    await fetch(`/api/messages/${msg.id}`, { method: "DELETE", headers });
+                } catch {}
+            }
+        } else {
+            // Solo eliminar el último mensaje del asistente
+            const lastAssistantMessage = messages[messages.length - 1];
+            if (lastAssistantMessage?.role === "assistant") {
+                try {
+                    const token = getToken();
+                    const headers: Record<string, string> = {};
+                    if (token) headers["Authorization"] = `Bearer ${token}`;
+                    await fetch(`/api/messages/${lastAssistantMessage.id}`, { method: "DELETE", headers });
+                } catch {}
             }
         }
 
@@ -462,7 +536,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                             if (parsed.error) {
                                 toast({
-                                    title: "Límite alcanzado",
+                                    title: "Error",
                                     description: parsed.error,
                                     variant: "destructive",
                                 });
@@ -492,6 +566,28 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         }
     };
 
+    const handleEditAndResend = async (messageIndex: number, newContent: string) => {
+        if (!currentConversationId) return;
+
+        // Eliminar el mensaje editado y todos los posteriores
+        const messagesToDelete = messages.slice(messageIndex);
+        for (const msg of messagesToDelete) {
+            try {
+                const token = getToken();
+                const headers: Record<string, string> = {};
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+                await fetch(`/api/messages/${msg.id}`, { method: "DELETE", headers });
+            } catch {}
+        }
+
+        queryClient.invalidateQueries({
+            queryKey: ["/api/conversations", currentConversationId, "messages"],
+        });
+
+        // Enviar el nuevo mensaje
+        await handleSendMessage(newContent);
+    };
+
     const handleNewChat = () => {
         setCurrentConversationId(null);
         setSidebarOpen(false);
@@ -514,15 +610,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
     const showEmptyState = !currentConversationId && messages.length === 0;
     const isPremium = user?.isPremium || usage?.isPremium || modelsData?.isPremium || false;
-    const webSearchRemaining = usage?.limits.webSearchPerWeek === -1
-        ? 999
-        : (usage?.limits.webSearchPerWeek || 5) - (usage?.webSearchCount || 0);
+    const webSearchRemaining = isPremium ? 999 : Math.max(0, 5 - (usage?.webSearchCount || 0));
 
     const selectedModelInfo = modelsData?.models.find(m => m.key === selectedModel);
 
     const modeMessageLimit = isPremium 
         ? { roblox: -1, general: -1 } 
-        : (usage?.messageLimits || { roblox: 20, general: 30 });
+        : { roblox: 10, general: 10 };
     const messagesUsedRoblox = usage?.robloxMessageCount || 0;
     const messagesUsedGeneral = usage?.generalMessageCount || 0;
     const messageRemaining = chatMode === 'roblox' 
@@ -537,13 +631,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     };
 
     return (
-        <div
-            className={`flex h-screen w-full overflow-hidden ${
-                chatMode === 'general' 
-                    ? 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40' 
-                    : 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950'
-            }`}
-        >
+        <div className={`flex h-screen w-full overflow-hidden ${
+            chatMode === 'general' 
+                ? 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40' 
+                : 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950'
+        }`}>
             {/* Sidebar */}
             <ChatSidebar
                 conversations={sortedConversations}
@@ -596,6 +688,9 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             }`}>
                                 <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-blue-500' : 'text-primary'}`} />
                                 <span>{messageRemaining === 999 ? "∞" : messageRemaining} msgs</span>
+                                <span className="text-slate-300 dark:text-zinc-600">|</span>
+                                <Globe className="h-3.5 w-3.5 text-emerald-500" />
+                                <span>{webSearchRemaining === 999 ? "∞" : webSearchRemaining} web</span>
                             </div>
                         </div>
 
@@ -676,6 +771,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     <span>{streamProgress.tokensGenerated} tokens</span>
                                     <span className={chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'}>•</span>
                                     <span>{formatTimeRemaining(streamProgress.estimatedSecondsRemaining)}</span>
+                                    {webSearchActive && (
+                                        <>
+                                            <span className={chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'}>•</span>
+                                            <Globe className="h-3 w-3 text-emerald-500" />
+                                            <span className="text-emerald-500">Web</span>
+                                        </>
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -712,9 +814,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                                 language,
                                                 title: "Código"
                                             })}
-                                            onRegenerate={
-                                                index === messages.length - 1 && message.role === "assistant" && !isStreaming
-                                                    ? handleRegenerate
+                                            onRegenerate={!isStreaming ? () => handleRegenerate(
+                                                message.role === "user" ? index : undefined
+                                            ) : undefined}
+                                            onEditAndResend={
+                                                message.role === "user" && !isStreaming
+                                                    ? (newContent) => handleEditAndResend(index, newContent)
                                                     : undefined
                                             }
                                         />
@@ -768,7 +873,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             onSend={handleSendMessage}
                             isLoading={isStreaming}
                             disabled={messageRemaining <= 0}
-                            webSearchRemaining={Math.max(0, webSearchRemaining)}
+                            webSearchRemaining={webSearchRemaining}
                             models={modelsData?.models || []}
                             selectedModel={selectedModel}
                             onModelChange={setSelectedModel}
