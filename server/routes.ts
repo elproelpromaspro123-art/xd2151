@@ -561,6 +561,61 @@ export async function registerRoutes(
         res.json({ siteKey: process.env.Site_Key });
     });
 
+    app.get("/api/models", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            const isPremium = userId ? await isUserPremium(userId) : false;
+
+            const models = Object.entries(AI_MODELS).map(([key, model]) => ({
+                key,
+                ...model,
+                available: !model.isPremiumOnly || isPremium,
+            }));
+
+            res.status(200).json({ models, isPremium });
+        } catch (error) {
+            console.error("Error fetching models:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    app.get("/api/usage", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const user = await getUserById(userId);
+            if (!user) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+
+            res.status(200).json({
+                aiUsageCount: 0,
+                webSearchCount: 0,
+                conversationCount: 0,
+                limits: {
+                    aiUsagePerWeek: user.isPremium ? -1 : 50,
+                    webSearchPerWeek: user.isPremium ? -1 : 5,
+                    maxChats: user.isPremium ? -1 : 10,
+                },
+                messageLimits: {
+                    roblox: user.isPremium ? -1 : 20,
+                    general: user.isPremium ? -1 : 30,
+                },
+                robloxMessageCount: 0,
+                generalMessageCount: 0,
+                weekStartDate: new Date().toISOString(),
+                isPremium: user.isPremium,
+                isLoggedIn: true,
+            });
+        } catch (error) {
+            console.error("Error fetching usage:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
     app.post("/api/auth/register", async (req: Request, res: Response) => {
         try {
             const { email, password, turnstileToken } = req.body;
@@ -868,7 +923,7 @@ export async function registerRoutes(
             }
 
             const conversations = await getUserConversations(userId);
-            res.status(200).json({ conversations });
+            res.status(200).json(Array.isArray(conversations) ? conversations : []);
         } catch (error) {
             console.error("Error fetching conversations:", error);
             res.status(500).json({ error: "Error interno del servidor" });
@@ -952,7 +1007,7 @@ export async function registerRoutes(
 
             const { conversationId } = req.params;
             const messages = await getUserMessages(userId, conversationId);
-            res.status(200).json({ messages });
+            res.status(200).json(Array.isArray(messages) ? messages : []);
         } catch (error) {
             console.error("Error fetching messages:", error);
             res.status(500).json({ error: "Error interno del servidor" });
