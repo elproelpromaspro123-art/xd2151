@@ -858,4 +858,33 @@
     outline: none !important;
     box-shadow: none !important;
   }
+
+  /* Artifact Card Styles - Claude-like */
+  .artifact-card {
+    @apply relative rounded-lg border border-border/50 bg-gradient-to-br from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/30 transition-all duration-200 p-4 text-left shadow-sm hover:shadow-md overflow-hidden;
+  }
+
+  .artifact-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .artifact-card:hover::before {
+    opacity: 1;
+  }
+
+  .artifact-card-content {
+    @apply relative z-10;
+  }
+
+  /* Smooth code block transitions */
+  .code-block-container {
+    @apply transition-all duration-300 ease-in-out;
+  }
 }

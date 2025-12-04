@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeBlock } from "./CodeBlock";
+import { ArtifactCard } from "./ArtifactCard";
 
 interface MessageContentProps {
   content: string;
@@ -12,6 +13,8 @@ interface MessageContentProps {
     content: string;
   };
 }
+
+const CODE_ARTIFACT_THRESHOLD = 50; // Show artifact card for code > 50 chars
 
 export function MessageContent({ content, isStreaming = false, chatMode = "roblox", onOpenArtifact, artifactState }: MessageContentProps) {
   return (
@@ -33,6 +36,20 @@ export function MessageContent({ content, isStreaming = false, chatMode = "roblo
 
             const language = match ? match[1] : "text";
             const codeString = String(children).replace(/\n$/, "");
+            const shouldShowAsArtifact = codeString.length > CODE_ARTIFACT_THRESHOLD;
+
+            if (shouldShowAsArtifact && onOpenArtifact) {
+              // Extract title from code or use language name
+              const title = `${language === "luau" ? "Luau" : language === "lua" ? "Luau" : language.toUpperCase()} Code`;
+              return (
+                <ArtifactCard 
+                  title={title}
+                  language={language}
+                  code={codeString}
+                  onOpen={() => onOpenArtifact(codeString, language)}
+                />
+              );
+            }
 
             return (
               <CodeBlock 

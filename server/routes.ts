@@ -119,16 +119,16 @@ const AI_MODELS = {
         description: "Google Gemini 2.5 Flash - El mejor modelo actual para programación y general - 1M contexto/65K output",
         supportsImages: true,
         supportsReasoning: true,
-        isPremiumOnly: false,
+        isPremiumOnly: true,
         category: "general" as const,
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
         // Oficial docs: 1,048,576 contexto, 65,535 output
-        // Free: 90% de 1M = 943,718 contexto, 90% de 65K = 58,981 output
+        // Free: no disponible (premium only)
         // Premium: 95% de 1M = 995,746 contexto, 95% de 65K = 62,259 output
-        freeContextTokens: 943718,
-        freeOutputTokens: 58981,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
     },
