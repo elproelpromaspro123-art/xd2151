@@ -111,7 +111,7 @@ export interface AIModel {
 }
 
 export const chatRequestSchema = z.object({
-  conversationId: z.string(),
+  conversationId: z.string().optional().nullable(),
   message: z.string().min(1),
   useWebSearch: z.boolean().optional(),
   model: z.string().optional(),

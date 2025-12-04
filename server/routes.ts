@@ -394,7 +394,12 @@ async function streamChatCompletion(
     chatMode: "roblox" | "general" = "roblox"
 ): Promise<void> {
     try {
+        console.log("[streamChatCompletion] Starting with model:", model, "mode:", chatMode);
         const modelInfo = AI_MODELS[model];
+        if (!modelInfo) {
+            console.error("[streamChatCompletion] Model not found:", model);
+            throw new Error(`Model ${model} not found`);
+        }
         const systemPrompt = getSystemPrompt(chatMode);
 
         const messagesWithContext = webSearchContext
@@ -536,7 +541,10 @@ async function streamChatCompletion(
         res.write("data: [DONE]\n\n");
         res.end();
     } catch (error) { // Handle streaming errors
-        console.error("Streaming error:", error);
+        console.error("[streamChatCompletion] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
+        if (!res.headersSent) {
+            res.setHeader("Content-Type", "text/event-stream");
+        }
         res.write(`data: ${JSON.stringify({ error: "Error durante la generación. Intenta de nuevo." })}\n\n`);
         res.write("data: [DONE]\n\n");
         res.end();
@@ -1019,7 +1027,10 @@ export async function registerRoutes(
         const fingerprint = getFingerprint(req);
 
         try {
+            console.log("[chat] Starting chat request", { userId, hasBody: !!req.body });
+
             const { conversationId: clientConversationId, message, useWebSearch, model, useReasoning, imageBase64, chatMode } = chatRequestSchema.parse(req.body);
+            console.log("[chat] Request validated", { conversationId: clientConversationId, model, chatMode });
 
             const currentConversationId = clientConversationId || randomUUID();
             const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
@@ -1040,11 +1051,13 @@ export async function registerRoutes(
             let webSearchContext: string | undefined;
 
             if (isWebSearchIntent) {
+                console.log("[chat] Performing web search");
                 webSearchContext = await searchTavily(message);
             }
 
             const apiKey = process.env.OPENROUTER_API_KEY;
             if (!apiKey) {
+                console.error("[chat] OPENROUTER_API_KEY not configured");
                 return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
             }
 
@@ -1058,7 +1071,13 @@ export async function registerRoutes(
             ];
 
             if (userId) {
-                createUserMessage(userId, currentConversationId, "user", message);
+                try {
+                    createUserMessage(userId, currentConversationId, "user", message);
+                    console.log("[chat] User message created successfully");
+                } catch (msgError) {
+                    console.error("[chat] Error creating user message:", msgError);
+                    throw msgError;
+                }
             } else {
                 await storage.createMessage({
                     id: randomUUID(),
@@ -1068,6 +1087,7 @@ export async function registerRoutes(
                 });
             }
 
+            console.log("[chat] About to stream completion with model:", selectedModel);
             await streamChatCompletion(
                 res,
                 currentConversationId,
@@ -1080,7 +1100,7 @@ export async function registerRoutes(
                 mode
             );
         } catch (error: any) {
-            console.error("Error en /api/chat:", error);
+            console.error("[chat] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
             if (!res.headersSent) {
                 res.status(500).json({ error: "Error interno del servidor al procesar el chat." });
             }
