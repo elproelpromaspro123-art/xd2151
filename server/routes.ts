@@ -436,13 +436,13 @@ async function streamGeminiCompletion(
         }
 
         // Agregar thinking si está soportado (formato correcto para Gemini 2.5)
-         if (useReasoning && modelInfo.supportsReasoning) {
-             const budgetTokens = isPremium ? 10000 : 5000;
-             requestBody.thinkingConfig = {
-                 type: "enabled",
-                 budgetTokens
-             };
-         }
+        if (useReasoning && modelInfo.supportsReasoning) {
+            const budgetTokens = isPremium ? 10000 : 5000;
+            requestBody.generationConfig.thinkingConfig = {
+                thinkingBudget: budgetTokens,
+                includeThoughts: true
+            };
+        }
 
         const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
@@ -856,11 +856,14 @@ async function streamGroqCompletion(
 
         // Agregar razonamiento si el modelo lo soporta
         if (useReasoning && modelInfo.supportsReasoning) {
-            const reasoningBudget = isPremium ? 10000 : 5000;
-            requestBody.thinking = {
-                type: "enabled",
-                budget_tokens: reasoningBudget
-            };
+            // Para GPT-OSS usar reasoning_effort (low, medium, high)
+            // Para otros modelos de Groq usar include_reasoning
+            const modelId = modelInfo.id;
+            if (modelId.includes('gpt-oss')) {
+                requestBody.reasoning_effort = isPremium ? "high" : "medium";
+            } else {
+                requestBody.include_reasoning = true;
+            }
         }
 
         const response = await fetch(GROQ_API_URL, {
