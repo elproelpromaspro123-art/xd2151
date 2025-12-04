@@ -86,15 +86,29 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
 
   const applyTheme = (dark: boolean) => {
     const root = document.documentElement;
-    if (dark) {
-      root.classList.remove("light");
-      root.classList.add("dark");
-      root.style.colorScheme = "dark";
+    
+    // Remove all theme classes
+    root.classList.remove("dark", "light", "roblox-dark", "roblox-light", "general-dark", "general-light");
+    
+    // Add the appropriate theme class
+    if (chatMode === 'roblox') {
+      if (dark) {
+        root.classList.add("roblox-dark");
+        root.style.colorScheme = "dark";
+      } else {
+        root.classList.add("roblox-light");
+        root.style.colorScheme = "light";
+      }
     } else {
-      root.classList.remove("dark");
-      root.classList.add("light");
-      root.style.colorScheme = "light";
+      if (dark) {
+        root.classList.add("general-dark");
+        root.style.colorScheme = "dark";
+      } else {
+        root.classList.add("general-light");
+        root.style.colorScheme = "light";
+      }
     }
+    
     // Force repaint to ensure changes apply
     void root.offsetHeight;
   };

@@ -19,21 +19,11 @@ import {
 } from "@/lib/auth";
 
 function initializeTheme() {
-    const stored = localStorage.getItem("theme");
+    // Se initializará en ChatPage con modo + tono
+    // Por defecto aplicamos dark al inicio
     const root = document.documentElement;
-
-    if (stored === "light") {
-        root.classList.remove("dark");
-        root.classList.add("light");
-        root.style.colorScheme = "light";
-    } else {
-        root.classList.add("dark");
-        root.classList.remove("light");
-        root.style.colorScheme = "dark";
-        if (!stored) {
-            localStorage.setItem("theme", "dark");
-        }
-    }
+    root.classList.add("dark");
+    root.style.colorScheme = "dark";
 }
 
 initializeTheme();

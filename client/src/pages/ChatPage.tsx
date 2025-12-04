@@ -112,20 +112,32 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         }
     });
 
-    // Apply theme based on mode
+    // Apply theme based on mode and tone
     useEffect(() => {
         const settings = getThemeSettings();
         const shouldBeDark = chatMode === 'roblox' ? settings.robloxDark : settings.generalDark;
         const root = document.documentElement;
 
-        if (shouldBeDark) {
-            root.classList.remove("light");
-            root.classList.add("dark");
-            root.style.colorScheme = "dark";
+        // Remove all theme classes
+        root.classList.remove("dark", "light", "roblox-dark", "roblox-light", "general-dark", "general-light");
+
+        // Add the appropriate theme class
+        if (chatMode === 'roblox') {
+            if (shouldBeDark) {
+                root.classList.add("roblox-dark");
+                root.style.colorScheme = "dark";
+            } else {
+                root.classList.add("roblox-light");
+                root.style.colorScheme = "light";
+            }
         } else {
-            root.classList.remove("dark");
-            root.classList.add("light");
-            root.style.colorScheme = "light";
+            if (shouldBeDark) {
+                root.classList.add("general-dark");
+                root.style.colorScheme = "dark";
+            } else {
+                root.classList.add("general-light");
+                root.style.colorScheme = "light";
+            }
         }
 
         // Force repaint to ensure theme changes apply immediately
@@ -139,14 +151,26 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             const shouldBeDark = chatMode === 'roblox' ? settings.robloxDark : settings.generalDark;
             const root = document.documentElement;
 
-            if (shouldBeDark) {
-                root.classList.remove("light");
-                root.classList.add("dark");
-                root.style.colorScheme = "dark";
+            // Remove all theme classes
+            root.classList.remove("dark", "light", "roblox-dark", "roblox-light", "general-dark", "general-light");
+
+            // Add the appropriate theme class
+            if (chatMode === 'roblox') {
+                if (shouldBeDark) {
+                    root.classList.add("roblox-dark");
+                    root.style.colorScheme = "dark";
+                } else {
+                    root.classList.add("roblox-light");
+                    root.style.colorScheme = "light";
+                }
             } else {
-                root.classList.remove("dark");
-                root.classList.add("light");
-                root.style.colorScheme = "light";
+                if (shouldBeDark) {
+                    root.classList.add("general-dark");
+                    root.style.colorScheme = "dark";
+                } else {
+                    root.classList.add("general-light");
+                    root.style.colorScheme = "light";
+                }
             }
 
             // Force repaint

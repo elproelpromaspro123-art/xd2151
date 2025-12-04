@@ -2,12 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   DEFAULT LIGHT MODE (Light grey, clean)
+   ============================================ */
 :root {
-  --button-outline: rgba(0,0,0, .08);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0, 0, 0, 0.08);
+  --badge-outline: rgba(0, 0, 0, 0.05);
   --opaque-button-border-intensity: -9;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .06);
+  --elevate-1: rgba(0, 0, 0, 0.03);
+  --elevate-2: rgba(0, 0, 0, 0.06);
   --background: 0 0% 100%;
   --foreground: 240 10% 10%;
   --border: 240 6% 85%;
@@ -45,7 +48,7 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --radius: .625rem;
+  --radius: 0.625rem;
   --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.08);
   --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.1);
@@ -74,56 +77,59 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* Light mode (General mode default) - Oscuro puro sin blancos */
-.light {
-   --button-outline: rgba(79, 70, 229, 0.1);
-   --badge-outline: rgba(79, 70, 229, 0.05);
-   --opaque-button-border-intensity: -5;
-   --elevate-1: rgba(79, 70, 229, 0.03);
-   --elevate-2: rgba(79, 70, 229, 0.08);
-   --background: 248 35% 10%;
-   --foreground: 248 40% 90%;
-   --border: 248 45% 25%;
-   --card: 248 35% 15%;
-   --card-foreground: 248 40% 90%;
-   --card-border: 248 45% 22%;
-   --sidebar: 248 35% 12%;
-   --sidebar-foreground: 248 40% 90%;
-   --sidebar-border: 248 45% 20%;
-   --sidebar-primary: 250 100% 68%;
-   --sidebar-primary-foreground: 248 35% 10%;
-   --sidebar-accent: 248 45% 25%;
-   --sidebar-accent-foreground: 248 40% 90%;
-   --sidebar-ring: 250 100% 68%;
-   --popover: 248 35% 18%;
-   --popover-foreground: 248 40% 90%;
-   --popover-border: 248 45% 25%;
-   --primary: 250 100% 68%;
-   --primary-foreground: 248 35% 10%;
-   --secondary: 248 45% 25%;
-   --secondary-foreground: 248 40% 90%;
-   --muted: 248 40% 22%;
-   --muted-foreground: 248 30% 65%;
-   --accent: 248 45% 25%;
-   --accent-foreground: 248 40% 90%;
-   --destructive: 0 84% 60%;
-   --destructive-foreground: 0 0% 100%;
-   --input: 248 45% 20%;
-   --ring: 250 100% 68%;
-   --chart-1: 250 100% 70%;
-   --chart-2: 160 60% 55%;
-   --chart-3: 30 80% 65%;
-   --chart-4: 280 65% 70%;
-   --chart-5: 340 75% 65%;
-   --glow-color: 250 100% 68%;
-   --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.35);
-   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.4);
-   --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.45);
-   --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.45);
-   --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.5);
-   --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.55);
-   --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.6);
-   --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.7);
+/* ============================================
+   DARK MODE (Defecto oscuro puro)
+   ============================================ */
+.dark {
+  --button-outline: rgba(255, 255, 255, 0.1);
+  --badge-outline: rgba(255, 255, 255, 0.05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.09);
+  --background: 240 40% 6%;
+  --foreground: 240 10% 94%;
+  --border: 250 40% 22%;
+  --card: 240 40% 12%;
+  --card-foreground: 240 10% 94%;
+  --card-border: 250 40% 20%;
+  --sidebar: 240 40% 9%;
+  --sidebar-foreground: 240 10% 94%;
+  --sidebar-border: 250 40% 18%;
+  --sidebar-primary: 250 100% 68%;
+  --sidebar-primary-foreground: 240 40% 8%;
+  --sidebar-accent: 250 40% 22%;
+  --sidebar-accent-foreground: 240 10% 94%;
+  --sidebar-ring: 250 100% 68%;
+  --popover: 240 40% 14%;
+  --popover-foreground: 240 10% 94%;
+  --popover-border: 250 40% 22%;
+  --primary: 250 100% 68%;
+  --primary-foreground: 240 40% 8%;
+  --secondary: 250 40% 22%;
+  --secondary-foreground: 240 10% 94%;
+  --muted: 250 30% 20%;
+  --muted-foreground: 240 10% 80%;
+  --accent: 250 40% 22%;
+  --accent-foreground: 240 10% 94%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 250 40% 18%;
+  --ring: 250 100% 68%;
+  --chart-1: 250 100% 70%;
+  --chart-2: 160 60% 55%;
+  --chart-3: 30 80% 65%;
+  --chart-4: 280 65% 70%;
+  --chart-5: 340 75% 65%;
+  --glow-color: 250 100% 68%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.3);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.35);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.4);
+  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.45);
+  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.5);
+  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.55);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.6);
+
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(var(--sidebar-accent));
@@ -140,55 +146,269 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-.dark {
-    --button-outline: rgba(255,255,255, .10);
-    --badge-outline: rgba(255,255,255, .05);
-    --opaque-button-border-intensity: 9;
-    --elevate-1: rgba(255,255,255, .04);
-    --elevate-2: rgba(255,255,255, .09);
-    --background: 240 40% 6%;
-    --foreground: 240 10% 94%;
-    --border: 250 40% 22%;
-    --card: 240 40% 12%;
-    --card-foreground: 240 10% 94%;
-    --card-border: 250 40% 20%;
-    --sidebar: 240 40% 9%;
-    --sidebar-foreground: 240 10% 94%;
-    --sidebar-border: 250 40% 18%;
-    --sidebar-primary: 250 100% 68%;
-    --sidebar-primary-foreground: 240 40% 8%;
-    --sidebar-accent: 250 40% 22%;
-    --sidebar-accent-foreground: 240 10% 94%;
-    --sidebar-ring: 250 100% 68%;
-    --popover: 240 40% 14%;
-    --popover-foreground: 240 10% 94%;
-    --popover-border: 250 40% 22%;
-    --primary: 250 100% 68%;
-    --primary-foreground: 240 40% 8%;
-    --secondary: 250 40% 22%;
-    --secondary-foreground: 240 10% 94%;
-    --muted: 250 30% 20%;
-    --muted-foreground: 240 10% 80%;
-    --accent: 250 40% 22%;
-    --accent-foreground: 240 10% 94%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --input: 250 40% 18%;
-    --ring: 250 100% 68%;
-    --chart-1: 250 100% 70%;
-    --chart-2: 160 60% 55%;
-    --chart-3: 30 80% 65%;
-    --chart-4: 280 65% 70%;
-    --chart-5: 340 75% 65%;
-    --glow-color: 250 100% 68%;
-    --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.3);
-    --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.35);
-    --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.4);
-    --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.4);
-    --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.45);
-    --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.5);
-    --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.55);
-    --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.6);
+/* ============================================
+   ROBLOX MODO OSCURO
+   Violeta, azul profundo, morado
+   ============================================ */
+.roblox-dark {
+  --button-outline: rgba(139, 92, 246, 0.1);
+  --badge-outline: rgba(139, 92, 246, 0.05);
+  --opaque-button-border-intensity: 8;
+  --elevate-1: rgba(139, 92, 246, 0.03);
+  --elevate-2: rgba(139, 92, 246, 0.08);
+  --background: 260 30% 8%;
+  --foreground: 260 20% 95%;
+  --border: 260 35% 28%;
+  --card: 260 30% 14%;
+  --card-foreground: 260 20% 95%;
+  --card-border: 260 35% 25%;
+  --sidebar: 260 30% 10%;
+  --sidebar-foreground: 260 20% 95%;
+  --sidebar-border: 260 35% 22%;
+  --sidebar-primary: 280 85% 55%;
+  --sidebar-primary-foreground: 260 30% 8%;
+  --sidebar-accent: 260 35% 28%;
+  --sidebar-accent-foreground: 260 20% 95%;
+  --sidebar-ring: 280 85% 55%;
+  --popover: 260 30% 16%;
+  --popover-foreground: 260 20% 95%;
+  --popover-border: 260 35% 28%;
+  --primary: 280 85% 55%;
+  --primary-foreground: 260 30% 8%;
+  --secondary: 260 35% 28%;
+  --secondary-foreground: 260 20% 95%;
+  --muted: 260 30% 22%;
+  --muted-foreground: 260 15% 70%;
+  --accent: 280 85% 55%;
+  --accent-foreground: 260 20% 95%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 260 35% 22%;
+  --ring: 280 85% 55%;
+  --chart-1: 280 85% 60%;
+  --chart-2: 260 70% 55%;
+  --chart-3: 240 80% 60%;
+  --chart-4: 200 75% 60%;
+  --chart-5: 320 80% 60%;
+  --glow-color: 280 85% 55%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.35);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.4);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.45);
+  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.45);
+  --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.5);
+  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.55);
+  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.6);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.7);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ============================================
+   ROBLOX MODO CLARO
+   Blanco/Gris claro con acentos en violeta
+   ============================================ */
+.roblox-light {
+  --button-outline: rgba(139, 92, 246, 0.12);
+  --badge-outline: rgba(139, 92, 246, 0.06);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(139, 92, 246, 0.04);
+  --elevate-2: rgba(139, 92, 246, 0.1);
+  --background: 0 0% 98%;
+  --foreground: 260 20% 15%;
+  --border: 260 30% 88%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 20% 15%;
+  --card-border: 260 30% 92%;
+  --sidebar: 260 20% 96%;
+  --sidebar-foreground: 260 20% 15%;
+  --sidebar-border: 260 30% 90%;
+  --sidebar-primary: 280 85% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 260 30% 88%;
+  --sidebar-accent-foreground: 260 20% 15%;
+  --sidebar-ring: 280 85% 55%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 20% 15%;
+  --popover-border: 260 30% 90%;
+  --primary: 280 85% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 260 30% 88%;
+  --secondary-foreground: 260 20% 15%;
+  --muted: 260 20% 92%;
+  --muted-foreground: 260 15% 45%;
+  --accent: 260 30% 88%;
+  --accent-foreground: 260 20% 15%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 260 30% 90%;
+  --ring: 280 85% 55%;
+  --chart-1: 280 85% 60%;
+  --chart-2: 260 70% 55%;
+  --chart-3: 240 80% 60%;
+  --chart-4: 200 75% 60%;
+  --chart-5: 320 80% 60%;
+  --glow-color: 280 85% 55%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.08);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.1);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.12);
+  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.12);
+  --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.14);
+  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.16);
+  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.18);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.2);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ============================================
+   GENERAL MODO OSCURO
+   Azul profundo, índigo, tonos fríos
+   ============================================ */
+.general-dark {
+  --button-outline: rgba(79, 70, 229, 0.1);
+  --badge-outline: rgba(79, 70, 229, 0.05);
+  --opaque-button-border-intensity: 8;
+  --elevate-1: rgba(79, 70, 229, 0.03);
+  --elevate-2: rgba(79, 70, 229, 0.08);
+  --background: 240 35% 7%;
+  --foreground: 240 15% 93%;
+  --border: 240 40% 26%;
+  --card: 240 35% 13%;
+  --card-foreground: 240 15% 93%;
+  --card-border: 240 40% 24%;
+  --sidebar: 240 35% 10%;
+  --sidebar-foreground: 240 15% 93%;
+  --sidebar-border: 240 40% 21%;
+  --sidebar-primary: 250 100% 68%;
+  --sidebar-primary-foreground: 240 35% 7%;
+  --sidebar-accent: 240 40% 26%;
+  --sidebar-accent-foreground: 240 15% 93%;
+  --sidebar-ring: 250 100% 68%;
+  --popover: 240 35% 15%;
+  --popover-foreground: 240 15% 93%;
+  --popover-border: 240 40% 26%;
+  --primary: 250 100% 68%;
+  --primary-foreground: 240 35% 7%;
+  --secondary: 240 40% 26%;
+  --secondary-foreground: 240 15% 93%;
+  --muted: 240 35% 21%;
+  --muted-foreground: 240 12% 75%;
+  --accent: 240 40% 26%;
+  --accent-foreground: 240 15% 93%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 240 40% 19%;
+  --ring: 250 100% 68%;
+  --chart-1: 250 100% 70%;
+  --chart-2: 160 60% 55%;
+  --chart-3: 30 80% 65%;
+  --chart-4: 280 65% 70%;
+  --chart-5: 340 75% 65%;
+  --glow-color: 250 100% 68%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.32);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.37);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.42);
+  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.42);
+  --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.47);
+  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.52);
+  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.57);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.65);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ============================================
+   GENERAL MODO CLARO
+   Blanco/Gris claro con acentos en azul índigo
+   ============================================ */
+.general-light {
+  --button-outline: rgba(79, 70, 229, 0.12);
+  --badge-outline: rgba(79, 70, 229, 0.06);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(79, 70, 229, 0.04);
+  --elevate-2: rgba(79, 70, 229, 0.1);
+  --background: 0 0% 99%;
+  --foreground: 240 15% 12%;
+  --border: 240 30% 87%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 15% 12%;
+  --card-border: 240 30% 91%;
+  --sidebar: 240 15% 96%;
+  --sidebar-foreground: 240 15% 12%;
+  --sidebar-border: 240 30% 89%;
+  --sidebar-primary: 250 100% 68%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 30% 87%;
+  --sidebar-accent-foreground: 240 15% 12%;
+  --sidebar-ring: 250 100% 68%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 15% 12%;
+  --popover-border: 240 30% 89%;
+  --primary: 250 100% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 30% 87%;
+  --secondary-foreground: 240 15% 12%;
+  --muted: 240 15% 91%;
+  --muted-foreground: 240 12% 42%;
+  --accent: 240 30% 87%;
+  --accent-foreground: 240 15% 12%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 240 30% 89%;
+  --ring: 250 100% 68%;
+  --chart-1: 250 100% 70%;
+  --chart-2: 160 60% 55%;
+  --chart-3: 30 80% 65%;
+  --chart-4: 280 65% 70%;
+  --chart-5: 340 75% 65%;
+  --glow-color: 250 100% 68%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.08);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.1);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.12);
+  --shadow: 0px 4px 6px -1px hsl(0 0% 0% / 0.12);
+  --shadow-md: 0px 6px 10px -2px hsl(0 0% 0% / 0.14);
+  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.16);
+  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.18);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.2);
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -232,16 +452,6 @@
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
   }
-
-  /* Scrollbar personalizado para modo General */
-  body.general-mode::-webkit-scrollbar-thumb {
-    background: rgb(199 210 254 / 0.4);
-    border-radius: 3px;
-  }
-
-  body.general-mode::-webkit-scrollbar-thumb:hover {
-    background: rgb(199 210 254 / 0.6);
-  }
 }
 
 @layer utilities {
@@ -255,8 +465,10 @@
     pointer-events: none;
   }
 
-  .no-default-hover-elevate {}
-  .no-default-active-elevate {}
+  .no-default-hover-elevate {
+  }
+  .no-default-active-elevate {
+  }
 
   .toggle-elevate::before,
   .toggle-elevate-2::before {
@@ -339,9 +551,7 @@
     );
     background-size: 300% 100%;
     animation: border-glow 2.5s linear infinite;
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
@@ -535,11 +745,14 @@
   .prose-chat code:not(pre code) {
     @apply px-1.5 py-0.5 rounded text-sm font-mono;
   }
-  
-  .light .prose-chat code:not(pre code) {
+
+  .roblox-light .prose-chat code:not(pre code),
+  .general-light .prose-chat code:not(pre code) {
     @apply bg-slate-100 text-slate-900;
   }
-  
+
+  .roblox-dark .prose-chat code:not(pre code),
+  .general-dark .prose-chat code:not(pre code),
   .dark .prose-chat code:not(pre code) {
     @apply bg-zinc-700 text-zinc-100;
   }
@@ -547,15 +760,18 @@
   .prose-chat pre {
     @apply my-3 rounded-lg overflow-hidden;
   }
-  
-  .light .prose-chat pre {
+
+  .roblox-light .prose-chat pre,
+  .general-light .prose-chat pre {
     @apply bg-slate-50 border border-slate-200;
   }
-  
+
+  .roblox-dark .prose-chat pre,
+  .general-dark .prose-chat pre,
   .dark .prose-chat pre {
     @apply bg-zinc-800 border border-zinc-700;
   }
-  
+
   .prose-chat pre code {
     @apply text-foreground;
   }
@@ -583,63 +799,5 @@
 
   .prose-chat th {
     @apply bg-muted font-semibold;
-  }
-
-  .general-typing span {
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  }
-
-  .animated-border-general {
-    position: relative;
-    overflow: visible;
-    border: 1px solid rgb(199 210 254 / 0.3);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .animated-border-general::before {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    padding: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 20%,
-      rgb(79 70 229 / 0.9) 40%,
-      rgb(99 102 241 / 1) 50%,
-      rgb(79 70 229 / 0.9) 60%,
-      transparent 80%,
-      transparent 100%
-    );
-    background-size: 300% 100%;
-    animation: border-glow-general 2.5s linear infinite;
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    opacity: 0.4;
-    transition: opacity 0.2s ease, padding 0.2s ease;
-  }
-
-  .animated-border-general:hover::before {
-    opacity: 0.7;
-    padding: 2.5px;
-  }
-
-  .animated-border-general:hover {
-    border-color: rgb(199 210 254 / 0.5);
-    box-shadow: 0 0 15px rgb(79 70 229 / 0.1);
-  }
-
-  @keyframes border-glow-general {
-    0% {
-      background-position: 300% 0;
-    }
-    100% {
-      background-position: -300% 0;
-    }
   }
 }
