@@ -87,7 +87,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const [isStreaming, setIsStreaming] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<string>("glm-4.5-air");
+    const [selectedModel, setSelectedModel] = useState<string>("qwen-coder");
     const [useReasoning, setUseReasoning] = useState(false);
     const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
     const [currentModelName, setCurrentModelName] = useState<string>("");
@@ -323,76 +323,101 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             const decoder = new TextDecoder();
             let fullMessage = "";
             let fullReasoning = "";
+            let hasError = false;
+            let lastError = "";
+            let retryCount = 0;
+            const maxRetries = 3;
 
             while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                try {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split("\n");
+                    retryCount = 0; // Reset on successful read
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split("\n");
 
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const data = line.slice(6);
-                        if (data === "[DONE]") continue;
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const data = line.slice(6).trim();
+                            if (data === "[DONE]") continue;
+                            if (!data) continue;
 
-                        try {
-                            const parsed = JSON.parse(data);
+                            try {
+                                const parsed = JSON.parse(data);
 
-                            if (parsed.conversationId && !conversationId) {
-                                conversationId = parsed.conversationId;
-                                setCurrentConversationId(conversationId);
-                                queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-                            }
+                                if (parsed.conversationId && !conversationId) {
+                                    conversationId = parsed.conversationId;
+                                    setCurrentConversationId(conversationId);
+                                    queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+                                }
 
-                            if (parsed.requestId) {
-                                setCurrentRequestId(parsed.requestId);
-                            }
+                                if (parsed.requestId) {
+                                    setCurrentRequestId(parsed.requestId);
+                                }
 
-                            if (parsed.webSearchUsed) {
-                                setWebSearchActive(true);
-                            }
+                                if (parsed.webSearchUsed) {
+                                    setWebSearchActive(true);
+                                }
 
-                            if (parsed.cancelled) {
-                                setIsStreaming(false);
-                                return;
-                            }
+                                if (parsed.cancelled) {
+                                    setIsStreaming(false);
+                                    return;
+                                }
 
-                            if (parsed.progress) {
-                                setStreamProgress(parsed.progress);
-                            }
+                                if (parsed.progress) {
+                                    setStreamProgress(parsed.progress);
+                                }
 
-                            if (parsed.reasoning) {
-                                fullReasoning += parsed.reasoning;
-                                setStreamingReasoning(fullReasoning);
-                            }
+                                if (parsed.reasoning) {
+                                    fullReasoning += parsed.reasoning;
+                                    setStreamingReasoning(fullReasoning);
+                                }
 
-                            if (parsed.content) {
-                                fullMessage += parsed.content;
-                                setStreamingMessage(fullMessage);
+                                if (parsed.content) {
+                                    fullMessage += parsed.content;
+                                    setStreamingMessage(fullMessage);
 
-                                const codeBlock = extractLatestCodeBlock(fullMessage);
-                                if (codeBlock && codeBlock.code.length > 50) {
-                                    setArtifactState({
-                                        isOpen: true,
-                                        content: codeBlock.code,
-                                        language: codeBlock.language,
-                                        title: "Generando código..."
+                                    const codeBlock = extractLatestCodeBlock(fullMessage);
+                                    if (codeBlock && codeBlock.code.length > 50) {
+                                        setArtifactState({
+                                            isOpen: true,
+                                            content: codeBlock.code,
+                                            language: codeBlock.language,
+                                            title: "Generando código..."
+                                        });
+                                    }
+                                }
+
+                                if (parsed.error) {
+                                    hasError = true;
+                                    lastError = parsed.error;
+                                    toast({
+                                        title: parsed.code === "MESSAGE_LIMIT_REACHED" || parsed.code === "PREMIUM_REQUIRED"
+                                            ? "Límite alcanzado"
+                                            : "Error",
+                                        description: parsed.error,
+                                        variant: "destructive",
                                     });
                                 }
+                            } catch (parseErr) {
+                                console.debug("Parse error (non-critical):", parseErr);
                             }
-
-                            if (parsed.error) {
-                                toast({
-                                    title: parsed.code === "MESSAGE_LIMIT_REACHED" || parsed.code === "PREMIUM_REQUIRED"
-                                        ? "Límite alcanzado"
-                                        : "Error",
-                                    description: parsed.error,
-                                    variant: "destructive",
-                                });
-                            }
-                        } catch (e) {
                         }
+                    }
+                } catch (readErr: any) {
+                    if (readErr?.name === 'AbortError') {
+                        setIsStreaming(false);
+                        return;
+                    }
+                    
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        console.warn(`Read error, retry ${retryCount}/${maxRetries}:`, readErr);
+                        await new Promise(r => setTimeout(r, 1000 * retryCount));
+                        continue;
+                    } else {
+                        throw readErr;
                     }
                 }
             }

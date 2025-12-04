@@ -23,19 +23,21 @@ function ensureDataDir(): void {
     }
 }
 
-function getWeekStartDate(): string {
+function getResetPeriodStartDate(): string {
+    // Calcula el inicio de un período de 3 días
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diff = now.getDate() - dayOfWeek;
-    const weekStart = new Date(now.setDate(diff));
-    weekStart.setHours(0, 0, 0, 0);
-    return weekStart.toISOString();
+    const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
+    const periodIndex = Math.floor(daysSinceEpoch / 3);
+    const periodStartMs = periodIndex * 3 * 24 * 60 * 60 * 1000;
+    const periodStart = new Date(periodStartMs);
+    periodStart.setHours(0, 0, 0, 0);
+    return periodStart.toISOString();
 }
 
 function shouldResetUsage(weekStartDate: string): boolean {
     const storedStart = new Date(weekStartDate);
-    const currentWeekStart = new Date(getWeekStartDate());
-    return currentWeekStart > storedStart;
+    const currentPeriodStart = new Date(getResetPeriodStartDate());
+    return currentPeriodStart > storedStart;
 }
 
 function loadUsageData(): UsageData {
@@ -66,7 +68,7 @@ function getDefaultUsage(): UserUsage {
         robloxMessageCount: 0,
         generalMessageCount: 0,
         webSearchCount: 0,
-        weekStartDate: getWeekStartDate(),
+        weekStartDate: getResetPeriodStartDate(),
         lastUpdated: new Date().toISOString(),
     };
 }

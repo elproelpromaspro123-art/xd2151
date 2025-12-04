@@ -50,21 +50,21 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Configuración de modelos con tokens específicos para FREE y PREMIUM
 const AI_MODELS = {
-    "glm-4.5-air": {
-        id: "z-ai/glm-4.5-air:free",
-        name: "GLM 4.5 Air",
-        description: "Modelo versátil con razonamiento - Texto avanzado",
+    "qwen-coder": {
+        id: "qwen/qwen3-coder:free",
+        name: "Qwen 3 Coder",
+        description: "Modelo especializado en programación - 262k contexto/output",
         supportsImages: false,
-        supportsReasoning: true,
+        supportsReasoning: false,
         isPremiumOnly: false,
-        category: "general" as const,
-        provider: "chutes/bf16",
-        fallbackProvider: "z-ai" as string | null,
-        // Free: 80k context, 100k output | Premium: 131k context, 131k output (con chutes)
-        freeContextTokens: 80000,
-        freeOutputTokens: 100000,
-        premiumContextTokens: 124000, // 95% de 131k
-        premiumOutputTokens: 124000,
+        category: "programming" as const,
+        provider: "venice/beta",
+        fallbackProvider: null as string | null,
+        // Free: 70% de 262k = 183k | Premium: 95% de 262k = 249k
+        freeContextTokens: 183000,
+        freeOutputTokens: 183000,
+        premiumContextTokens: 249000,
+        premiumOutputTokens: 249000,
     },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
@@ -81,25 +81,10 @@ const AI_MODELS = {
         premiumContextTokens: 155000, // 95% de 163.8k
         premiumOutputTokens: 155000,
     },
-    "nemotron-nvidia": {
-        id: "nvidia/nemotron-nano-12b-v2-vl:free",
-        name: "Nemotron NVIDIA VL",
-        description: "Modelo NVIDIA con visión - Texto e imágenes + Razonamiento",
-        supportsImages: true,
-        supportsReasoning: true,
-        isPremiumOnly: true,
-        category: "general" as const,
-        provider: "nvidia",
-        fallbackProvider: null as string | null,
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
-        premiumContextTokens: 121000, // 95% de 128k
-        premiumOutputTokens: 121000,
-    },
     "gemma-3-27b": {
         id: "google/gemma-3-27b-it:free",
         name: "Gemma 3 27B",
-        description: "Modelo Google premium con visión y alto rendimiento",
+        description: "Modelo Google con visión y alto rendimiento",
         supportsImages: true,
         supportsReasoning: false,
         isPremiumOnly: true,
@@ -255,37 +240,43 @@ async function searchTavily(query: string): Promise<string> {
             body: JSON.stringify({
                 api_key: apiKey,
                 query: query,
-                search_depth: "basic",
+                search_depth: "advanced",
                 include_answer: true,
-                include_raw_content: false,
-                max_results: 5,
+                include_raw_content: true,
+                max_results: 7,
+                include_domains: [],
+                exclude_domains: [],
+                topic: "general"
             }),
         });
 
         if (!response.ok) {
-            console.error("Tavily API error:", await response.text());
-            return "Error al realizar la búsqueda web";
+            const errorText = await response.text();
+            console.error("Tavily API error:", errorText);
+            return "Error al realizar la búsqueda web. Intenta de nuevo.";
         }
 
         const data = await response.json();
 
-        let searchResults = "## Resultados de búsqueda web:\n\n";
+        let searchResults = "## Resultados de búsqueda web reciente:\n\n";
 
         if (data.answer) {
-            searchResults += `**Resumen:** ${data.answer}\n\n`;
+            searchResults += `**Resumen actualizado:** ${data.answer}\n\n`;
         }
 
         if (data.results && data.results.length > 0) {
-            searchResults += "**Fuentes:**\n";
-            for (const result of data.results.slice(0, 3)) {
-                searchResults += `- [${result.title}](${result.url}): ${result.content?.slice(0, 200)}...\n`;
+            searchResults += "**Fuentes (información más reciente):**\n";
+            for (const result of data.results.slice(0, 5)) {
+                const content = result.raw_content || result.content || "";
+                const preview = content.slice(0, 250);
+                searchResults += `- [${result.title}](${result.url}) - Acceso: ${new Date(result.published_date || Date.now()).toLocaleDateString('es-ES')}\n  ${preview}${preview.length >= 250 ? '...' : ''}\n`;
             }
         }
 
         return searchResults;
     } catch (error) {
         console.error("Tavily search error:", error);
-        return "Error al realizar la búsqueda web";
+        return "Error al realizar la búsqueda web. Por favor intenta de nuevo.";
     }
 }
 
@@ -301,7 +292,7 @@ async function streamChatCompletion(
     userId: string | null,
     chatHistory: Array<{ role: string; content: string | MessageContent[] }>,
     apiKey: string,
-    model: ModelKey = "glm-4.5-air",
+    model: ModelKey = "qwen-coder",
     useReasoning: boolean = false,
     webSearchContext?: string,
     chatMode: "roblox" | "general" = "roblox",
@@ -372,8 +363,18 @@ async function streamChatCompletion(
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("OpenRouter API error:", errorText);
-            res.write(`data: ${JSON.stringify({ error: "Error al conectar con la IA. Intenta de nuevo." })}\n\n`);
+            console.error("OpenRouter API error:", response.status, errorText);
+            
+            let errorMessage = "Error al conectar con la IA. Intenta de nuevo.";
+            if (response.status === 429) {
+                errorMessage = "Limite de tasa alcanzado. Espera un momento e intenta de nuevo.";
+            } else if (response.status === 503) {
+                errorMessage = "El servicio de IA no está disponible en este momento. Intenta de nuevo más tarde.";
+            } else if (response.status === 401 || response.status === 403) {
+                errorMessage = "Error de autenticación con el servicio de IA. Por favor contacta al administrador.";
+            }
+            
+            res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
             res.write("data: [DONE]\n\n");
             res.end();
             return;
@@ -465,7 +466,15 @@ async function streamChatCompletion(
         if (!res.headersSent) {
             res.setHeader("Content-Type", "text/event-stream");
         }
-        res.write(`data: ${JSON.stringify({ error: "Error durante la generación. Intenta de nuevo." })}\n\n`);
+        
+        let errorMessage = "Error durante la generación. Intenta de nuevo.";
+        if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
+            errorMessage = "La solicitud tardó demasiado. Intenta de nuevo con un mensaje más corto.";
+        } else if (error?.message?.includes('network') || error?.code === 'ECONNREFUSED') {
+            errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.";
+        }
+        
+        res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
         res.write("data: [DONE]\n\n");
         res.end();
     } finally {
@@ -1085,14 +1094,14 @@ export function registerRoutes(
                 const canSend = canSendMessage(userId, mode);
                 if (!canSend) {
                     return res.status(429).json({ 
-                        error: `Has alcanzado el límite de mensajes para el modo ${mode === 'roblox' ? 'Roblox' : 'General'}. Espera al próximo reinicio semanal.`,
+                        error: `Has alcanzado el límite de mensajes para el modo ${mode === 'roblox' ? 'Roblox' : 'General'}. Los límites se reinician cada 3 días.`,
                         code: "MESSAGE_LIMIT_REACHED"
                     });
                 }
             }
 
             let currentConversationId = clientConversationId;
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "glm-4.5-air";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
 
             // Verificar si el modelo requiere premium
             if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
@@ -1169,19 +1178,21 @@ export function registerRoutes(
             // Agregar mensaje actual
             let currentMessageContent: string | MessageContent[] = message;
             if (imageBase64 && AI_MODELS[selectedModel]?.supportsImages) {
-                currentMessageContent = [
-                    { type: "text", text: message },
-                    { type: "image_url", image_url: { url: imageBase64 } }
-                ];
+                // Validar que la imagen sea un data URL válido
+                if (imageBase64.startsWith('data:image/')) {
+                    currentMessageContent = [
+                        { type: "text", text: message || "¿Qué ves en esta imagen?" },
+                        { type: "image_url", image_url: { url: imageBase64 } }
+                    ];
+                } else {
+                    console.warn("[chat] Imagen inválida, enviando solo texto");
+                }
             }
             chatHistory.push({ role: "user", content: currentMessageContent });
 
             // Guardar mensaje del usuario
-            const contentToSave = imageBase64 
-                ? JSON.stringify([
-                    { type: "text", text: message },
-                    { type: "image_url", image_url: { url: imageBase64 } }
-                ])
+            const contentToSave = imageBase64 && typeof currentMessageContent !== 'string'
+                ? JSON.stringify(currentMessageContent)
                 : message;
             createUserMessage(userId, currentConversationId!, "user", contentToSave);
 
@@ -1250,12 +1261,12 @@ export function registerRoutes(
             res.setHeader("X-Accel-Buffering", "no");
             res.setHeader("X-Request-Id", requestId);
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "glm-4.5-air";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
             const isPremium = user.isPremium;
 
-            // Obtener historial para contexto
-            const existingMessages = await getUserMessages(userId, conversationId);
+             // Obtener historial para contexto
+             const existingMessages = await getUserMessages(userId, conversationId);
             const chatHistory: Array<{ role: string; content: string | MessageContent[] }> = [];
             
             const recentMessages = existingMessages.slice(-20);

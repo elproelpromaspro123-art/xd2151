@@ -87,16 +87,16 @@ export const MessageBubble = memo(function MessageBubble({
     
     return (
       <div className={cn(
-        "absolute -top-8 right-0 flex items-center gap-0.5 px-1 py-0.5 rounded-lg transition-all duration-200",
+        "absolute -bottom-8 flex items-center gap-0.5 px-1 py-0.5 rounded-lg transition-all duration-200",
         isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none",
-        "bg-background/90 border border-border shadow-sm"
+        "bg-card/95 border border-card-border shadow-md backdrop-blur-sm"
       )}>
         <Button
           variant="ghost"
           size="icon"
           onClick={handleCopy}
           className={cn(
-            "h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
+            "h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           )}
           title="Copiar"
         >
@@ -109,7 +109,7 @@ export const MessageBubble = memo(function MessageBubble({
             size="icon"
             onClick={handleStartEdit}
             className={cn(
-              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             )}
             title="Editar y reenviar"
           >
@@ -117,15 +117,15 @@ export const MessageBubble = memo(function MessageBubble({
           </Button>
         )}
 
-        {onRegenerate && (
+        {!isUser && onRegenerate && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onRegenerate}
             className={cn(
-              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              "h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             )}
-            title={isUser ? "Regenerar desde aquí" : "Regenerar respuesta"}
+            title="Regenerar respuesta"
           >
             <RefreshCw className="h-3 w-3" />
           </Button>

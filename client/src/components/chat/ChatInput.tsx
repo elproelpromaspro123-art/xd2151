@@ -237,7 +237,11 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className="w-full resize-none bg-transparent px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] text-foreground placeholder:text-muted-foreground"
+                        className={`w-full resize-none px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] transition-colors ${
+                            chatMode === 'general'
+                                ? 'bg-transparent text-slate-900 placeholder:text-slate-500'
+                                : 'bg-transparent text-white placeholder:text-zinc-400'
+                        }`}
                     />
 
                     {/* Action buttons */}
@@ -318,7 +322,7 @@ export function ChatInput({
                                     <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-72">
+                            <DropdownMenuContent align="start" className="w-80">
                                 {freeModels.length > 0 && (
                                     <>
                                         <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -339,8 +343,13 @@ export function ChatInput({
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className="font-medium text-sm">{model.name}</span>
-                                                    <div className="ml-auto flex items-center gap-1">
+                                                    <span className="font-medium text-sm flex-1">{model.name}</span>
+                                                    <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                        {model.key === "qwen-coder" && (
+                                                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                70%
+                                                            </span>
+                                                        )}
                                                         {model.supportsImages && (
                                                             <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
                                                                 IMG
@@ -380,8 +389,13 @@ export function ChatInput({
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className="font-medium text-sm">{model.name}</span>
-                                                    <div className="ml-auto flex items-center gap-1">
+                                                    <span className="font-medium text-sm flex-1">{model.name}</span>
+                                                    <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                        {model.key === "qwen-coder" && (
+                                                            <span className="px-2 py-0.5 bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                95%
+                                                            </span>
+                                                        )}
                                                         {model.supportsImages && (
                                                             <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
                                                                 IMG
