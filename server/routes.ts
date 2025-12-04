@@ -115,100 +115,21 @@ function detectWebSearchIntent(message: string): boolean {
     return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
-const ROBLOX_SYSTEM_PROMPT = `Eres Roblox UI Designer Pro, un experto en diseño de interfaces UI/UX High-End para Roblox Studio. Tu nivel es "Top Tier", especializado en crear experiencias visuales artísticas y profesionales.
-Tu objetivo es generar scripts de Luau EXTREMADAMENTE COMPLETOS, LARGOS y DETALLADOS. No escatimes en líneas de código.
+const ROBLOX_SYSTEM_PROMPT = `Eres un asistente de Roblox. Ayuda al usuario con preguntas sobre Roblox, Lua/Luau, scripting y desarrollo en general.`;
 
-## 🏆 IDENTIDAD
-- **Nombre:** Roblox UI Designer Pro
-- **Especialidad:** UI/UX High-End, Animaciones fluidas (Tweens), Estructura Modular, Scripting Luau Avanzado.
-- **Personalidad:** Serio, directo, profesional, pero amigable. Experto absoluto.
-
-## ⚡ REGLAS DE ORO (STRICT)
-1.  **CÓDIGO MASIVO Y COMPLETO:** Cuando el usuario pida una GUI o script, genera TODO el código necesario en un solo bloque (o los necesarios). Incluye TODOS los estilos, propiedades, animaciones, efectos y lógica.
-    - *Ejemplo:* Si piden un menú, incluye botones, efectos hover, transiciones, bordes redondeados, sombras, colores modernos, estructura de carpetas virtual en el script, etc.
-    - **NO** uses placeholders como "aquí va tu lógica" o "...". Escribe la lógica completa.
-2.  **SOLO LO SOLICITADO (PERO COMPLETO):** No inventes features que no se pidieron (ej. no hagas un sistema de admin si pidieron un login), pero haz el login MÁS COMPLETO y HERMOSO posible.
-3.  **CÓDIGO 100% FUNCIONAL:** El código debe ser "Copy & Paste" y funcionar inmediatamente en un LocalScript.
-4.  **DISEÑO UI/UX DE ÉLITE:**
-    - Usa "UDim2.new" para todo (Scale).
-    - Implementa \`UICorner\`, \`UIStroke\`, \`UIGradient\` para estética moderna.
-    - Usa \`TweenService\` para animaciones de entrada/salida y hover.
-    - Colores coherentes y profesionales (temas oscuros/azules modernos).
-
-## 📝 ESTÁNDARES DE CÓDIGO
-- **Sintaxis:** Luau estricto.
-- **Servicios:** Usa \`game:GetService(\"ServiceName\")\`.
-- **Estructura:**
-    - Define constantes de configuración al inicio (Colores, Tamaños).
-    - Crea las instancias (\`Instance.new\`) de forma ordenada.
-    - Anida correctamente (\`Parent\`).
-    - Conecta eventos al final.
-- **Comentarios:** Explica brevemente las secciones clave.
-
-## 🧠 PROCESO DE PENSAMIENTO
-1.  Analiza los requisitos del usuario.
-2.  Planifica una estructura UI jerárquica completa.
-3.  Escribe el código maximizando la calidad visual y funcional. ¡Hazlo largo y detallado!
-4.  Si es una GUI, asegúrate de que se cree en \`PlayerGui\`.
-
-## 🚫 LÍMITES
-- NO scripts maliciosos.
-- NO contenido NSFW.`;
-
-const GENERAL_SYSTEM_PROMPT = `Eres Asistente Pro, una IA inteligente, seria pero amigable. Tu objetivo es ser útil y directo, sin rodeos innecesarios.
-
-## 🌟 IDENTIDAD
-- **Nombre:** Asistente Pro
-- **Personalidad:** Profesional, serio, amigable y conciso.
-- **Misión:** Ayudar al usuario de forma eficiente.
-
-## ⚡ REGLAS DE ORO (STRICT)
-1.  **SOLO LO SOLICITADO:** Entrega exactamente lo que el usuario pide. No asumas ni agregues cosas no solicitadas.
-2.  **CÓDIGO COMPLETO:** Si se pide código, debe ser 100% funcional y completo.
-3.  **DIRECTO AL GRANO:** Evita introducciones largas o despedidas innecesarias.
-
-## 🚀 CAPACIDADES
-- **Programación:** Código limpio en cualquier lenguaje.
-- **Análisis:** Respuestas lógicas y fundamentadas.
-- **Búsqueda Web:** Solo si es necesario para información actual.
-
-## 🛡️ PRINCIPIOS
-- Honestidad y Seguridad ante todo.
-- Respeto absoluto por lo que pide el usuario.`;
+const GENERAL_SYSTEM_PROMPT = `Eres un asistente general. Ayuda al usuario con cualquier pregunta que tenga.`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
     return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
 }
 
-const ETHICAL_REJECTION_KEYWORDS = [
-    "hack", "exploit", "bypass", "steal", "scam", "cheat",
-    "adult", "nsfw", "violence", "gore", "drugs",
-    "malware", "virus", "ddos", "crash server",
-    "free robux", "robux generator", "account hack",
-    "password", "credential", "phishing", "keylogger",
-    "injection", "xss", "sql injection", "remote access"
-];
-
-const ROBLOX_ETHICAL_REJECTION_MESSAGE = "Lo siento, no puedo ayudar con esa solicitud. Mi especialidad es únicamente el diseño de interfaces UI/UX para Roblox Studio. Por favor, describe el tipo de GUI que te gustaría crear y estaré encantado de ayudarte con código Luau profesional.";
-
-const GENERAL_ETHICAL_REJECTION_MESSAGE = "Lo siento, no puedo ayudar con esa solicitud ya que va en contra de mis principios éticos. Estoy aquí para ayudarte con preguntas constructivas y positivas. ¿Hay algo más en lo que pueda ayudarte?";
-
-const GENERAL_MODE_BLOCKED_KEYWORDS = [
-    "hack", "exploit", "steal", "scam", "cheat",
-    "adult", "nsfw", "violence", "gore", "drugs",
-    "illegal", "bypass security", "injection", "xss", "sql injection"
-];
-
-function containsUnethicalContent(message: string, mode: "roblox" | "general" = "roblox"): boolean {
-    const lowerMessage = message.toLowerCase();
-    if (mode === "general") {
-        return GENERAL_MODE_BLOCKED_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
-    }
-    return ETHICAL_REJECTION_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
+// Ethical content checks disabled - allowing free responses
+function containsUnethicalContent(): boolean {
+    return false;
 }
 
-function getEthicalRejectionMessage(mode: "roblox" | "general" = "roblox"): string {
-    return mode === "general" ? GENERAL_ETHICAL_REJECTION_MESSAGE : ROBLOX_ETHICAL_REJECTION_MESSAGE;
+function getEthicalRejectionMessage(): string {
+    return "";
 }
 
 function getVisitorId(req: Request): string {
@@ -328,52 +249,8 @@ async function searchTavily(query: string): Promise<string> {
     }
 }
 
-function sanitizeAssistantContent(content: string, mode: "roblox" | "general" = "roblox"): { sanitized: string; isClean: boolean } {
-    if (containsUnethicalContent(content, mode)) {
-        return { sanitized: getEthicalRejectionMessage(mode), isClean: false };
-    }
+function sanitizeAssistantContent(content: string): { sanitized: string; isClean: boolean } {
     return { sanitized: content, isClean: true };
-}
-
-async function sendEthicalRejection(
-    res: Response,
-    conversationId: string,
-    userId: string | null,
-    userMessage?: string,
-    mode: "roblox" | "general" = "roblox"
-): Promise<void> {
-    const rejectionMessage = getEthicalRejectionMessage(mode);
-
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-
-    if (userMessage && userId) {
-        createUserMessage(userId, conversationId, "user", userMessage);
-    } else if (userMessage) {
-        await storage.createMessage({
-            id: randomUUID(),
-            conversationId,
-            role: "user",
-            content: userMessage,
-        });
-    }
-
-    if (userId) {
-        createUserMessage(userId, conversationId, "assistant", rejectionMessage);
-    } else {
-        await storage.createMessage({
-            id: randomUUID(),
-            conversationId,
-            role: "assistant",
-            content: rejectionMessage,
-        });
-    }
-
-    res.write(`data: ${JSON.stringify({ content: rejectionMessage })}\n\n`);
-    res.write("data: [DONE]\n\n");
-    res.end();
 }
 
 interface MessageContent {
