@@ -456,81 +456,84 @@ async function streamGeminiCompletion(
         let firstChunk = true;
 
         let buffer = "";
+        let braceDepth = 0;
+        let currentObject = "";
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
-            const lines = buffer.split("\n");
 
-            // Keep the last incomplete line in the buffer
-            buffer = lines[lines.length - 1];
+            // Process complete JSON objects from buffer
+            for (let i = 0; i < buffer.length; i++) {
+                const char = buffer[i];
+                currentObject += char;
 
-            for (let i = 0; i < lines.length - 1; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                console.log("[streamGeminiCompletion] Raw line:", line.slice(0, 100));
+                if (char === "{") {
+                    braceDepth++;
+                } else if (char === "}") {
+                    braceDepth--;
 
-                // Try both with and without "data: " prefix
-                let jsonStr = "";
-                if (line.startsWith("data: ")) {
-                    jsonStr = line.slice(6).trim();
-                } else if (line.startsWith("{")) {
-                    jsonStr = line;
-                } else {
-                    continue;
-                }
-
-                if (!jsonStr) continue;
-
-                try {
-                    const data = JSON.parse(jsonStr);
-                    if (firstChunk) {
-                        console.log("[streamGeminiCompletion] First response chunk:", JSON.stringify(data).slice(0, 300));
-                        firstChunk = false;
-                    }
-
-                    // Check for error in response
-                    if (data.error) {
-                        console.error("[streamGeminiCompletion] API Error in chunk:", JSON.stringify(data.error).slice(0, 200));
-                    }
-
-                    if (data.candidates && data.candidates[0]) {
-                        const candidate = data.candidates[0];
-
-                        if (candidate.content && candidate.content.parts) {
-                            for (const part of candidate.content.parts) {
-                                // Procesar pensamiento (thinking)
-                                if (part.thinking) {
-                                    fullThinking += part.thinking;
-                                    res.write(`data: ${JSON.stringify({ reasoning: part.thinking })}\n\n`);
+                    // When we close a top-level object
+                    if (braceDepth === 0 && currentObject.trim().length > 2) {
+                        const objStr = currentObject.trim();
+                        if (objStr.startsWith("{") && objStr.endsWith("}")) {
+                            try {
+                                const data = JSON.parse(objStr);
+                                if (firstChunk) {
+                                    console.log("[streamGeminiCompletion] First response chunk parsed successfully");
+                                    firstChunk = false;
                                 }
 
-                                // Procesar contenido normal
-                                if (part.text) {
-                                    fullContent += part.text;
-                                    chunkCount++;
-                                    tokenCount += part.text.split(/\s+/).length;
+                                // Check for error in response
+                                if (data.error) {
+                                    console.error("[streamGeminiCompletion] API Error in chunk:", JSON.stringify(data.error).slice(0, 200));
+                                }
 
-                                    if (chunkCount % CHECK_INTERVAL === 0) {
-                                        const elapsed = (Date.now() - startTime) / 1000;
-                                        const tokensPerSecond = tokenCount / elapsed;
-                                        const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
-                                        res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                                if (data.candidates && data.candidates[0]) {
+                                    const candidate = data.candidates[0];
+
+                                    if (candidate.content && candidate.content.parts) {
+                                        for (const part of candidate.content.parts) {
+                                            // Procesar pensamiento (thinking)
+                                            if (part.thinking) {
+                                                fullThinking += part.thinking;
+                                                res.write(`data: ${JSON.stringify({ reasoning: part.thinking })}\n\n`);
+                                            }
+
+                                            // Procesar contenido normal
+                                            if (part.text) {
+                                                fullContent += part.text;
+                                                chunkCount++;
+                                                tokenCount += part.text.split(/\s+/).length;
+                                                console.log("[streamGeminiCompletion] Got text chunk:", part.text.slice(0, 50));
+
+                                                if (chunkCount % CHECK_INTERVAL === 0) {
+                                                    const elapsed = (Date.now() - startTime) / 1000;
+                                                    const tokensPerSecond = tokenCount / elapsed;
+                                                    const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
+                                                    res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                                                }
+
+                                                res.write(`data: ${JSON.stringify({ content: part.text })}\n\n`);
+                                            }
+                                        }
                                     }
-
-                                    res.write(`data: ${JSON.stringify({ content: part.text })}\n\n`);
                                 }
+                            } catch (parseError) {
+                                console.error("[streamGeminiCompletion] Parse error:", parseError instanceof Error ? parseError.message : String(parseError));
                             }
                         }
-                    } else if (!data.error) {
-                        console.log("[streamGeminiCompletion] Response chunk without candidates:", JSON.stringify(data).slice(0, 200));
+                        currentObject = "";
                     }
-                } catch (parseError) {
-                    console.error("[streamGeminiCompletion] Parse error on line:", line.slice(0, 100), parseError instanceof Error ? parseError.message : String(parseError));
                 }
+            }
+
+            // Keep unparsed content for next iteration
+            if (braceDepth === 0) {
+                buffer = "";
             }
         }
 
