@@ -791,7 +791,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Usuario no encontrado" });
       }
 
-      res.status(200).json({ user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+      res.status(200).json({ user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isEmailVerified } });
     } catch (error) {
       console.error("Error fetching user data:", error);
       res.status(500).json({ error: "Error interno del servidor" });
@@ -917,27 +917,28 @@ export async function registerRoutes(
     const fingerprint = getFingerprint(req);
 
     try {
-      const { messages, model, useReasoning, conversationId: clientConversationId, chatMode } = chatRequestSchema.parse(req.body);
+      const { conversationId: clientConversationId, message, useWebSearch, model, useReasoning, imageBase64, chatMode } = chatRequestSchema.parse(req.body);
 
       const currentConversationId = clientConversationId || randomUUID();
+      const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+      const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
 
       if (userId) {
         const conversationCount = await getUserConversationCount(userId);
         if (conversationCount === 0 && !clientConversationId) {
-          await createUserConversation(userId, "Nueva Conversación", currentConversationId);
+          await createUserConversation(userId, "Nueva Conversación");
         }
       }
 
-      const lastUserMessage = messages[messages.length - 1];
-      if (typeof lastUserMessage.content !== "string") {
-        return res.status(400).json({ error: "El último mensaje del usuario debe ser texto." });
+      if (typeof message !== "string" || message.trim().length === 0) {
+        return res.status(400).json({ error: "El mensaje del usuario debe ser texto." });
       }
 
-      const isWebSearchIntent = detectWebSearchIntent(lastUserMessage.content);
+      const isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
       let webSearchContext: string | undefined;
 
       if (isWebSearchIntent) {
-        webSearchContext = await searchTavily(lastUserMessage.content);
+        webSearchContext = await searchTavily(message);
       }
 
       const apiKey = process.env.OPENROUTER_API_KEY;
@@ -950,19 +951,18 @@ export async function registerRoutes(
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
 
-      const chatHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      const chatHistory = [
+        { role: "user", content: message }
+      ];
 
       if (userId) {
-        createUserMessage(userId, currentConversationId, "user", lastUserMessage.content);
+        createUserMessage(userId, currentConversationId, "user", message);
       } else {
         await storage.createMessage({
           id: randomUUID(),
           conversationId: currentConversationId,
           role: "user",
-          content: lastUserMessage.content,
+          content: message,
         });
       }
 
@@ -972,15 +972,59 @@ export async function registerRoutes(
         userId,
         chatHistory,
         apiKey,
-        model,
+        selectedModel,
         useReasoning,
         webSearchContext,
-        chatMode
+        mode
       );
     } catch (error: any) {
       console.error("Error en /api/chat:", error);
       if (!res.headersSent) {
         res.status(500).json({ error: "Error interno del servidor al procesar el chat." });
+      }
+    }
+  });
+
+  app.post("/api/chat/regenerate", async (req: Request, res: Response) => {
+    const userId = getUserIdFromRequest(req);
+    try {
+      const { conversationId, lastUserMessage, model, useReasoning, chatMode } = req.body || {};
+      if (!conversationId || typeof lastUserMessage !== "string" || lastUserMessage.trim().length === 0) {
+        return res.status(400).json({ error: "Parámetros inválidos para regenerar" });
+      }
+
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
+      }
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+      const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
+
+      const chatHistory = [
+        { role: "user", content: lastUserMessage as string }
+      ];
+
+      await streamChatCompletion(
+        res,
+        conversationId,
+        userId,
+        chatHistory,
+        apiKey,
+        selectedModel,
+        Boolean(useReasoning),
+        undefined,
+        mode
+      );
+    } catch (error: any) {
+      console.error("Error en /api/chat/regenerate:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Error interno del servidor al regenerar." });
       }
     }
   });

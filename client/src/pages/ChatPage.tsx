@@ -158,16 +158,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       ]);
     }
 
+    const ensuredConversationId = conversationId!;
     const tempUserMessage: Message = {
       id: `temp-${Date.now()}`,
-      conversationId: conversationId,
+      conversationId: ensuredConversationId,
       role: "user",
       content: contentToSave,
       createdAt: new Date().toISOString(),
     };
 
     queryClient.setQueryData<Message[]>(
-      ["/api/conversations", conversationId, "messages"],
+      ["/api/conversations", ensuredConversationId, "messages"],
       (old = []) => [...old, tempUserMessage]
     );
 
@@ -189,7 +190,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         method: "POST",
         headers,
         body: JSON.stringify({ 
-          conversationId, 
+          conversationId: ensuredConversationId, 
           message: content, 
           useWebSearch,
           model: selectedModel,
@@ -283,7 +284,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
       }
 
       queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", conversationId, "messages"],
+        queryKey: ["/api/conversations", ensuredConversationId, "messages"],
       });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/usage"] });

@@ -12,8 +12,14 @@ interface UsageInfo {
     webSearchPerWeek: number;
     maxChats: number;
   };
+  messageLimits?: {
+    roblox: number;
+    general: number;
+  };
   weekStartDate: string;
   isPremium?: boolean;
+  robloxMessageCount?: number;
+  generalMessageCount?: number;
 }
 
 interface UpgradeModalProps {
