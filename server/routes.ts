@@ -528,9 +528,7 @@ async function streamGeminiCompletion(
             systemInstruction: {
                 parts: [{ text: systemPrompt }]
             },
-            // Habilitar todas las capacidades del modelo Gemini 3 Pro Preview
             tools: [],
-            toolConfig: {},
         };
 
         // Agregar contexto de búsqueda web si está disponible
@@ -555,13 +553,6 @@ async function streamGeminiCompletion(
                 { google_search: {} },
                 { code_execution: {} }
             ];
-
-            requestBody.toolConfig = {
-                functionCallingConfig: {
-                    mode: "ANY",
-                    allowedFunctionNames: []
-                }
-            };
         }
 
         const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?alt=sse`;
