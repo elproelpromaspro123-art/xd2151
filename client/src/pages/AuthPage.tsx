@@ -153,11 +153,12 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
       const googleButtonDiv = document.getElementById("google-signin-button");
       if (googleButtonDiv) {
         window.google.accounts.id.renderButton(googleButtonDiv, {
-          theme: "filled_black",
+          theme: "outline",
           size: "large",
           width: "100%",
           text: mode === "login" ? "signin_with" : "signup_with",
           shape: "rectangular",
+          locale: "es",
         });
       }
     }
@@ -452,7 +453,11 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                 </div>
               </div>
 
-              <div id="google-signin-button" className="flex justify-center w-full" style={{ outline: 'none', border: 'none' }}></div>
+              <div 
+                id="google-signin-button" 
+                className="flex justify-center w-full overflow-hidden rounded-lg"
+                style={{ outline: 'none', border: 'none', padding: 0, margin: 0 }}
+              ></div>
 
               <p className="text-center text-sm text-muted-foreground mt-6">
                 {mode === "login" ? (
