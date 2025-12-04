@@ -10,9 +10,11 @@ import { EmptyState } from "@/components/chat/EmptyState";
 import { UpgradeModal } from "@/components/chat/UpgradeModal";
 import { ProfileModal } from "@/components/ProfileModal";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
+import { RateLimitAlert } from "@/components/RateLimitAlert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useRateLimitStream } from "@/hooks/useRateLimitStream";
 import {
     Sparkles, Zap, Crown, LogOut, User as UserIcon,
     Gamepad2, MessageCircle, StopCircle, PanelLeftClose, PanelLeft, Globe
@@ -95,9 +97,20 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const [artifactState, setArtifactState] = useState<ArtifactState>({ isOpen: false, content: "", language: "text" });
     const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
     const [webSearchActive, setWebSearchActive] = useState(false);
+    const [isModelRateLimited, setIsModelRateLimited] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
+
+    // Suscribirse a actualizaciones de rate limit en tiempo real
+    const { limitInfo } = useRateLimitStream({
+        modelKey: selectedModel,
+        onUpdate: (info) => {
+            if (!Array.isArray(info)) {
+                setIsModelRateLimited(!info.available);
+            }
+        }
+    });
 
     // Apply theme based on mode
     useEffect(() => {
@@ -853,12 +866,25 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                         )}
                     </div>
 
+                    {/* Rate Limit Alert */}
+                    {isModelRateLimited && selectedModelInfo && (
+                        <div className="px-3 sm:px-4 py-2 border-b border-border bg-background/50">
+                            <div className="max-w-3xl mx-auto">
+                                <RateLimitAlert 
+                                    modelKey={selectedModel}
+                                    modelName={selectedModelInfo.name}
+                                    onAvailable={() => setIsModelRateLimited(false)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* Input Area */}
                     <div className={`border-t border-border bg-background/50 backdrop-blur-xl`}>
                         <ChatInput
                             onSend={handleSendMessage}
                             isLoading={isStreaming}
-                            disabled={messageRemaining <= 0}
+                            disabled={messageRemaining <= 0 || isModelRateLimited}
                             webSearchRemaining={webSearchRemaining}
                             models={modelsData?.models || []}
                             selectedModel={selectedModel}
