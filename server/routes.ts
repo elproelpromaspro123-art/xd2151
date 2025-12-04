@@ -187,25 +187,25 @@ const AI_MODELS = {
          premiumContextTokens: 124518,
          premiumOutputTokens: 124518,
      },
-     "gemini-3-pro-preview": {
-         id: "gemini-3-pro-preview",
-         name: "Gemini 3 Pro Preview",
-         description: "Google Gemini 3 Pro Preview - Modelo avanzado con multimodal completo (texto, imágenes, video, audio, PDF), pensamiento mejorado, ejecución de código, búsqueda y procesamiento estructurado - 1M+ contexto/65K output",
-         supportsImages: true,
-         supportsReasoning: true,
-         isPremiumOnly: false,
-         category: "general" as const,
-         provider: "google",
-         fallbackProvider: null as string | null,
-         apiProvider: "gemini" as const,
-         // Oficial docs: 1,048,576 contexto entrada, 65,536 output máximo
-         // Free: 90% de 1M = 943,718 contexto, 90% de 65K = 58,982 output
-         // Premium: 98% de 1M = 1,027,581 contexto, 98% de 65K = 64,223 output
-         freeContextTokens: 943718,
-         freeOutputTokens: 58982,
-         premiumContextTokens: 1027581,
-         premiumOutputTokens: 64223,
-     },
+    "gemini-2.5-pro": {
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        description: "Google Gemini 2.5 Pro - Multimodal (audio, imágenes, video, texto y PDF), pensamiento avanzado, ejecución de código, búsqueda y resultados estructurados - 1M contexto / 65K salida",
+        supportsImages: true,
+        supportsReasoning: true,
+        isPremiumOnly: free,
+        category: "general" as const,
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
+        // Free: no disponible (premium only)
+        // Premium: usar 95% para margen de seguridad
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
+        premiumContextTokens: 995746,
+        premiumOutputTokens: 62259,
+    },
      };
 
 type ModelKey = keyof typeof AI_MODELS;
@@ -549,7 +549,8 @@ async function streamGeminiCompletion(
         }
 
         // Optimizaciones específicas para Gemini 3 Pro Preview
-        if (model === "gemini-3-pro-preview") {
+        // Activar herramientas para modelos Gemini 2.5 (Pro/Flash)
+        if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.id.startsWith("gemini-2.5-")) {
             requestBody.tools = [
                 { google_search: {} },
                 { code_execution: {} }
