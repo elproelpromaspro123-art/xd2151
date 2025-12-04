@@ -13,18 +13,24 @@ export function serveStatic(app: Express) {
       console.log(`[static] Contents of ${parentDir}:`, fs.readdirSync(parentDir));
     }
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}. ` +
+      `Run "npm run build" to generate the client build, or ensure the build was successful.`,
     );
   }
   
   const indexPath = path.join(distPath, "index.html");
   if (!fs.existsSync(indexPath)) {
     console.error(`[static] index.html not found at ${indexPath}`);
-    throw new Error(`Could not find index.html at ${indexPath}`);
+    console.error(`[static] Directory contents:`, fs.readdirSync(distPath));
+    throw new Error(
+      `Could not find index.html at ${indexPath}. ` +
+      `The client build may have failed. Check the build logs.`
+    );
   }
   
   console.log(`[static] Build directory found, serving from ${distPath}`);
   console.log(`[static] index.html verified at ${indexPath}`);
+  console.log(`[static] Static assets directory size:`, fs.readdirSync(distPath).length, "items");
 
   app.use(express.static(distPath, {
     maxAge: "1d",
@@ -40,14 +46,17 @@ export function serveStatic(app: Express) {
   }));
 
   app.use("*", (req: Request, res: Response, next: NextFunction) => {
+    // Don't serve static files for API or health check routes
     if (req.originalUrl.startsWith("/api") || req.originalUrl === "/health") {
       return next();
     }
+    
+    // Serve index.html for all other routes (SPA)
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(indexPath, (err) => {
       if (err) {
-        console.error(`[static] Error serving index.html:`, err);
-        res.status(500).send("Error loading application");
+        console.error(`[static] Error serving index.html for ${req.originalUrl}:`, err.message);
+        res.status(500).json({ error: "Error loading application" });
       }
     });
   });

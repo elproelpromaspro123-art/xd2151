@@ -15,15 +15,18 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["react", "react-dom"],
           ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
+          icons: ["lucide-react"],
+          markdown: ["react-markdown", "remark-gfm"],
         },
       },
     },
+    minify: "esbuild",
   },
   server: {
     host: "0.0.0.0",
@@ -33,5 +36,8 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "@radix-ui/react-dialog"],
   },
 });

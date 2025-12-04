@@ -61,6 +61,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+    const startupTimeout = setTimeout(() => {
+        log("FATAL: Server startup timeout exceeded (120 seconds)");
+        process.exit(1);
+    }, 120000); // 120 second timeout
+
     try {
         log("=".repeat(50));
         log("Starting server...");
@@ -94,13 +99,19 @@ app.use((req, res, next) => {
         const port = parseInt(process.env.PORT || "5000", 10);
 
         const server = httpServer.listen(port, "0.0.0.0", () => {
+            clearTimeout(startupTimeout);
             log("=".repeat(50));
             log(`✓ Server is ready and listening on port ${port}`);
             log(`✓ Health check: http://0.0.0.0:${port}/health`);
             log("=".repeat(50));
         });
 
+        // Set keep-alive on connections
+        server.keepAliveTimeout = 65000;
+        server.headersTimeout = 66000;
+
         server.on("error", (error: NodeJS.ErrnoException) => {
+            clearTimeout(startupTimeout);
             if (error.code === "EADDRINUSE") {
                 log(`FATAL: Port ${port} is already in use`);
             } else {
@@ -112,6 +123,7 @@ app.use((req, res, next) => {
         // Graceful shutdown handling
         process.on("SIGTERM", () => {
             log("SIGTERM signal received: closing server");
+            clearTimeout(startupTimeout);
             server.close(() => {
                 log("HTTP server closed");
                 process.exit(0);
@@ -120,6 +132,7 @@ app.use((req, res, next) => {
 
         process.on("SIGINT", () => {
             log("SIGINT signal received: closing server");
+            clearTimeout(startupTimeout);
             server.close(() => {
                 log("HTTP server closed");
                 process.exit(0);
@@ -127,6 +140,7 @@ app.use((req, res, next) => {
         });
 
     } catch (error) {
+        clearTimeout(startupTimeout);
         log(`FATAL ERROR during startup: ${error instanceof Error ? error.message : String(error)}`);
         console.error(error);
         process.exit(1);
