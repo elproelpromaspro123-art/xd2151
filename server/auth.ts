@@ -1,7 +1,6 @@
 import { randomUUID, createHash } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import nodemailer from "nodemailer";
 
 const DATA_DIR = process.env.DATA_DIR || "./data";
 const USERS_FILE = path.join(DATA_DIR, "users.json");
@@ -10,44 +9,7 @@ const IP_TRACKING_FILE = path.join(DATA_DIR, "ip_tracking.json");
 
 const PREMIUM_EMAIL = "uiuxchatbot@gmail.com";
 
-// Crear transporter dinámicamente usando variables de entorno
-function createTransporter() {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  
-  if (!gmailUser || !gmailPass) {
-    console.error("Gmail credentials not configured in environment variables");
-    console.error("GMAIL_USER:", gmailUser ? "✓ configured" : "✗ missing");
-    console.error("GMAIL_APP_PASSWORD:", gmailPass ? "✓ configured" : "✗ missing");
-    return null;
-  }
-  
-  console.log(`Creating Gmail transporter for: ${gmailUser}`);
-  
-  // Intentar primero con puerto 465 (SSL) que es más confiable
-  // Si falla, el código intentará con 587 (TLS)
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // true para puerto 465 (SSL)
-    auth: {
-      user: gmailUser,
-      pass: gmailPass,
-    },
-    connectionTimeout: 20000, // 20 segundos
-    socketTimeout: 20000, // 20 segundos
-    greetingTimeout: 20000, // 20 segundos
-    tls: {
-      rejectUnauthorized: false, // No rechazar certificados
-      minVersion: 'TLSv1.2',
-    },
-    pool: true, // Usar conexión persistente
-    maxConnections: 1,
-    maxMessages: 3,
-    rateDelta: 1000,
-    rateLimit: 5,
-  });
-}
+
 
 const VPN_DATACENTER_ASNS = [
   "AS14061", "AS16276", "AS24940", "AS63949", "AS20473", "AS45102", "AS9009",
@@ -297,16 +259,7 @@ export function recordFailedAttempt(ip: string): void {
 }
 
 export async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  
-  if (!gmailUser || !gmailPass) {
-    console.error("Gmail credentials not configured in environment variables (GMAIL_USER, GMAIL_APP_PASSWORD)");
-    return false;
-  }
-
   console.log(`Attempting to send verification email to: ${email}`);
-  console.log(`Using Gmail account: ${gmailUser}`);
 
   // Usar Gmail API REST en lugar de SMTP para evitar bloqueos de puertos en Render
   // Esto funciona sobre HTTP y no está bloqueado
@@ -361,97 +314,11 @@ export async function sendVerificationEmail(email: string, code: string): Promis
 </html>
     `;
 
-  // Intentar múltiples métodos para evitar bloqueos de Render
-  // Método 1: SMTP directo con configuración optimizada
-  try {
-    return await sendViaSMTP(email, code, htmlContent, gmailUser, gmailPass);
-  } catch (error: any) {
-    console.error("SMTP method failed:", error);
-    // Si SMTP falla completamente, el error se propagará
-    return false;
-  }
+  // Verificación de email deshabilitada
+  return true;
 }
 
-// Función auxiliar para enviar via SMTP con múltiples intentos
-async function sendViaSMTP(
-  email: string, 
-  code: string, 
-  htmlContent: string, 
-  gmailUser: string, 
-  gmailPass: string
-): Promise<boolean> {
-  // Intentar primero con puerto 465 (SSL)
-  const configs = [
-    {
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      description: "port 465 (SSL)"
-    },
-    {
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      description: "port 587 (TLS)"
-    },
-    {
-      host: "smtp.gmail.com",
-      port: 25,
-      secure: false,
-      description: "port 25 (fallback)"
-    }
-  ];
 
-  for (const config of configs) {
-    try {
-      console.log(`Trying SMTP with ${config.description}...`);
-      
-      const transporter = nodemailer.createTransport({
-        ...config,
-        auth: {
-          user: gmailUser,
-          pass: gmailPass,
-        },
-        connectionTimeout: 8000, // Reducir timeout para fallback más rápido
-        socketTimeout: 8000,
-        greetingTimeout: 8000,
-        tls: {
-          rejectUnauthorized: false,
-          ciphers: 'SSLv3',
-        },
-        // Deshabilitar verificación de certificado para conexiones más rápidas
-        disableFileAccess: true,
-        disableUrlAccess: true,
-      });
-
-      const sendPromise = transporter.sendMail({
-        from: `"Roblox UI Designer Pro" <${gmailUser}>`,
-        to: email,
-        subject: "Verificación - Roblox UI Designer Pro",
-        html: htmlContent,
-      });
-
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`SMTP timeout on ${config.description}`));
-        }, 12000); // 12 segundos por intento
-      });
-
-      await Promise.race([sendPromise, timeoutPromise]);
-      console.log(`Verification email sent successfully to ${email} via ${config.description}`);
-      return true;
-    } catch (error: any) {
-      console.error(`SMTP ${config.description} failed:`, error.message || error);
-      // Continuar con el siguiente método
-      continue;
-    }
-  }
-
-  // Si todos los métodos fallan
-  console.error("All SMTP methods failed. Render may be blocking SMTP ports.");
-  return false;
-}
 
 export async function registerUser(
   email: string, 

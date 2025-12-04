@@ -49,12 +49,10 @@ The project is configured to run on Replit with the following setup:
 2. **Development Server**: Runs on port 5000 (configured for Replit's proxy)
 3. **Workflow**: "Start application" workflow runs `npm run dev` automatically
 4. **Environment Variables**: Configure these in Replit Secrets:
-   - `OPENROUTER_API_KEY` - Required for AI features
-   - `GMAIL_USER` - For email verification
-   - `GMAIL_APP_PASSWORD` - Gmail app password
-   - `GOOGLE_CLIENT_ID` - Optional, for Google OAuth
-   - `GOOGLE_CLIENT_SECRET` - Optional, for Google OAuth
-   - `TAVILY_API_KEY` - Optional, for web search
+    - `OPENROUTER_API_KEY` - Required for AI features
+    - `GOOGLE_CLIENT_ID` - Optional, for Google OAuth
+    - `GOOGLE_CLIENT_SECRET` - Optional, for Google OAuth
+    - `TAVILY_API_KEY` - Optional, for web search
    
 5. **Deployment**: Configured as "autoscale" deployment on Replit
    - Build command: `npm run build`
@@ -84,14 +82,12 @@ The project is configured to run on Replit with the following setup:
    - Click "Create Web Service"
 
 3. **Configure Environment Variables in Render:**
-   Go to your service > Environment tab and add these secrets:
-   - `OPENROUTER_API_KEY` - Your OpenRouter API key
-   - `GMAIL_USER` - Gmail account for sending verification emails
-   - `GMAIL_APP_PASSWORD` - Gmail app password (Google Account > Security > App Passwords)
-   - `GOOGLE_CLIENT_ID` - Google OAuth client ID (optional)
-   - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret (optional)
-   - `TAVILY_API_KEY` - Tavily API key for web search (optional)
-   - `GOOGLE_API_KEY` - Google API key (optional)
+    Go to your service > Environment tab and add these secrets:
+    - `OPENROUTER_API_KEY` - Your OpenRouter API key
+    - `GOOGLE_CLIENT_ID` - Google OAuth client ID (optional)
+    - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret (optional)
+    - `TAVILY_API_KEY` - Tavily API key for web search (optional)
+    - `GOOGLE_API_KEY` - Google API key (optional)
 
    Note: `SESSION_SECRET` and `APP_URL` are auto-configured by render.yaml
 
@@ -104,8 +100,6 @@ The project is configured to run on Replit with the following setup:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENROUTER_API_KEY` | Yes | API key for OpenRouter AI models |
-| `GMAIL_USER` | Yes | Gmail account for email verification |
-| `GMAIL_APP_PASSWORD` | Yes | Gmail app password |
 | `GOOGLE_CLIENT_ID` | No | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | No | Google OAuth secret |
 | `TAVILY_API_KEY` | No | Tavily search API key |
@@ -119,10 +113,10 @@ The project is configured to run on Replit with the following setup:
 - AI-powered Roblox UI code generation
 - Real-time chat interface with streaming responses
 - User authentication (email/password + Google)
-- Email verification
 - Premium tier with advanced AI models
 - Web search integration for up-to-date Roblox info
 - Dark mode UI design
+- IP-based rate limiting (max 2 accounts per IP)
 - **Dual Chat Modes:**
   - **Roblox Mode**: Specialized in UI/UX design for Roblox Studio with Luau code generation
   - **General Mode (Modo General)**: General-purpose AI assistant for any topic
