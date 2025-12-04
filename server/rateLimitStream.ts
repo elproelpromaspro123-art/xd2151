@@ -18,8 +18,10 @@ const subscribers = new Set<RateLimitSubscriber>();
 // Almacena el último estado enviado para cada modelo (evita envíos duplicados)
 const lastSentState = new Map<string, any>();
 
-// Intervalo de actualización en milisegundos (por defecto 30 segundos, no 1 segundo)
-const UPDATE_INTERVAL_MS = 30000; // 30 segundos
+// Intervalo de actualización en milisegundos (cada 1 hora = 3600000ms)
+// Reset de rate limits: cada 24 horas
+const UPDATE_INTERVAL_MS = 3600000; // 1 hora - para evitar spam de actualizaciones
+const RATE_LIMIT_RESET_HOURS = 24; // Reset cada 24 horas
 
 /**
  * Crea una suscripción SSE para actualizaciones de rate limit en tiempo real

@@ -36,22 +36,23 @@ const providerLimitStatus = new Map<string, ProviderLimitStatus>();
 // Almacena el historial de errores de rate limit por modelo
 const modelRateLimits = new Map<string, ModelRateLimitData>();
 
-// Configuración de backoff exponencial (en milisegundos)
+// Configuración de backoff: 24 horas (86400000 ms) según reset estándar de providers
+// Todos los providers resetean sus límites cada 24 horas
 const BACKOFF_CONFIG = {
     openrouter: {
-        initialBackoff: 5 * 60 * 1000, // 5 minutos
-        maxBackoff: 60 * 60 * 1000, // 1 hora
-        multiplier: 2,
+        initialBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        maxBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        multiplier: 1, // Sin multiplicador, siempre 24h
     },
     gemini: {
-        initialBackoff: 10 * 60 * 1000, // 10 minutos
-        maxBackoff: 2 * 60 * 60 * 1000, // 2 horas
-        multiplier: 1.5,
+        initialBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        maxBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        multiplier: 1, // Sin multiplicador, siempre 24h
     },
     groq: {
-        initialBackoff: 5 * 60 * 1000, // 5 minutos
-        maxBackoff: 30 * 60 * 1000, // 30 minutos
-        multiplier: 2,
+        initialBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        maxBackoff: 24 * 60 * 60 * 1000, // 24 horas
+        multiplier: 1, // Sin multiplicador, siempre 24h
     },
 };
 

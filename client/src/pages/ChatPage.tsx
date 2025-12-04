@@ -833,6 +833,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                             reasoning={streamingReasoning}
                                             modelName={currentModelName || selectedModelInfo?.name}
                                             chatMode={chatMode}
+                                            isStreaming={isStreaming}
                                         />
                                     )}
 

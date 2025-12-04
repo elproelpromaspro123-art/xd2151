@@ -114,22 +114,24 @@ const AI_MODELS = {
         premiumOutputTokens: 124000,
     },
     "gemini-2.5-flash": {
-         id: "gemini-2.5-flash",
-         name: "Gemini 2.5 Flash",
-         description: "Google Gemini 2.5 Flash - Rápido, multimodal con soporte para razonamiento",
-         supportsImages: true,
-         supportsReasoning: true,
-         isPremiumOnly: false,
-         category: "general" as const,
-         provider: "google",
-         fallbackProvider: null as string | null,
-         apiProvider: "gemini" as const,
-         // Free: 250 requests/day, 10 RPM, 250k TPM
-         freeContextTokens: 1048576, // 1M tokens
-         freeOutputTokens: 65535,
-         premiumContextTokens: 1048576,
-         premiumOutputTokens: 65535,
-     },
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        description: "Google Gemini 2.5 Flash - El mejor modelo actual para programación y general - 1M contexto/65K output",
+        supportsImages: true,
+        supportsReasoning: true,
+        isPremiumOnly: false,
+        category: "general" as const,
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        // Oficial docs: 1,048,576 contexto, 65,535 output
+        // Free: 90% de 1M = 943,718 contexto, 90% de 65K = 58,981 output
+        // Premium: 95% de 1M = 995,746 contexto, 95% de 65K = 62,259 output
+        freeContextTokens: 943718,
+        freeOutputTokens: 58981,
+        premiumContextTokens: 995746,
+        premiumOutputTokens: 62259,
+    },
      "llama-3.3-70b": {
          id: "llama-3.3-70b-versatile",
          name: "Llama 3.3 70B",
@@ -150,7 +152,7 @@ const AI_MODELS = {
      "gpt-oss-120b": {
          id: "openai/gpt-oss-120b",
          name: "GPT OSS 120B",
-         description: "OpenAI GPT-OSS 120B - Modelo MoE ultra potente con 131K contexto, tool use, razonamiento avanzado y ejecución de código (Groq ~500 tokens/seg)",
+         description: "OpenAI GPT-OSS 120B - Modelo MoE ultra potente con razonamiento avanzado, 131K contexto, tool use y ejecución de código",
          supportsImages: false,
          supportsReasoning: true,
          isPremiumOnly: false,
@@ -158,16 +160,18 @@ const AI_MODELS = {
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
-         // Groq: 131K contexto, 65K output máximo
-         freeContextTokens: 131072, // 131K full context window
-         freeOutputTokens: 65536, // 65K max output
-         premiumContextTokens: 131072,
-         premiumOutputTokens: 65536,
+         // Oficial docs: 131,072 contexto, 131,072 output máximo
+         // Free: 90% de 131K contexto = 117,964, 90% de 131K output = 117,964
+         // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
+         freeContextTokens: 117964,
+         freeOutputTokens: 117964,
+         premiumContextTokens: 124518,
+         premiumOutputTokens: 124518,
      },
      "qwen3-32b": {
          id: "qwen/qwen3-32b",
          name: "Qwen 3 32B",
-         description: "Alibaba Qwen 3 32B - Última generación con razonamiento dual, 131K contexto, reasoning, JSON mode y tool use (Groq ~400 tokens/seg)",
+         description: "Alibaba Qwen 3 32B - Última generación con razonamiento dual, 128K nativo + 131K expandido con YaRN, reasoning y tool use",
          supportsImages: false,
          supportsReasoning: true,
          isPremiumOnly: false,
@@ -175,11 +179,13 @@ const AI_MODELS = {
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
-         // Groq: 131K contexto, 40K output máximo (según docs)
-         freeContextTokens: 131072, // 131K full context window
-         freeOutputTokens: 40960, // 40K max output (40,960 tokens)
-         premiumContextTokens: 131072,
-         premiumOutputTokens: 40960,
+         // Oficial docs: 131,072 contexto (con YaRN), 131,072 output máximo
+         // Free: 90% de 131K contexto = 117,964, 90% de 131K output = 117,964
+         // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
+         freeContextTokens: 117964,
+         freeOutputTokens: 117964,
+         premiumContextTokens: 124518,
+         premiumOutputTokens: 124518,
      },
      };
 

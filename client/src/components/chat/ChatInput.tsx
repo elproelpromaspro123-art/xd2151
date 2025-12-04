@@ -346,6 +346,7 @@ export function ChatInput({
                                                 })()
                                                 : '';
                                             
+                                            const isGemini = model.key === "gemini-2.5-flash";
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
@@ -357,12 +358,17 @@ export function ChatInput({
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 ${!model.available ? 'opacity-50' : ''}`}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGemini ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className="font-medium text-sm flex-1">{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${isGemini ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                        {isGemini && (
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                ⭐ Mejor
+                                                            </span>
+                                                        )}
                                                         {model.isRateLimited && (
                                                             <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 No disponible ({formattedTime})
@@ -388,7 +394,7 @@ export function ChatInput({
                                                 <span className="text-[10px] text-muted-foreground">{model.description}</span>
                                             </DropdownMenuItem>
                                             );
-                                        })}
+                                            })}
                                     </>
                                 )}
 
@@ -412,6 +418,7 @@ export function ChatInput({
                                                 })()
                                                 : '';
                                             
+                                            const isGemini = model.key === "gemini-2.5-flash";
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
@@ -423,12 +430,17 @@ export function ChatInput({
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 ${!model.available ? 'opacity-50' : ''}`}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGemini ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className="font-medium text-sm flex-1">{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${isGemini ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                        {isGemini && (
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                ⭐ Mejor
+                                                            </span>
+                                                        )}
                                                         {model.isRateLimited && (
                                                             <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 No disponible ({formattedTime})
@@ -454,10 +466,10 @@ export function ChatInput({
                                                 <span className="text-[10px] text-muted-foreground">{model.description}</span>
                                             </DropdownMenuItem>
                                             );
-                                        })}
-                                    </>
-                                )}
-                            </DropdownMenuContent>
+                                            })}
+                                            </>
+                                            )}
+                                            </DropdownMenuContent>
                         </DropdownMenu>
 
                         {/* Mode toggle */}

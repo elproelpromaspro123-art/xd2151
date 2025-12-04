@@ -230,36 +230,40 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>DeepSeek R1T2</span>
+                      <span>⭐ Gemini 2.5 Flash</span>
+                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Programación avanzada + Razonamiento</span>
+                    <span className="text-xs text-muted-foreground">Mejor modelo - 1M contexto + 65K output</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Nemotron NVIDIA VL</span>
-                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
+                      <span>GPT OSS 120B</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Visión + Razonamiento</span>
+                    <span className="text-xs text-muted-foreground">MoE ultra potente - 131K contexto</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Gemma 3 27B</span>
-                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
+                      <span>Qwen 3 32B</span>
+                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Google premium con visión</span>
+                    <span className="text-xs text-muted-foreground">Razonamiento dual - 131K contexto</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <span>Tokens máximos (95% capacidad)</span>
+                </li>
+                <li className="flex items-start gap-2 text-sm">
+                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <span>Reset cada 24 horas</span>
                 </li>
               </ul>
               
