@@ -193,7 +193,7 @@ const AI_MODELS = {
         description: "Google Gemini 2.5 Pro - Multimodal (audio, imágenes, video, texto y PDF), pensamiento avanzado, ejecución de código, búsqueda y resultados estructurados - 1M contexto / 65K salida",
         supportsImages: true,
         supportsReasoning: true,
-        isPremiumOnly: free,
+        isPremiumOnly: true,
         category: "general" as const,
         provider: "google",
         fallbackProvider: null as string | null,
@@ -201,8 +201,8 @@ const AI_MODELS = {
         // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
         // Free: no disponible (premium only)
         // Premium: usar 95% para margen de seguridad
-        freeContextTokens: 995746,
-        freeOutputTokens: 62259,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
     },
@@ -542,9 +542,9 @@ async function streamGeminiCompletion(
         // Para Gemini 3 Pro Preview, usar presupuesto adaptativo según plan
         if (useReasoning && modelInfo.supportsReasoning) {
             const budgetTokens = isPremium ? 15000 : 8000;
-            requestBody.thinkingConfig = {
-                budgetTokens: budgetTokens,
-                includeThoughts: true
+            requestBody.thinking_config = {
+                thinking_budget: budgetTokens,
+                include_thoughts: true
             };
         }
 
@@ -564,12 +564,13 @@ async function streamGeminiCompletion(
             };
         }
 
-        const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}&alt=sse`;
+        const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?alt=sse`;
 
         const response = await fetch(endpoint, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
             },
             body: JSON.stringify(requestBody),
             signal: abortController.signal,
@@ -681,13 +682,14 @@ async function streamGeminiCompletion(
 
                         if (candidate.content && candidate.content.parts) {
                             for (const part of candidate.content.parts) {
-                                // Procesar pensamiento (thinking)
-                                if (part.thinking) {
-                                    fullThinking += part.thinking;
-                                    res.write(`data: ${JSON.stringify({ reasoning: part.thinking })}\n\n`);
+                                // Pensamiento: en REST viene como part.thought === true y el texto en part.text
+                                if (part.thought && part.text) {
+                                    fullThinking += part.text;
+                                    res.write(`data: ${JSON.stringify({ reasoning: part.text })}\n\n`);
+                                    continue;
                                 }
 
-                                // Procesar contenido normal
+                                // Contenido normal
                                 if (part.text) {
                                     fullContent += part.text;
                                     chunkCount++;
