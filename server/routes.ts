@@ -47,6 +47,7 @@ import {
 } from "./usageTracking";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Configuración de modelos con tokens específicos para FREE y PREMIUM
 const AI_MODELS = {
@@ -60,6 +61,7 @@ const AI_MODELS = {
         category: "programming" as const,
         provider: "venice/beta",
         fallbackProvider: null as string | null,
+        apiProvider: "openrouter" as const,
         // Free: 70% de 262k = 183k | Premium: 95% de 262k = 249k
         freeContextTokens: 183000,
         freeOutputTokens: 183000,
@@ -76,6 +78,7 @@ const AI_MODELS = {
         category: "programming" as const,
         provider: "chutes",
         fallbackProvider: null as string | null,
+        apiProvider: "openrouter" as const,
         freeContextTokens: 0,
         freeOutputTokens: 0,
         premiumContextTokens: 155000, // 95% de 163.8k
@@ -91,10 +94,28 @@ const AI_MODELS = {
         category: "general" as const,
         provider: "modelrun",
         fallbackProvider: null as string | null,
+        apiProvider: "openrouter" as const,
         freeContextTokens: 0,
         freeOutputTokens: 0,
         premiumContextTokens: 124000, // 95% de 131k
         premiumOutputTokens: 124000,
+    },
+    "gemini-2.5-flash": {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        description: "Google Gemini 2.5 Flash - Rápido, multimodal con soporte para razonamiento",
+        supportsImages: true,
+        supportsReasoning: true,
+        isPremiumOnly: false,
+        category: "general" as const,
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        // Free: 250 requests/day, 10 RPM, 250k TPM
+        freeContextTokens: 1048576, // 1M tokens
+        freeOutputTokens: 65535,
+        premiumContextTokens: 1048576,
+        premiumOutputTokens: 65535,
     },
 };
 
@@ -286,6 +307,251 @@ interface MessageContent {
     image_url?: { url: string };
 }
 
+interface GeminiMessageContent {
+    type: "text" | "image_data";
+    text?: string;
+    inlineData?: { mimeType: string; data: string };
+}
+
+async function streamGeminiCompletion(
+    res: Response,
+    conversationId: string,
+    userId: string | null,
+    chatHistory: Array<{ role: string; content: string | MessageContent[] }>,
+    apiKey: string,
+    model: ModelKey = "gemini-2.5-flash",
+    useReasoning: boolean = false,
+    webSearchContext?: string,
+    chatMode: "roblox" | "general" = "roblox",
+    requestId?: string,
+    isPremium: boolean = false
+): Promise<void> {
+    const abortController = new AbortController();
+
+    if (requestId) {
+        activeRequests.set(requestId, abortController);
+    }
+
+    try {
+        console.log("[streamGeminiCompletion] Starting with model:", model, "mode:", chatMode, "reasoning:", useReasoning);
+        const modelInfo = AI_MODELS[model];
+        if (!modelInfo) {
+            throw new Error(`Model ${model} not found`);
+        }
+
+        const systemPrompt = getSystemPrompt(chatMode);
+
+        // Convertir historial OpenRouter a formato Gemini
+        const geminiMessages: any[] = [];
+
+        for (const msg of chatHistory) {
+            const role = msg.role === "user" ? "user" : "model";
+            let parts: any[] = [];
+
+            if (typeof msg.content === "string") {
+                parts = [{ text: msg.content }];
+            } else if (Array.isArray(msg.content)) {
+                for (const part of msg.content) {
+                    if (part.type === "text") {
+                        parts.push({ text: part.text });
+                    } else if (part.type === "image_url" && part.image_url?.url) {
+                        // Convertir data URL a formato Gemini
+                        const dataUrl = part.image_url.url;
+                        if (dataUrl.startsWith("data:")) {
+                            const matches = dataUrl.match(/data:([^;]+);base64,(.+)/);
+                            if (matches) {
+                                parts.push({
+                                    inlineData: {
+                                        mimeType: matches[1],
+                                        data: matches[2],
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (parts.length > 0) {
+                geminiMessages.push({
+                    role,
+                    parts,
+                });
+            }
+        }
+
+        // Determinar tokens según plan
+        const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+
+        // Configurar thinking budget (para Gemini 2.5)
+        let thinkingBudget = undefined;
+        if (useReasoning && modelInfo.supportsReasoning) {
+            thinkingBudget = isPremium ? 10000 : 5000; // Budget moderado para free tier
+        }
+
+        const requestBody: any = {
+            contents: geminiMessages,
+            generationConfig: {
+                maxOutputTokens: maxTokens || 8192,
+                temperature: 0.7,
+                topP: 0.95,
+            },
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+        };
+
+        // Agregar contexto de búsqueda web si está disponible
+        if (webSearchContext) {
+            requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
+        }
+
+        // Agregar thinking si está soportado
+        if (thinkingBudget !== undefined) {
+            requestBody.generationConfig.thinkingBudget = thinkingBudget;
+        }
+
+        const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}`;
+
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+            signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Gemini API error:", response.status, errorText);
+
+            let errorMessage = "Error al conectar con Gemini. Intenta de nuevo.";
+            if (response.status === 429) {
+                errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
+            } else if (response.status === 503) {
+                errorMessage = "El servicio de Gemini no está disponible en este momento. Intenta de nuevo más tarde.";
+            } else if (response.status === 401 || response.status === 403) {
+                errorMessage = "Error de autenticación con Gemini. Por favor verifica tu API key.";
+            }
+
+            res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error("No reader available");
+        }
+
+        const decoder = new TextDecoder();
+        let fullContent = "";
+        let fullThinking = "";
+        let chunkCount = 0;
+        let tokenCount = 0;
+        const CHECK_INTERVAL = 10;
+        const startTime = Date.now();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                    const jsonStr = line.slice(6).trim();
+                    if (!jsonStr) continue;
+
+                    try {
+                        const data = JSON.parse(jsonStr);
+
+                        if (data.candidates && data.candidates[0]) {
+                            const candidate = data.candidates[0];
+
+                            if (candidate.content && candidate.content.parts) {
+                                for (const part of candidate.content.parts) {
+                                    // Procesar pensamiento (thinking)
+                                    if (part.thinking) {
+                                        fullThinking += part.thinking;
+                                        res.write(`data: ${JSON.stringify({ reasoning: part.thinking })}\n\n`);
+                                    }
+
+                                    // Procesar contenido normal
+                                    if (part.text) {
+                                        fullContent += part.text;
+                                        chunkCount++;
+                                        tokenCount += part.text.split(/\s+/).length;
+
+                                        if (chunkCount % CHECK_INTERVAL === 0) {
+                                            const elapsed = (Date.now() - startTime) / 1000;
+                                            const tokensPerSecond = tokenCount / elapsed;
+                                            const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
+                                            res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                                        }
+
+                                        res.write(`data: ${JSON.stringify({ content: part.text })}\n\n`);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (parseError) {
+                        // Ignorar errores de parsing
+                    }
+                }
+            }
+        }
+
+        // Guardar mensaje del asistente
+        if (fullContent) {
+            if (userId) {
+                createUserMessage(userId, conversationId, "assistant", fullContent);
+            } else {
+                await storage.createMessage({
+                    id: randomUUID(),
+                    conversationId,
+                    role: "assistant",
+                    content: fullContent,
+                });
+            }
+        }
+
+        res.write("data: [DONE]\n\n");
+        res.end();
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("[streamGeminiCompletion] Request was cancelled");
+            res.write(`data: ${JSON.stringify({ cancelled: true })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+        }
+
+        console.error("[streamGeminiCompletion] Error:", error instanceof Error ? error.message : String(error));
+        if (!res.headersSent) {
+            res.setHeader("Content-Type", "text/event-stream");
+        }
+
+        let errorMessage = "Error durante la generación con Gemini. Intenta de nuevo.";
+        if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
+            errorMessage = "La solicitud tardó demasiado. Intenta de nuevo con un mensaje más corto.";
+        } else if (error?.message?.includes('network') || error?.code === 'ECONNREFUSED') {
+            errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.";
+        }
+
+        res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+        res.write("data: [DONE]\n\n");
+        res.end();
+    } finally {
+        if (requestId) {
+            activeRequests.delete(requestId);
+        }
+    }
+}
+
 async function streamChatCompletion(
     res: Response,
     conversationId: string,
@@ -300,7 +566,7 @@ async function streamChatCompletion(
     isPremium: boolean = false
 ): Promise<void> {
     const abortController = new AbortController();
-    
+
     if (requestId) {
         activeRequests.set(requestId, abortController);
     }
@@ -335,7 +601,7 @@ async function streamChatCompletion(
             max_tokens: maxTokens || 32000,
             temperature: 0.7,
             provider: {
-                order: modelInfo.fallbackProvider 
+                order: modelInfo.fallbackProvider
                     ? [modelInfo.provider, modelInfo.fallbackProvider]
                     : [modelInfo.provider],
                 allow_fallbacks: !!modelInfo.fallbackProvider,
@@ -364,7 +630,7 @@ async function streamChatCompletion(
         if (!response.ok) {
             const errorText = await response.text();
             console.error("OpenRouter API error:", response.status, errorText);
-            
+
             let errorMessage = "Error al conectar con la IA. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Limite de tasa alcanzado. Espera un momento e intenta de nuevo.";
@@ -373,7 +639,7 @@ async function streamChatCompletion(
             } else if (response.status === 401 || response.status === 403) {
                 errorMessage = "Error de autenticación con el servicio de IA. Por favor contacta al administrador.";
             }
-            
+
             res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
             res.write("data: [DONE]\n\n");
             res.end();
@@ -408,7 +674,7 @@ async function streamChatCompletion(
                     try {
                         const parsed = JSON.parse(data);
                         const delta = parsed.choices?.[0]?.delta;
-                        
+
                         // Manejar reasoning_content (streaming de pensamiento)
                         if (delta?.reasoning_content) {
                             fullReasoning += delta.reasoning_content;
@@ -461,19 +727,19 @@ async function streamChatCompletion(
             res.end();
             return;
         }
-        
+
         console.error("[streamChatCompletion] Error:", error instanceof Error ? error.message : String(error));
         if (!res.headersSent) {
             res.setHeader("Content-Type", "text/event-stream");
         }
-        
+
         let errorMessage = "Error durante la generación. Intenta de nuevo.";
         if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
             errorMessage = "La solicitud tardó demasiado. Intenta de nuevo con un mensaje más corto.";
         } else if (error?.message?.includes('network') || error?.code === 'ECONNREFUSED') {
             errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.";
         }
-        
+
         res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
         res.write("data: [DONE]\n\n");
         res.end();
@@ -598,15 +864,15 @@ export function registerRoutes(
 
             const session = createSession(result.userId, req.headers['user-agent'], ip);
             const user = getUserById(result.userId);
-            return res.status(201).json({ 
-                token: session.token, 
-                user: user ? { 
-                    id: user.id, 
-                    email: user.email, 
-                    isPremium: user.isPremium, 
+            return res.status(201).json({
+                token: session.token,
+                user: user ? {
+                    id: user.id,
+                    email: user.email,
+                    isPremium: user.isPremium,
                     isVerified: user.isEmailVerified,
                     isGoogleUser: !!user.googleId,
-                } : undefined 
+                } : undefined
             });
         } catch (error: any) {
             console.error("Error during registration:", error);
@@ -648,15 +914,15 @@ export function registerRoutes(
             }
 
             const session = createSession(result.user.id, req.headers['user-agent'], ip);
-            res.status(200).json({ 
-                token: session.token, 
-                user: { 
-                    id: result.user.id, 
-                    email: result.user.email, 
-                    isPremium: result.user.isPremium, 
+            res.status(200).json({
+                token: session.token,
+                user: {
+                    id: result.user.id,
+                    email: result.user.email,
+                    isPremium: result.user.isPremium,
                     isVerified: result.user.isEmailVerified,
                     isGoogleUser: !!result.user.googleId,
-                } 
+                }
             });
         } catch (error: any) {
             console.error("Error during login:", error);
@@ -712,15 +978,15 @@ export function registerRoutes(
             }
 
             const session = createSession(result.user.id, req.headers['user-agent'], ip);
-            res.status(200).json({ 
-                token: session.token, 
-                user: { 
-                    id: result.user.id, 
-                    email: result.user.email, 
-                    isPremium: result.user.isPremium, 
+            res.status(200).json({
+                token: session.token,
+                user: {
+                    id: result.user.id,
+                    email: result.user.email,
+                    isPremium: result.user.isPremium,
                     isVerified: true, // Google siempre verificado
                     isGoogleUser: true,
-                } 
+                }
             });
         } catch (error: any) {
             console.error("Error during Google login:", error);
@@ -820,10 +1086,10 @@ export function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            res.status(200).json({ 
-                id: user.id, 
-                email: user.email, 
-                isPremium: user.isPremium, 
+            res.status(200).json({
+                id: user.id,
+                email: user.email,
+                isPremium: user.isPremium,
                 isEmailVerified: user.isEmailVerified,
                 isGoogleUser: !!user.googleId,
                 isCreatorAccount: user.email.toLowerCase() === "uiuxchatbot@gmail.com",
@@ -846,15 +1112,15 @@ export function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            res.status(200).json({ 
-                user: { 
-                    id: user.id, 
-                    email: user.email, 
-                    isPremium: user.isPremium, 
+            res.status(200).json({
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    isPremium: user.isPremium,
                     isVerified: user.isEmailVerified,
                     isGoogleUser: !!user.googleId,
                     isCreatorAccount: user.email.toLowerCase() === "uiuxchatbot@gmail.com",
-                } 
+                }
             });
         } catch (error) {
             console.error("Error fetching user data:", error);
@@ -938,12 +1204,12 @@ export function registerRoutes(
 
             const { conversationId } = req.params;
             const { title } = req.body;
-            
+
             const updated = await updateUserConversation(userId, conversationId, { title });
             if (!updated) {
                 return res.status(404).json({ error: "Conversación no encontrada" });
             }
-            
+
             res.status(200).json({ conversation: updated });
         } catch (error) {
             console.error("Error updating conversation:", error);
@@ -1007,11 +1273,11 @@ export function registerRoutes(
 
             const { messageId } = req.params;
             const deleted = await deleteUserMessage(userId, messageId);
-            
+
             if (!deleted) {
                 return res.status(404).json({ error: "Mensaje no encontrado" });
             }
-            
+
             res.status(204).send();
         } catch (error) {
             console.error("Error deleting message:", error);
@@ -1029,7 +1295,7 @@ export function registerRoutes(
 
             const { messageId } = req.params;
             const { content } = req.body;
-            
+
             if (!content || typeof content !== 'string') {
                 return res.status(400).json({ error: "Contenido requerido" });
             }
@@ -1038,7 +1304,7 @@ export function registerRoutes(
             if (!updated) {
                 return res.status(404).json({ error: "Mensaje no encontrado" });
             }
-            
+
             res.status(200).json({ message: updated });
         } catch (error) {
             console.error("Error updating message:", error);
@@ -1050,7 +1316,7 @@ export function registerRoutes(
     app.post("/api/chat/stop", async (req: Request, res: Response) => {
         try {
             const { requestId } = req.body;
-            
+
             if (!requestId) {
                 return res.status(400).json({ error: "requestId es requerido" });
             }
@@ -1093,7 +1359,7 @@ export function registerRoutes(
             if (!isPremium) {
                 const canSend = canSendMessage(userId, mode);
                 if (!canSend) {
-                    return res.status(429).json({ 
+                    return res.status(429).json({
                         error: `Has alcanzado el límite de mensajes para el modo ${mode === 'roblox' ? 'Roblox' : 'General'}. Los límites se reinician cada 3 días.`,
                         code: "MESSAGE_LIMIT_REACHED"
                     });
@@ -1105,7 +1371,7 @@ export function registerRoutes(
 
             // Verificar si el modelo requiere premium
             if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
-                return res.status(403).json({ 
+                return res.status(403).json({
                     error: "Este modelo requiere una cuenta Premium.",
                     code: "PREMIUM_REQUIRED"
                 });
@@ -1142,23 +1408,35 @@ export function registerRoutes(
                 }
             }
 
-            const apiKey = process.env.OPENROUTER_API_KEY;
-            if (!apiKey) {
-                return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
-            }
-
             res.setHeader("Content-Type", "text/event-stream");
             res.setHeader("Cache-Control", "no-cache");
             res.setHeader("Connection", "keep-alive");
             res.setHeader("X-Accel-Buffering", "no");
             res.setHeader("X-Request-Id", requestId);
 
+            // Determinar cual API usar basado en el modelo seleccionado
+            const modelInfo = AI_MODELS[selectedModel];
+            const isGeminiModel = modelInfo.apiProvider === "gemini";
+
+            let apiKey: string | undefined;
+            if (isGeminiModel) {
+                apiKey = process.env.Gemini;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de Gemini no está configurada." });
+                }
+            } else {
+                apiKey = process.env.OPENROUTER_API_KEY;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
+                }
+            }
+
             // Obtener historial de mensajes para contexto
             const existingMessages = await getUserMessages(userId, currentConversationId!);
-            
+
             // Construir historial de chat con mensajes anteriores
             const chatHistory: Array<{ role: string; content: string | MessageContent[] }> = [];
-            
+
             // Agregar mensajes anteriores (máximo últimos 20 para contexto)
             const recentMessages = existingMessages.slice(-20);
             for (const msg of recentMessages) {
@@ -1171,7 +1449,7 @@ export function registerRoutes(
                             continue;
                         }
                     }
-                } catch {}
+                } catch { }
                 chatHistory.push({ role: msg.role, content: msg.content });
             }
 
@@ -1202,26 +1480,43 @@ export function registerRoutes(
             }
 
             // Enviar info inicial al cliente
-            res.write(`data: ${JSON.stringify({ 
-                conversationId: currentConversationId, 
+            res.write(`data: ${JSON.stringify({
+                conversationId: currentConversationId,
                 requestId,
                 webSearchUsed,
                 webSearchDetected: isWebSearchIntent,
             })}\n\n`);
 
-            await streamChatCompletion(
-                res,
-                currentConversationId!,
-                userId,
-                chatHistory,
-                apiKey,
-                selectedModel,
-                useReasoning,
-                webSearchContext,
-                mode,
-                requestId,
-                isPremium
-            );
+            // Usar el handler adecuado basado en el proveedor
+            if (isGeminiModel) {
+                await streamGeminiCompletion(
+                    res,
+                    currentConversationId!,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    useReasoning,
+                    webSearchContext,
+                    mode,
+                    requestId,
+                    isPremium
+                );
+            } else {
+                await streamChatCompletion(
+                    res,
+                    currentConversationId!,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    useReasoning,
+                    webSearchContext,
+                    mode,
+                    requestId,
+                    isPremium
+                );
+            }
         } catch (error: any) {
             console.error("[chat] Error:", error instanceof Error ? error.message : String(error));
             if (!res.headersSent) {
@@ -1233,10 +1528,10 @@ export function registerRoutes(
     app.post("/api/chat/regenerate", async (req: Request, res: Response) => {
         const userId = getUserIdFromRequest(req);
         const requestId = randomUUID();
-        
+
         try {
             const { conversationId, lastUserMessage, model, useReasoning, chatMode } = req.body || {};
-            
+
             if (!userId) {
                 return res.status(401).json({ error: "No autorizado" });
             }
@@ -1250,9 +1545,21 @@ export function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            const apiKey = process.env.OPENROUTER_API_KEY;
-            if (!apiKey) {
-                return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
+            const modelInfo = AI_MODELS[selectedModel];
+            const isGeminiModel = modelInfo.apiProvider === "gemini";
+
+            let apiKey: string | undefined;
+            if (isGeminiModel) {
+                apiKey = process.env.Gemini;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de Gemini no está configurada." });
+                }
+            } else {
+                apiKey = process.env.OPENROUTER_API_KEY;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
+                }
             }
 
             res.setHeader("Content-Type", "text/event-stream");
@@ -1261,14 +1568,13 @@ export function registerRoutes(
             res.setHeader("X-Accel-Buffering", "no");
             res.setHeader("X-Request-Id", requestId);
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
             const isPremium = user.isPremium;
 
-             // Obtener historial para contexto
-             const existingMessages = await getUserMessages(userId, conversationId);
+            // Obtener historial para contexto
+            const existingMessages = await getUserMessages(userId, conversationId);
             const chatHistory: Array<{ role: string; content: string | MessageContent[] }> = [];
-            
+
             const recentMessages = existingMessages.slice(-20);
             for (const msg of recentMessages) {
                 if (msg.role === 'assistant' && msg === existingMessages[existingMessages.length - 1]) {
@@ -1282,25 +1588,41 @@ export function registerRoutes(
                             continue;
                         }
                     }
-                } catch {}
+                } catch { }
                 chatHistory.push({ role: msg.role, content: msg.content });
             }
 
             res.write(`data: ${JSON.stringify({ requestId })}\n\n`);
 
-            await streamChatCompletion(
-                res,
-                conversationId,
-                userId,
-                chatHistory,
-                apiKey,
-                selectedModel,
-                Boolean(useReasoning),
-                undefined,
-                mode,
-                requestId,
-                isPremium
-            );
+            if (isGeminiModel) {
+                await streamGeminiCompletion(
+                    res,
+                    conversationId,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    Boolean(useReasoning),
+                    undefined,
+                    mode,
+                    requestId,
+                    isPremium
+                );
+            } else {
+                await streamChatCompletion(
+                    res,
+                    conversationId,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    Boolean(useReasoning),
+                    undefined,
+                    mode,
+                    requestId,
+                    isPremium
+                );
+            }
         } catch (error: any) {
             console.error("Error en /api/chat/regenerate:", error);
             if (!res.headersSent) {
