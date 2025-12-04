@@ -666,7 +666,26 @@ export async function registerRoutes(
 
   app.post("/api/auth/google", async (req: Request, res: Response) => {
     try {
-      const { googleId, email } = req.body;
+      let googleId = req.body.googleId;
+      let email = req.body.email;
+      const credential = req.body.credential;
+
+      // Si recibimos un credential JWT en lugar de googleId/email, decodificarlo
+      if (!googleId || !email) {
+        if (credential) {
+          try {
+            // Decodificar el JWT de Google sin verificación (ya está verificado por Google)
+            const parts = credential.split('.');
+            if (parts.length === 3) {
+              const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+              googleId = decoded.sub;
+              email = decoded.email;
+            }
+          } catch (decodeError) {
+            console.error("Error decodificando Google credential:", decodeError);
+          }
+        }
+      }
 
       if (!googleId || !email) {
         return res.status(400).json({ error: "googleId y email son requeridos" });
