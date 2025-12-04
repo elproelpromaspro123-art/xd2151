@@ -48,6 +48,7 @@ import {
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Configuración de modelos con tokens específicos para FREE y PREMIUM
 const AI_MODELS = {
@@ -101,23 +102,40 @@ const AI_MODELS = {
         premiumOutputTokens: 124000,
     },
     "gemini-2.5-flash": {
-        id: "gemini-2.5-flash",
-        name: "Gemini 2.5 Flash",
-        description: "Google Gemini 2.5 Flash - Rápido, multimodal con soporte para razonamiento",
-        supportsImages: true,
-        supportsReasoning: true,
-        isPremiumOnly: false,
-        category: "general" as const,
-        provider: "google",
-        fallbackProvider: null as string | null,
-        apiProvider: "gemini" as const,
-        // Free: 250 requests/day, 10 RPM, 250k TPM
-        freeContextTokens: 1048576, // 1M tokens
-        freeOutputTokens: 65535,
-        premiumContextTokens: 1048576,
-        premiumOutputTokens: 65535,
-    },
-};
+         id: "gemini-2.5-flash",
+         name: "Gemini 2.5 Flash",
+         description: "Google Gemini 2.5 Flash - Rápido, multimodal con soporte para razonamiento",
+         supportsImages: true,
+         supportsReasoning: true,
+         isPremiumOnly: false,
+         category: "general" as const,
+         provider: "google",
+         fallbackProvider: null as string | null,
+         apiProvider: "gemini" as const,
+         // Free: 250 requests/day, 10 RPM, 250k TPM
+         freeContextTokens: 1048576, // 1M tokens
+         freeOutputTokens: 65535,
+         premiumContextTokens: 1048576,
+         premiumOutputTokens: 65535,
+     },
+     "llama-3.3-70b": {
+         id: "llama-3.3-70b-versatile",
+         name: "Llama 3.3 70B",
+         description: "Meta Llama 3.3 70B - Rápido, excelente en código y multilingüe (Groq ultra-rápido 500 tokens/seg)",
+         supportsImages: false,
+         supportsReasoning: false,
+         isPremiumOnly: false,
+         category: "programming" as const,
+         provider: "groq",
+         fallbackProvider: null as string | null,
+         apiProvider: "groq" as const,
+         // Groq: 128K contexto, sin límites de output (hasta 32K razonable)
+         freeContextTokens: 131072, // 128K contexto
+         freeOutputTokens: 32768,
+         premiumContextTokens: 131072,
+         premiumOutputTokens: 32768,
+     },
+    };
 
 type ModelKey = keyof typeof AI_MODELS;
 
@@ -383,12 +401,6 @@ async function streamGeminiCompletion(
         // Determinar tokens según plan
         const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
 
-        // Configurar thinking budget (para Gemini 2.5)
-        let thinkingBudget = undefined;
-        if (useReasoning && modelInfo.supportsReasoning) {
-            thinkingBudget = isPremium ? 10000 : 5000; // Budget moderado para free tier
-        }
-
         const requestBody: any = {
             contents: geminiMessages,
             generationConfig: {
@@ -406,9 +418,13 @@ async function streamGeminiCompletion(
             requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
         }
 
-        // Agregar thinking si está soportado
-        if (thinkingBudget !== undefined) {
-            requestBody.generationConfig.thinkingBudget = thinkingBudget;
+        // Agregar thinking si está soportado (formato correcto para Gemini 2.5)
+        if (useReasoning && modelInfo.supportsReasoning) {
+            const budgetTokens = isPremium ? 10000 : 5000;
+            requestBody.generationConfig.thinking = {
+                type: "ENABLED",
+                budgetTokens: budgetTokens
+            };
         }
 
         const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}&alt=sse`;
@@ -526,11 +542,9 @@ async function streamGeminiCompletion(
         }
 
         // Guardar mensaje del asistente
-        console.log("[streamGeminiCompletion] Saving message - fullContent length:", fullContent.length, "userId:", userId);
         if (fullContent) {
             if (userId) {
                 createUserMessage(userId, conversationId, "assistant", fullContent);
-                console.log("[streamGeminiCompletion] Message saved to DB for user:", userId);
             } else {
                 await storage.createMessage({
                     id: randomUUID(),
@@ -539,8 +553,6 @@ async function streamGeminiCompletion(
                     content: fullContent,
                 });
             }
-        } else {
-            console.log("[streamGeminiCompletion] fullContent is empty!");
         }
 
         res.write("data: [DONE]\n\n");
@@ -758,6 +770,193 @@ async function streamChatCompletion(
         }
 
         let errorMessage = "Error durante la generación. Intenta de nuevo.";
+        if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
+            errorMessage = "La solicitud tardó demasiado. Intenta de nuevo con un mensaje más corto.";
+        } else if (error?.message?.includes('network') || error?.code === 'ECONNREFUSED') {
+            errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.";
+        }
+
+        res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+        res.write("data: [DONE]\n\n");
+        res.end();
+    } finally {
+        if (requestId) {
+            activeRequests.delete(requestId);
+        }
+    }
+}
+
+async function streamGroqCompletion(
+    res: Response,
+    conversationId: string,
+    userId: string | null,
+    chatHistory: Array<{ role: string; content: string | MessageContent[] }>,
+    apiKey: string,
+    model: ModelKey = "llama-3.3-70b",
+    useReasoning: boolean = false,
+    webSearchContext?: string,
+    chatMode: "roblox" | "general" = "roblox",
+    requestId?: string,
+    isPremium: boolean = false
+): Promise<void> {
+    const abortController = new AbortController();
+
+    if (requestId) {
+        activeRequests.set(requestId, abortController);
+    }
+
+    try {
+        console.log("[streamGroqCompletion] Starting with model:", model, "mode:", chatMode);
+        const modelInfo = AI_MODELS[model];
+        if (!modelInfo) {
+            console.error("[streamGroqCompletion] Model not found:", model);
+            throw new Error(`Model ${model} not found`);
+        }
+        const systemPrompt = getSystemPrompt(chatMode);
+
+        const messagesWithContext = webSearchContext
+            ? [
+                { role: "system", content: systemPrompt },
+                { role: "system", content: `## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.` },
+                ...chatHistory,
+            ]
+            : [
+                { role: "system", content: systemPrompt },
+                ...chatHistory,
+            ];
+
+        // Determinar tokens según plan
+        const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+
+        const requestBody: any = {
+            model: modelInfo.id,
+            messages: messagesWithContext,
+            stream: true,
+            max_tokens: maxTokens || 32000,
+            temperature: 0.7,
+        };
+
+        const response = await fetch(GROQ_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+            signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Groq API error:", response.status, errorText);
+
+            let errorMessage = "Error al conectar con Groq. Intenta de nuevo.";
+            if (response.status === 429) {
+                errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
+            } else if (response.status === 401 || response.status === 403) {
+                errorMessage = "Error de autenticación con Groq. Por favor verifica tu API key.";
+            } else if (response.status === 503) {
+                errorMessage = "El servicio de Groq no está disponible en este momento.";
+            }
+
+            res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error("No reader available");
+        }
+
+        const decoder = new TextDecoder();
+        let fullContent = "";
+        let fullReasoning = "";
+        let chunkCount = 0;
+        let tokenCount = 0;
+        const CHECK_INTERVAL = 10;
+        const startTime = Date.now();
+
+        let buffer = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            const lines = buffer.split("\n");
+
+            // Keep the last incomplete line in the buffer
+            buffer = lines[lines.length - 1];
+
+            for (let i = 0; i < lines.length - 1; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // SSE format: data: {json}
+                if (!line.startsWith("data: ")) continue;
+
+                const jsonStr = line.slice(6).trim();
+                if (jsonStr === "[DONE]") continue;
+                if (!jsonStr) continue;
+
+                try {
+                    const parsed = JSON.parse(jsonStr);
+                    const delta = parsed.choices?.[0]?.delta;
+
+                    // Manejar contenido normal
+                    if (delta?.content) {
+                        fullContent += delta.content;
+                        chunkCount++;
+                        tokenCount += delta.content.split(/\s+/).length;
+
+                        if (chunkCount % CHECK_INTERVAL === 0) {
+                            const elapsed = (Date.now() - startTime) / 1000;
+                            const tokensPerSecond = tokenCount / elapsed;
+                            const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
+                            res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                        }
+
+                        res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
+                    }
+                } catch (parseError) {
+                    // Ignorar errores de parsing
+                }
+            }
+        }
+
+        // Guardar mensaje del asistente
+        if (fullContent) {
+            if (userId) {
+                createUserMessage(userId, conversationId, "assistant", fullContent);
+            } else {
+                await storage.createMessage({
+                    id: randomUUID(),
+                    conversationId,
+                    role: "assistant",
+                    content: fullContent,
+                });
+            }
+        }
+
+        res.write("data: [DONE]\n\n");
+        res.end();
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("[streamGroqCompletion] Request was cancelled");
+            res.write(`data: ${JSON.stringify({ cancelled: true })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+        }
+
+        console.error("[streamGroqCompletion] Error:", error instanceof Error ? error.message : String(error));
+        if (!res.headersSent) {
+            res.setHeader("Content-Type", "text/event-stream");
+        }
+
+        let errorMessage = "Error durante la generación con Groq. Intenta de nuevo.";
         if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
             errorMessage = "La solicitud tardó demasiado. Intenta de nuevo con un mensaje más corto.";
         } else if (error?.message?.includes('network') || error?.code === 'ECONNREFUSED') {
@@ -1441,12 +1640,18 @@ export function registerRoutes(
             // Determinar cual API usar basado en el modelo seleccionado
             const modelInfo = AI_MODELS[selectedModel];
             const isGeminiModel = modelInfo.apiProvider === "gemini";
+            const isGroqModel = modelInfo.apiProvider === "groq";
 
             let apiKey: string | undefined;
             if (isGeminiModel) {
                 apiKey = process.env.Gemini;
                 if (!apiKey) {
                     return res.status(500).json({ error: "La clave API de Gemini no está configurada." });
+                }
+            } else if (isGroqModel) {
+                apiKey = process.env.grokAPI;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de Groq no está configurada." });
                 }
             } else {
                 apiKey = process.env.OPENROUTER_API_KEY;
@@ -1526,6 +1731,20 @@ export function registerRoutes(
                     requestId,
                     isPremium
                 );
+            } else if (isGroqModel) {
+                await streamGroqCompletion(
+                    res,
+                    currentConversationId!,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    useReasoning,
+                    webSearchContext,
+                    mode,
+                    requestId,
+                    isPremium
+                );
             } else {
                 await streamChatCompletion(
                     res,
@@ -1572,12 +1791,18 @@ export function registerRoutes(
             const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
             const modelInfo = AI_MODELS[selectedModel];
             const isGeminiModel = modelInfo.apiProvider === "gemini";
+            const isGroqModel = modelInfo.apiProvider === "groq";
 
             let apiKey: string | undefined;
             if (isGeminiModel) {
                 apiKey = process.env.Gemini;
                 if (!apiKey) {
                     return res.status(500).json({ error: "La clave API de Gemini no está configurada." });
+                }
+            } else if (isGroqModel) {
+                apiKey = process.env.grokAPI;
+                if (!apiKey) {
+                    return res.status(500).json({ error: "La clave API de Groq no está configurada." });
                 }
             } else {
                 apiKey = process.env.OPENROUTER_API_KEY;
@@ -1620,6 +1845,20 @@ export function registerRoutes(
 
             if (isGeminiModel) {
                 await streamGeminiCompletion(
+                    res,
+                    conversationId,
+                    userId,
+                    chatHistory,
+                    apiKey,
+                    selectedModel,
+                    Boolean(useReasoning),
+                    undefined,
+                    mode,
+                    requestId,
+                    isPremium
+                );
+            } else if (isGroqModel) {
+                await streamGroqCompletion(
                     res,
                     conversationId,
                     userId,
