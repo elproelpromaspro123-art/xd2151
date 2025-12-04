@@ -152,6 +152,23 @@ const AI_MODELS = {
          premiumContextTokens: 131072,
          premiumOutputTokens: 65536,
      },
+     "qwen3-32b": {
+         id: "qwen/qwen3-32b",
+         name: "Qwen 3 32B",
+         description: "Alibaba Qwen 3 32B - Última generación con razonamiento dual, 131K contexto, reasoning, JSON mode y tool use (Groq ~400 tokens/seg)",
+         supportsImages: false,
+         supportsReasoning: true,
+         isPremiumOnly: false,
+         category: "general" as const,
+         provider: "groq",
+         fallbackProvider: null as string | null,
+         apiProvider: "groq" as const,
+         // Groq: 131K contexto, 40K output máximo (según docs)
+         freeContextTokens: 131072, // 131K full context window
+         freeOutputTokens: 40960, // 40K max output (40,960 tokens)
+         premiumContextTokens: 131072,
+         premiumOutputTokens: 40960,
+     },
      };
 
 type ModelKey = keyof typeof AI_MODELS;
@@ -857,10 +874,18 @@ async function streamGroqCompletion(
         // Agregar razonamiento si el modelo lo soporta
         if (useReasoning && modelInfo.supportsReasoning) {
             // Para GPT-OSS usar reasoning_effort (low, medium, high)
+            // Para Qwen3-32B usar reasoning_format (hidden o parsed) con temperatura baja
             // Para otros modelos de Groq usar include_reasoning
             const modelId = modelInfo.id;
             if (modelId.includes('gpt-oss')) {
                 requestBody.reasoning_effort = isPremium ? "high" : "medium";
+            } else if (modelId.includes('qwen3-32b')) {
+                // Qwen3-32B: usar thinking mode con parámetros optimizados
+                requestBody.reasoning_format = "parsed"; // Mostrar razonamiento separado
+                requestBody.temperature = 0.6; // Temperatura baja para thinking mode
+                requestBody.top_k = 20;
+                requestBody.top_p = 0.95;
+                requestBody.min_p = 0;
             } else {
                 requestBody.include_reasoning = true;
             }
