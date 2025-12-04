@@ -47,8 +47,8 @@ const AI_MODELS = {
     supportsImages: false,
     supportsReasoning: false,
     isPremiumOnly: false,
-    maxTokens: 8000,
-    avgTokensPerSecond: 72,
+    maxTokens: 15000,
+    avgTokensPerSecond: 60,
     category: "programming",
   },
   "deepseek-r1t2": {
@@ -58,7 +58,7 @@ const AI_MODELS = {
     supportsImages: false,
     supportsReasoning: false,
     isPremiumOnly: false,
-    maxTokens: 16000,
+    maxTokens: 15000,
     avgTokensPerSecond: 60,
     category: "programming",
   },
@@ -67,9 +67,9 @@ const AI_MODELS = {
     name: "Amazon Nova 2 Lite",
     description: "Texto e imágenes - Mejor para uso general",
     supportsImages: true,
-    supportsReasoning: true,
+    supportsReasoning: false,
     isPremiumOnly: true,
-    maxTokens: 8000,
+    maxTokens: 30000,
     avgTokensPerSecond: 55,
     category: "general",
   },
@@ -80,7 +80,7 @@ const AI_MODELS = {
     supportsImages: true,
     supportsReasoning: true,
     isPremiumOnly: true,
-    maxTokens: 30000,
+    maxTokens: 50000,
     avgTokensPerSecond: 65,
     category: "general",
   },
@@ -130,18 +130,18 @@ Tu objetivo es generar scripts de Luau EXTREMADAMENTE COMPLETOS, LARGOS y DETALL
 2.  **SOLO LO SOLICITADO (PERO COMPLETO):** No inventes features que no se pidieron (ej. no hagas un sistema de admin si pidieron un login), pero haz el login MÁS COMPLETO y HERMOSO posible.
 3.  **CÓDIGO 100% FUNCIONAL:** El código debe ser "Copy & Paste" y funcionar inmediatamente en un LocalScript.
 4.  **DISEÑO UI/UX DE ÉLITE:**
-    - Usa `UDim2.new` para todo (Scale).
-    - Implementa `UICorner`, `UIStroke`, `UIGradient` para estética moderna.
-    - Usa `TweenService` para animaciones de entrada/salida y hover.
+    - Usa "UDim2.new" para todo (Scale).
+    - Implementa \`UICorner\`, \`UIStroke\`, \`UIGradient\` para estética moderna.
+    - Usa \`TweenService\` para animaciones de entrada/salida y hover.
     - Colores coherentes y profesionales (temas oscuros/azules modernos).
 
 ## 📝 ESTÁNDARES DE CÓDIGO
 - **Sintaxis:** Luau estricto.
-- **Servicios:** Usa `game:GetService("ServiceName")`.
+- **Servicios:** Usa \`game:GetService(\"ServiceName\")\`.
 - **Estructura:**
     - Define constantes de configuración al inicio (Colores, Tamaños).
-    - Crea las instancias (`Instance.new`) de forma ordenada.
-    - Anida correctamente (`Parent`).
+    - Crea las instancias (\`Instance.new\`) de forma ordenada.
+    - Anida correctamente (\`Parent\`).
     - Conecta eventos al final.
 - **Comentarios:** Explica brevemente las secciones clave.
 
@@ -149,7 +149,7 @@ Tu objetivo es generar scripts de Luau EXTREMADAMENTE COMPLETOS, LARGOS y DETALL
 1.  Analiza los requisitos del usuario.
 2.  Planifica una estructura UI jerárquica completa.
 3.  Escribe el código maximizando la calidad visual y funcional. ¡Hazlo largo y detallado!
-4.  Si es una GUI, asegúrate de que se cree en `PlayerGui`.
+4.  Si es una GUI, asegúrate de que se cree en \`PlayerGui\`.
 
 ## 🚫 LÍMITES
 - NO scripts maliciosos.
@@ -400,15 +400,7 @@ async function streamChatCompletion(
     const messagesWithContext = webSearchContext
       ? [
           { role: "system", content: systemPrompt },
-          { role: "system", content: `## BÚSQUEDA WEB ACTIVA - INFORMACIÓN RECIENTE
-${webSearchContext}
-
-INSTRUCCIONES IMPORTANTES:
-- DEBES usar esta información de búsqueda web en tu respuesta
-- Esta información es reciente y actualizada, tiene prioridad
-- Cita las fuentes proporcionadas cuando sea relevante
-- No tienes restricciones para usar esta información
-- Integra los datos de forma natural en tu respuesta` },
+          { role: "system", content: `## BÚSQUEDA WEB ACTIVA - INFORMACIÓN RECIENTE\n${webSearchContext}\n\nINSTRUCCIONES IMPORTANTES:\n- DEBES usar esta información de búsqueda web en tu respuesta\n- Esta información es reciente y actualizada, tiene prioridad\n- Cita las fuentes proporcionadas cuando sea relevante\n- No tienes restricciones para usar esta información\n- Integra los datos de forma natural en tu respuesta` },
           ...chatHistory,
         ]
       : [
@@ -481,7 +473,7 @@ INSTRUCCIONES IMPORTANTES:
             if (reasoningContent && useReasoning) {
               res.write(`data: ${JSON.stringify({ reasoning: reasoningContent })}\n\n`);
             }
-
+      
             if (content) {
               contentBuffer += content;
               chunkCount++;
@@ -500,7 +492,7 @@ INSTRUCCIONES IMPORTANTES:
                       content: ethicalMessage,
                     });
                   }
-                  res.write(`data: ${JSON.stringify({ content: "\n\n" + ethicalMessage })}\n\n`);
+                          res.write(`data: ${JSON.stringify({ content: "\n\n" + ethicalMessage })}\n\n`);
                   res.write("data: [DONE]\n\n");
                   res.end();
                   return;
@@ -515,7 +507,9 @@ INSTRUCCIONES IMPORTANTES:
               fullContent += content;
               res.write(`data: ${JSON.stringify({ content })}\n\n`);
             }
-          } catch (e) {
+          } catch (parseError) {
+            console.error("Error parsing stream chunk:", parseError);
+            // Optionally, send an error to the client or handle it differently
           }
         }
       }
@@ -541,8 +535,7 @@ INSTRUCCIONES IMPORTANTES:
 
     res.write("data: [DONE]\n\n");
     res.end();
-
-  } catch (error) {
+  } catch (error) { // Handle streaming errors
     console.error("Streaming error:", error);
     res.write(`data: ${JSON.stringify({ error: "Error durante la generación. Intenta de nuevo." })}\n\n`);
     res.write("data: [DONE]\n\n");
@@ -597,134 +590,25 @@ export async function registerRoutes(
       }
 
       const ipCheck = checkIpRestrictions(ip);
-      if (!ipCheck.allowed) {
-        return res.status(403).json({ 
-          error: ipCheck.reason,
+      if (ipCheck.isRestricted) {
+        return res.status(403).json({
+          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
           code: "IP_RESTRICTED"
         });
       }
 
-      const result = await registerUser(email, password, ip);
+      const user = await registerUser(email, password, ip);
+      const verificationCode = generateVerificationCode();
+      saveVerificationData(user.id, verificationCode);
+      await sendVerificationEmail(user.email, verificationCode);
 
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
+      res.status(201).json({ message: "Usuario registrado exitosamente. Por favor, verifica tu correo electrónico." });
+    } catch (error: any) {
+      console.error("Error during registration:", error);
+      if (error.message === "User already exists") {
+        return res.status(409).json({ error: "El usuario ya existe" });
       }
-
-      // Crear sesión directamente (sin verificación de email)
-      const userAgent = req.headers["user-agent"];
-      const user = getUserById(result.userId!);
-      if (!user) {
-        return res.status(500).json({ error: "Error al crear usuario" });
-      }
-
-      const remember = !!req.body.remember;
-      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined; // 30 days if remember
-      const session = createSession(user.id, userAgent, ip, rememberDuration);
-
-      res.status(201).json({ 
-        success: true, 
-        message: "Registro exitoso",
-        token: session.token,
-        user: {
-          id: user.id,
-          email: user.email,
-          isPremium: user.isPremium,
-          isEmailVerified: user.isEmailVerified,
-        }
-      });
-    } catch (error) {
-      console.error("Register error:", error);
-      res.status(500).json({ error: "Error al registrar usuario" });
-    }
-  });
-
-  app.post("/api/auth/verify-email", async (req: Request, res: Response) => {
-    try {
-      const { email, code } = req.body;
-
-      if (!email || !code) {
-        return res.status(400).json({ error: "Correo y código son requeridos" });
-      }
-
-      const result = verifyEmailCode(email, code);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      res.json({ success: true, message: "Correo verificado exitosamente. Ya puedes iniciar sesión." });
-    } catch (error) {
-      console.error("Verify email error:", error);
-      res.status(500).json({ error: "Error al verificar correo" });
-    }
-  });
-
-  app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
-    try {
-      const { email } = req.body;
-
-      if (!email) {
-        return res.status(400).json({ error: "Correo es requerido" });
-      }
-
-      const result = await resendVerificationCode(email);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      // Verificar si el email realmente se envió
-      const verificationData = loadVerificationData();
-      const verification = verificationData.codes[email.toLowerCase()];
-      
-      if (!verification) {
-        return res.status(500).json({ 
-          success: false,
-          error: "Error al generar código de verificación. Por favor intenta de nuevo.",
-          emailSent: false
-        });
-      }
-
-      // Intentar enviar el email con timeout
-      let emailSent = false;
-      try {
-        const emailPromise = sendVerificationEmail(email, verification.code);
-        const timeoutPromise = new Promise<boolean>((resolve) => {
-          setTimeout(() => {
-            console.error("Email sending timeout after 30 seconds");
-            resolve(false);
-          }, 30000);
-        });
-        emailSent = await Promise.race([emailPromise, timeoutPromise]);
-        
-        if (emailSent) {
-          console.log(`Verification email successfully resent to ${email}`);
-        } else {
-          console.error(`Failed to resend verification email to ${email}`);
-        }
-      } catch (error) {
-        console.error("Error resending verification email:", error);
-        emailSent = false;
-      }
-
-      // Si el email no se envió, retornar error
-      if (!emailSent) {
-        return res.status(500).json({ 
-          success: false,
-          error: "No se pudo enviar el código de verificación. Por favor intenta de nuevo.",
-          emailSent: false
-        });
-      }
-
-      // Solo retornar éxito si el email se envió correctamente
-      res.json({ 
-        success: true, 
-        message: "Código reenviado. Revisa tu correo (también la carpeta de spam).",
-        emailSent: true
-      });
-    } catch (error) {
-      console.error("Resend verification error:", error);
-      res.status(500).json({ error: "Error al reenviar código" });
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
@@ -737,100 +621,129 @@ export async function registerRoutes(
       }
 
       const ip = getClientIp(req);
-      const result = loginUser(email, password, ip);
-
-      if (!result.success) {
-        return res.status(401).json({ error: result.error });
+      const vpnCheck = await detectVpnOrProxy(req);
+      if (vpnCheck.isVpn) {
+        return res.status(403).json({
+          error: "No se permite el uso de VPN o proxy para iniciar sesión. Por favor desactiva tu VPN e intenta de nuevo.",
+          code: "VPN_DETECTED"
+        });
       }
 
-      const userAgent = req.headers["user-agent"];
-      const remember = !!req.body.remember;
-      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined;
-      const session = createSession(result.user!.id, userAgent, ip, rememberDuration);
+      const ipCheck = checkIpRestrictions(ip);
+      if (ipCheck.isRestricted) {
+        return res.status(403).json({
+          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
+          code: "IP_RESTRICTED"
+        });
+      }
 
-      res.json({
-        success: true,
-        token: session.token,
-        user: {
-          id: result.user!.id,
-          email: result.user!.email,
-          isPremium: result.user!.isPremium,
-          isEmailVerified: result.user!.isEmailVerified,
-        }
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ error: "Error al iniciar sesión" });
+      const { user, token } = await loginUser(email, password, ip);
+      res.status(200).json({ token, user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+    } catch (error: any) {
+      console.error("Error during login:", error);
+      if (error.message === "Invalid credentials" || error.message === "User not verified") {
+        return res.status(401).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
   app.post("/api/auth/google", async (req: Request, res: Response) => {
     try {
-      const { credential } = req.body;
+      const { idToken } = req.body;
 
-      if (!credential) {
-        return res.status(400).json({ error: "Token de Google requerido" });
-      }
-
-      const clientId = process.env.GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        return res.status(500).json({ error: "Google OAuth no está configurado" });
-      }
-
-      const verifyResponse = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
-      );
-
-      if (!verifyResponse.ok) {
-        return res.status(401).json({ error: "Token de Google inválido o expirado" });
-      }
-
-      const googleData = await verifyResponse.json();
-
-      if (googleData.aud !== clientId) {
-        return res.status(401).json({ error: "Token no corresponde a esta aplicación" });
-      }
-
-      if (!googleData.email || !googleData.sub) {
-        return res.status(400).json({ error: "Token de Google inválido" });
+      if (!idToken) {
+        return res.status(400).json({ error: "Token de Google es requerido" });
       }
 
       const ip = getClientIp(req);
-
       const vpnCheck = await detectVpnOrProxy(req);
       if (vpnCheck.isVpn) {
-        return res.status(403).json({ 
-          error: "No se permite el uso de VPN o proxy. Por favor desactiva tu VPN e intenta de nuevo.",
+        return res.status(403).json({
+          error: "No se permite el uso de VPN o proxy para iniciar sesión con Google. Por favor desactiva tu VPN e intenta de nuevo.",
           code: "VPN_DETECTED"
         });
       }
 
-      const result = loginWithGoogle(googleData.sub, googleData.email, ip);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
+      const ipCheck = checkIpRestrictions(ip);
+      if (ipCheck.isRestricted) {
+        return res.status(403).json({
+          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
+          code: "IP_RESTRICTED"
+        });
       }
 
-      // Verificación de email deshabilitada - crear sesión directamente
-      const userAgent = req.headers["user-agent"];
-      const remember = !!req.body.remember;
-      const rememberDuration = remember ? 30 * 24 * 60 * 60 * 1000 : undefined;
-      const session = createSession(result.user!.id, userAgent, ip, rememberDuration);
+      const { user, token } = await loginWithGoogle(idToken, ip);
+      res.status(200).json({ token, user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+    } catch (error: any) {
+      console.error("Error during Google login:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
 
-      res.json({
-        success: true,
-        token: session.token,
-        isNewUser: result.isNewUser,
-        user: {
-          id: result.user!.id,
-          email: result.user!.email,
-          isPremium: result.user!.isPremium,
-          isEmailVerified: result.user!.isEmailVerified,
-        }
-      });
-    } catch (error) {
-      console.error("Google auth error:", error);
-      res.status(500).json({ error: "Error en autenticación con Google" });
+  app.post("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({ error: "Correo y código de verificación son requeridos" });
+      }
+
+      const user = await verifyEmailCode(email, code);
+      res.status(200).json({ message: "Correo verificado exitosamente", user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+    } catch (error: any) {
+      console.error("Error verifying email:", error);
+      if (error.message === "Invalid or expired verification code") {
+        return res.status(400).json({ error: "Código de verificación inválido o expirado" });
+      }
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Correo electrónico es requerido" });
+      }
+
+      await resendVerificationCode(email);
+      res.status(200).json({ message: "Código de verificación reenviado. Revisa tu bandeja de entrada." });
+    } catch (error: any) {
+      console.error("Error resending verification code:", error);
+      if (error.message === "User not found or already verified") {
+        return res.status(400).json({ error: "Usuario no encontrado o ya verificado" });
+      }
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
+      }
+
+      const { oldPassword, newPassword } = req.body;
+
+      if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Contraseña actual y nueva son requeridas" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "La nueva contraseña debe tener al menos 6 caracteres" });
+      }
+
+      await changePassword(userId, oldPassword, newPassword);
+      res.status(200).json({ message: "Contraseña cambiada exitosamente" });
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      if (error.message === "Invalid old password") {
+        return res.status(401).json({ error: "Contraseña actual incorrecta" });
+      }
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
@@ -841,671 +754,215 @@ export async function registerRoutes(
         const token = authHeader.substring(7);
         deleteSession(token);
       }
-      res.json({ success: true });
+      res.status(200).json({ message: "Sesión cerrada exitosamente" });
     } catch (error) {
-      res.status(500).json({ error: "Error al cerrar sesión" });
+      console.error("Error during logout:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
-  app.get("/api/auth/me", async (req: Request, res: Response) => {
+  app.get("/api/user", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-      
       if (!userId) {
-        return res.status(401).json({ error: "No autenticado" });
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const user = getUserById(userId);
+      const user = await getUserById(userId);
       if (!user) {
         return res.status(404).json({ error: "Usuario no encontrado" });
       }
 
-      res.json({
-        id: user.id,
-        email: user.email,
-        isPremium: user.isPremium,
-        isEmailVerified: user.isEmailVerified,
-      });
+      res.status(200).json({ user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
     } catch (error) {
-      res.status(500).json({ error: "Error al obtener usuario" });
+      console.error("Error fetching user data:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
-  app.get("/api/auth/google-client-id", async (_req: Request, res: Response) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    res.json({ clientId: clientId || null, configured: !!clientId });
-  });
-
-  app.get("/api/auth/turnstile-site-key", async (_req: Request, res: Response) => {
-    const siteKey = process.env.Site_Key;
-    res.json({ siteKey: siteKey || null, configured: !!siteKey });
-  });
-
-  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+  app.get("/api/user/premium-status", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-      
       if (!userId) {
-        return res.status(401).json({ error: "No autenticado" });
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const { currentPassword, newPassword } = req.body;
-
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: "Contraseña actual y nueva son requeridas" });
-      }
-
-      const result = changePassword(userId, currentPassword, newPassword);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      res.json({ success: true, message: "Contraseña cambiada exitosamente" });
+      const isPremium = await isUserPremium(userId);
+      res.status(200).json({ isPremium });
     } catch (error) {
-      console.error("Change password error:", error);
-      res.status(500).json({ error: "Error al cambiar contraseña" });
+      console.error("Error fetching premium status:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
-
-  app.get("/api/models", async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      let isPremium = false;
-
-      if (userId) {
-        isPremium = isUserPremium(userId);
-      } else {
-        const visitorId = getVisitorId(req);
-        isPremium = await storage.isPremiumUser(visitorId);
-      }
-      
-      const models = Object.entries(AI_MODELS).map(([key, model]) => ({
-        key,
-        ...model,
-        available: !model.isPremiumOnly || isPremium,
-      }));
-      
-      res.json({ models, isPremium });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get models" });
-    }
-  });
-
-  // Include per-mode message limits and counts
-  app.get("/api/usage", async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFromRequest(req);
-      let isPremium = false;
-      let conversationCount = 0;
-
-      if (userId) {
-        isPremium = isUserPremium(userId);
-        conversationCount = getUserConversationCount(userId);
-      } else {
-        const visitorId = getVisitorId(req);
-        const fingerprint = getFingerprint(req);
-        const limits = await storage.getUsageLimits(visitorId, fingerprint);
-        isPremium = await storage.isPremiumUser(visitorId);
-        conversationCount = await storage.getConversationCount();
-
-        return res.json({
-          aiUsageCount: limits.aiUsageCount,
-          webSearchCount: limits.webSearchCount,
-          conversationCount,
-          limits: isPremium ? PLAN_LIMITS.premium : PLAN_LIMITS.free,
-          messageLimits: isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free,
-          robloxMessageCount: limits.robloxMessageCount || 0,
-          generalMessageCount: limits.generalMessageCount || 0,
-          weekStartDate: limits.weekStartDate,
-          isPremium,
-          isLoggedIn: false,
-        });
-      }
-
-      const visitorId = getVisitorId(req);
-      const fingerprint = getFingerprint(req);
-      const limits = await storage.getUsageLimits(visitorId, fingerprint);
-
-      res.json({
-        aiUsageCount: limits.aiUsageCount,
-        webSearchCount: limits.webSearchCount,
-        conversationCount,
-        limits: isPremium ? PLAN_LIMITS.premium : PLAN_LIMITS.free,
-        messageLimits: isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free,
-        robloxMessageCount: limits.robloxMessageCount || 0,
-        generalMessageCount: limits.generalMessageCount || 0,
-        weekStartDate: limits.weekStartDate,
-        isPremium,
-        isLoggedIn: true,
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get usage" });
-    }
-  });
-
-  
 
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-      
-      if (userId) {
-        const conversations = getUserConversations(userId);
-        return res.json(conversations);
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const conversations = await storage.getConversations();
-      res.json(conversations);
+      const conversations = await getUserConversations(userId);
+      res.status(200).json({ conversations });
     } catch (error) {
-      res.status(500).json({ error: "Failed to get conversations" });
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId", async (req: Request, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
+      }
+
+      const { conversationId } = req.params;
+      const conversation = await getUserConversation(userId, conversationId);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversación no encontrada" });
+      }
+
+      res.status(200).json({ conversation });
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
   app.post("/api/conversations", async (req: Request, res: Response) => {
     try {
-      const { title } = req.body;
-      if (!title || typeof title !== "string") {
-        return res.status(400).json({ error: "Title is required" });
-      }
-
       const userId = getUserIdFromRequest(req);
-
-      if (userId) {
-        const isPremium = isUserPremium(userId);
-        const maxChats = isPremium ? PLAN_LIMITS.premium.maxChats : PLAN_LIMITS.free.maxChats;
-        const conversationCount = getUserConversationCount(userId);
-
-        if (maxChats !== -1 && conversationCount >= maxChats) {
-          return res.status(403).json({ 
-            error: "Has alcanzado el límite de chats guardados",
-            code: "CHAT_LIMIT_REACHED",
-            limit: maxChats
-          });
-        }
-
-        const conversation = createUserConversation(userId, title.slice(0, 100));
-        return res.status(201).json(conversation);
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const visitorId = getVisitorId(req);
-      const isPremium = await storage.isPremiumUser(visitorId);
-      const maxChats = isPremium ? PLAN_LIMITS.premium.maxChats : PLAN_LIMITS.free.maxChats;
-      const conversationCount = await storage.getConversationCount();
-
-      if (maxChats !== -1 && conversationCount >= maxChats) {
-        res.status(403).json({ 
-          error: "Has alcanzado el límite de chats guardados",
-          code: "CHAT_LIMIT_REACHED",
-          limit: maxChats
-        });
-        return;
-      }
-
-      const conversation = await storage.createConversation({
-        id: randomUUID(),
-        title: title.slice(0, 100),
-      });
-
-      res.status(201).json(conversation);
+      const { title } = req.body;
+      const conversation = await createUserConversation(userId, title || "Nueva Conversación");
+      res.status(201).json({ conversation });
     } catch (error) {
-      res.status(500).json({ error: "Failed to create conversation" });
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
-  app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.delete("/api/conversations/:conversationId", async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
       const userId = getUserIdFromRequest(req);
-
-      if (userId) {
-        const deleted = deleteUserConversation(userId, id);
-        if (!deleted) {
-          return res.status(404).json({ error: "Conversation not found" });
-        }
-        return res.status(204).send();
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const deleted = await storage.deleteConversation(id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-
+      const { conversationId } = req.params;
+      await deleteUserConversation(userId, conversationId);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete conversation" });
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
   app.delete("/api/conversations", async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-
-      if (userId) {
-        deleteAllUserConversations(userId);
-        return res.status(204).send();
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      await storage.deleteAllConversations();
+      await deleteAllUserConversations(userId);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete all conversations" });
+      console.error("Error deleting all conversations:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
-  app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:conversationId/messages", async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
       const userId = getUserIdFromRequest(req);
-
-      if (userId) {
-        const conversation = getUserConversation(userId, id);
-        if (!conversation) {
-          return res.status(404).json({ error: "Conversation not found" });
-        }
-        const messages = getUserMessages(userId, id);
-        return res.json(messages);
+      if (!userId) {
+        return res.status(401).json({ error: "No autorizado" });
       }
 
-      const conversation = await storage.getConversation(id);
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-
-      const messages = await storage.getMessages(id);
-      res.json(messages);
+      const { conversationId } = req.params;
+      const messages = await getUserMessages(userId, conversationId);
+      res.status(200).json({ messages });
     } catch (error) {
-      res.status(500).json({ error: "Failed to get messages" });
-    }
-  });
-
-  app.delete("/api/messages/:id", async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const userId = getUserIdFromRequest(req);
-
-      if (userId) {
-        const deleted = deleteUserMessage(userId, id);
-        if (!deleted) {
-          return res.status(404).json({ error: "Message not found" });
-        }
-        return res.status(204).send();
-      }
-
-      const deleted = await storage.deleteMessage(id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Message not found" });
-      }
-
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete message" });
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   });
 
   app.post("/api/chat", async (req: Request, res: Response) => {
+    const userId = getUserIdFromRequest(req);
+    const fingerprint = getFingerprint(req);
+
     try {
-      const result = chatRequestSchema.safeParse(req.body);
+      const { messages, model, useReasoning, conversationId: clientConversationId, chatMode } = chatRequestSchema.parse(req.body);
 
-      if (!result.success) {
-        return res.status(400).json({ error: "Invalid request", details: result.error.errors });
-      }
+      const currentConversationId = clientConversationId || randomUUID();
 
-      const { conversationId, message, useWebSearch: requestedWebSearch, model = "kat-coder-pro", useReasoning = false, imageBase64, chatMode = "roblox" } = result.data;
-      const userId = getUserIdFromRequest(req);
-      const visitorId = getVisitorId(req);
-      const fingerprint = getFingerprint(req);
-
-      const modelKey = model as ModelKey;
-      const modelInfo = AI_MODELS[modelKey];
-
-      if (!modelInfo) {
-        return res.status(400).json({ error: "Modelo no válido" });
-      }
-
-      const autoDetectedWebSearch = detectWebSearchIntent(message);
-      const useWebSearch = requestedWebSearch || autoDetectedWebSearch;
-
-      let isPremium = false;
       if (userId) {
-        isPremium = isUserPremium(userId);
-      } else {
-        isPremium = await storage.isPremiumUser(visitorId);
-      }
-
-      if (modelInfo.isPremiumOnly && !isPremium) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: "Este modelo requiere una suscripción Premium. Actualiza tu plan para usar Grok 4.1 Fast.",
-          code: "PREMIUM_REQUIRED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      if (imageBase64 && !modelInfo.supportsImages) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: "Este modelo no soporta imágenes. Usa Amazon Nova 2 Lite o Grok 4.1 Fast para enviar imágenes.",
-          code: "IMAGES_NOT_SUPPORTED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      if (useReasoning && !modelInfo.supportsReasoning) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: "Este modelo no soporta reasoning. Usa DeepSeek R1T2 o Grok 4.1 Fast para activar reasoning.",
-          code: "REASONING_NOT_SUPPORTED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      const limits = await storage.getUsageLimits(visitorId, fingerprint);
-      // enforce per-mode message limits (roblox/general)
-      const messageLimits = isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free;
-      const currentRoblox = limits.robloxMessageCount || 0;
-      const currentGeneral = limits.generalMessageCount || 0;
-      const modeLimit = chatMode === 'roblox' ? messageLimits.roblox : messageLimits.general;
-
-      if (modeLimit !== -1) {
-        if (chatMode === 'roblox' && currentRoblox >= modeLimit) {
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-          res.setHeader("X-Accel-Buffering", "no");
-          res.write(`data: ${JSON.stringify({ 
-            error: `Has alcanzado el límite de mensajes en modo Roblox (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
-            code: "MODE_LIMIT_REACHED"
-          })}\n\n`);
-          res.write("data: [DONE]\n\n");
-          return res.end();
-        }
-
-        if (chatMode === 'general' && currentGeneral >= modeLimit) {
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-          res.setHeader("X-Accel-Buffering", "no");
-          res.write(`data: ${JSON.stringify({ 
-            error: `Has alcanzado el límite de mensajes en modo General (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
-            code: "MODE_LIMIT_REACHED"
-          })}\n\n`);
-          res.write("data: [DONE]\n\n");
-          return res.end();
+        const conversationCount = await getUserConversationCount(userId);
+        if (conversationCount === 0 && !clientConversationId) {
+          await createUserConversation(userId, "Nueva Conversación", currentConversationId);
         }
       }
 
-      const webSearchLimit = isPremium ? PLAN_LIMITS.premium.webSearchPerWeek : PLAN_LIMITS.free.webSearchPerWeek;
-      if (useWebSearch && webSearchLimit !== -1 && limits.webSearchCount >= webSearchLimit) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: `Has alcanzado el límite de búsquedas web esta semana (${webSearchLimit} usos). El límite se reinicia cada lunes.`,
-          code: "WEB_SEARCH_LIMIT_REACHED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
+      const lastUserMessage = messages[messages.length - 1];
+      if (typeof lastUserMessage.content !== "string") {
+        return res.status(400).json({ error: "El último mensaje del usuario debe ser texto." });
       }
 
-      let conversation;
-      if (userId) {
-        conversation = getUserConversation(userId, conversationId);
-      } else {
-        conversation = await storage.getConversation(conversationId);
+      const isWebSearchIntent = detectWebSearchIntent(lastUserMessage.content);
+      let webSearchContext: string | undefined;
+
+      if (isWebSearchIntent) {
+        webSearchContext = await searchTavily(lastUserMessage.content);
       }
 
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "La clave API de OpenRouter no está configurada." });
       }
 
-      if (containsUnethicalContent(message, chatMode)) {
-        return await sendEthicalRejection(res, conversationId, userId, message, chatMode);
-      }
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
 
-      let storedContent = message;
-      if (imageBase64) {
-        storedContent = JSON.stringify([
-          { type: "text", text: message },
-          { type: "image_url", image_url: { url: imageBase64 } }
-        ]);
-      }
+      const chatHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
       if (userId) {
-        createUserMessage(userId, conversationId, "user", storedContent);
+        createUserMessage(userId, currentConversationId, "user", lastUserMessage.content);
       } else {
         await storage.createMessage({
           id: randomUUID(),
-          conversationId,
+          conversationId: currentConversationId,
           role: "user",
-          content: storedContent,
+          content: lastUserMessage.content,
         });
       }
 
-      // increment mode-specific message counter
-      await storage.incrementMessageCount(visitorId, fingerprint, chatMode);
-
-      let webSearchContext: string | undefined;
-      if (useWebSearch) {
-        await storage.incrementWebSearchUsage(visitorId, fingerprint);
-        webSearchContext = await searchTavily(message);
-      }
-
-      let previousMessages;
-      if (userId) {
-        previousMessages = getUserMessages(userId, conversationId);
-      } else {
-        previousMessages = await storage.getMessages(conversationId);
-      }
-      
-      let userMessageContent: string | MessageContent[];
-      if (imageBase64 && modelInfo.supportsImages) {
-        userMessageContent = [
-          { type: "text" as const, text: message },
-          { type: "image_url" as const, image_url: { url: imageBase64 } }
-        ];
-      } else {
-        userMessageContent = message;
-      }
-
-      const chatHistory = previousMessages.slice(0, -1).map((m) => {
-        let content = m.content;
-        try {
-          if (content.trim().startsWith('[')) {
-            const parsed = JSON.parse(content);
-            if (Array.isArray(parsed)) content = parsed;
-          }
-        } catch (e) {}
-        return {
-          role: m.role as "user" | "assistant",
-          content: content,
-        };
-      });
-      
-      chatHistory.push({
-        role: "user",
-        content: userMessageContent as any,
-      });
-
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
-
-      const estimatedTime = estimateCompletionTime(message.length, modelKey);
-      res.write(`data: ${JSON.stringify({ estimatedTime, model: modelInfo.name })}\n\n`);
-
-      const apiKey = process.env.OPENROUTER_API_KEY;
-      if (!apiKey) {
-        let fallbackContent = "";
-        if (chatMode === "roblox") {
-          fallbackContent = `No tengo acceso al proveedor de IA en este entorno, pero aquí tienes una respuesta básica basada en tu mensaje:\n\n- Entendí: "${message.trim()}"\n- Puedo generarte pasos y estructura en texto.\n\nSi configuras la clave OPENROUTER_API_KEY, podré darte código Luau y respuestas completas.`;
-        } else {
-          fallbackContent = `No tengo acceso al proveedor de IA en este entorno, pero puedo ayudarte igualmente con una guía inicial basada en tu mensaje: "${message.trim()}".\n\nConfigura la variable OPENROUTER_API_KEY para habilitar respuestas de modelos como Grok o Nova.`;
-        }
-
-        if (userId) {
-          createUserMessage(userId, conversationId, "assistant", fallbackContent);
-        } else {
-          await storage.createMessage({
-            id: randomUUID(),
-            conversationId,
-            role: "assistant",
-            content: fallbackContent,
-          });
-        }
-
-        res.write(`data: ${JSON.stringify({ content: fallbackContent })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      await streamChatCompletion(res, conversationId, userId, chatHistory, apiKey, modelKey, useReasoning, webSearchContext, chatMode);
-
-    } catch (error) {
-      console.error("Chat error:", error);
+      await streamChatCompletion(
+        res,
+        currentConversationId,
+        userId,
+        chatHistory,
+        apiKey,
+        model,
+        useReasoning,
+        webSearchContext,
+        chatMode
+      );
+    } catch (error: any) {
+      console.error("Error en /api/chat:", error);
       if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to process chat request" });
-      }
-    }
-  });
-
-  app.post("/api/chat/regenerate", async (req: Request, res: Response) => {
-    try {
-      const { conversationId, lastUserMessage, model = "kat-coder-pro", useReasoning = false, chatMode = "roblox" } = req.body;
-      const userId = getUserIdFromRequest(req);
-      const visitorId = getVisitorId(req);
-      const fingerprint = getFingerprint(req);
-
-      if (!conversationId || !lastUserMessage) {
-        return res.status(400).json({ error: "Invalid request" });
-      }
-
-      const modelKey = model as ModelKey;
-      const modelInfo = AI_MODELS[modelKey];
-
-      if (!modelInfo) {
-        return res.status(400).json({ error: "Modelo no válido" });
-      }
-
-      let isPremium = false;
-      if (userId) {
-        isPremium = isUserPremium(userId);
-      } else {
-        isPremium = await storage.isPremiumUser(visitorId);
-      }
-
-      if (modelInfo.isPremiumOnly && !isPremium) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.setHeader("X-Accel-Buffering", "no");
-        res.write(`data: ${JSON.stringify({ 
-          error: "Este modelo requiere una suscripción Premium.",
-          code: "PREMIUM_REQUIRED"
-        })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      const limits = await storage.getUsageLimits(visitorId, fingerprint);
-      // enforce per-mode message limits for regenerate as well
-      const messageLimits = isPremium ? MESSAGE_LIMITS.premium : MESSAGE_LIMITS.free;
-      const currentRoblox = limits.robloxMessageCount || 0;
-      const currentGeneral = limits.generalMessageCount || 0;
-      const modeLimit = chatMode === 'roblox' ? messageLimits.roblox : messageLimits.general;
-
-      if (modeLimit !== -1) {
-        if (chatMode === 'roblox' && currentRoblox >= modeLimit) {
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-          res.setHeader("X-Accel-Buffering", "no");
-          res.write(`data: ${JSON.stringify({ 
-            error: `Has alcanzado el límite de mensajes en modo Roblox (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
-            code: "MODE_LIMIT_REACHED"
-          })}\n\n`);
-          res.write("data: [DONE]\n\n");
-          return res.end();
-        }
-
-        if (chatMode === 'general' && currentGeneral >= modeLimit) {
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-          res.setHeader("X-Accel-Buffering", "no");
-          res.write(`data: ${JSON.stringify({ 
-            error: `Has alcanzado el límite de mensajes en modo General (${modeLimit} mensajes). El contador se reinicia cada 7 días.`,
-            code: "MODE_LIMIT_REACHED"
-          })}\n\n`);
-          res.write("data: [DONE]\n\n");
-          return res.end();
-        }
-      }
-
-      let conversation;
-      if (userId) {
-        conversation = getUserConversation(userId, conversationId);
-      } else {
-        conversation = await storage.getConversation(conversationId);
-      }
-
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-
-      if (containsUnethicalContent(lastUserMessage, chatMode)) {
-        return await sendEthicalRejection(res, conversationId, userId, undefined, chatMode);
-      }
-
-      await storage.incrementMessageCount(visitorId, fingerprint, chatMode);
-
-      let previousMessages;
-      if (userId) {
-        previousMessages = getUserMessages(userId, conversationId);
-      } else {
-        previousMessages = await storage.getMessages(conversationId);
-      }
-
-      const chatHistory = previousMessages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
-
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
-
-      const estimatedTime = estimateCompletionTime(lastUserMessage.length, modelKey);
-      res.write(`data: ${JSON.stringify({ estimatedTime, model: modelInfo.name })}\n\n`);
-
-      const apiKey = process.env.OPENROUTER_API_KEY;
-      if (!apiKey) {
-        res.write(`data: ${JSON.stringify({ error: "API key not configured" })}\n\n`);
-        res.write("data: [DONE]\n\n");
-        return res.end();
-      }
-
-      await streamChatCompletion(res, conversationId, userId, chatHistory, apiKey, modelKey, useReasoning, undefined, chatMode);
-
-    } catch (error) {
-      console.error("Regenerate error:", error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to regenerate response" });
+        res.status(500).json({ error: "Error interno del servidor al procesar el chat." });
       }
     }
   });
