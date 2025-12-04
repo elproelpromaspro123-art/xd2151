@@ -375,8 +375,8 @@ export function ChatInput({
                                                             </span>
                                                         )}
                                                         {!model.isRateLimited && model.key === "qwen-coder" && (
-                                                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                70%
+                                                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap cursor-help" title="Limitado por tener plan free">
+                                                                90%
                                                             </span>
                                                         )}
                                                         {model.supportsImages && (

@@ -190,15 +190,23 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>GLM 4.5 Air</span>
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
+                      <span>Qwen 3 Coder</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Texto con razonamiento</span>
+                    <span className="text-xs text-muted-foreground">90% de capacidad (235K contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Reinicio cada domingo</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>Llama 3.3 70B</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Rápido y multilingüe (128K contexto)</span>
+                  </div>
+                </li>
+                <li className="flex items-start gap-2 text-sm">
+                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span>Reset cada 24 horas</span>
                 </li>
               </ul>
             </div>
@@ -234,7 +242,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                       <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Mejor modelo - 1M contexto + 65K output</span>
+                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K output)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
@@ -244,7 +252,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                       <span>GPT OSS 120B</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">MoE ultra potente - 131K contexto</span>
+                    <span className="text-xs text-muted-foreground">95% capacidad (124K contexto + output)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
@@ -254,12 +262,12 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                       <span>Qwen 3 32B</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Razonamiento dual - 131K contexto</span>
+                    <span className="text-xs text-muted-foreground">95% capacidad (124K contexto + output)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>Tokens máximos (95% capacidad)</span>
+                  <span>DeepSeek R1T2, Gemma 3 27B y otros</span>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />

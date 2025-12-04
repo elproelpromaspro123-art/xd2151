@@ -75,11 +75,11 @@ const AI_MODELS = {
         provider: "venice/beta",
         fallbackProvider: null as string | null,
         apiProvider: "openrouter" as const,
-        // Free: 70% de 262k = 183k | Premium: 95% de 262k = 249k
-        freeContextTokens: 183000,
-        freeOutputTokens: 183000,
-        premiumContextTokens: 249000,
-        premiumOutputTokens: 249000,
+        // Free: 90% de 262k = 235,680 | Premium: 95% de 262k = 248,880
+        freeContextTokens: 235680,
+        freeOutputTokens: 235680,
+        premiumContextTokens: 248880,
+        premiumOutputTokens: 248880,
     },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
@@ -155,16 +155,16 @@ const AI_MODELS = {
          description: "OpenAI GPT-OSS 120B - Modelo MoE ultra potente con razonamiento avanzado, 131K contexto, tool use y ejecución de código",
          supportsImages: false,
          supportsReasoning: true,
-         isPremiumOnly: false,
+         isPremiumOnly: true,
          category: "general" as const,
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
          // Oficial docs: 131,072 contexto, 131,072 output máximo
-         // Free: 90% de 131K contexto = 117,964, 90% de 131K output = 117,964
+         // Free: no disponible (premium only)
          // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
-         freeContextTokens: 117964,
-         freeOutputTokens: 117964,
+         freeContextTokens: 0,
+         freeOutputTokens: 0,
          premiumContextTokens: 124518,
          premiumOutputTokens: 124518,
      },
@@ -174,16 +174,16 @@ const AI_MODELS = {
          description: "Alibaba Qwen 3 32B - Última generación con razonamiento dual, 128K nativo + 131K expandido con YaRN, reasoning y tool use",
          supportsImages: false,
          supportsReasoning: true,
-         isPremiumOnly: false,
+         isPremiumOnly: true,
          category: "general" as const,
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
          // Oficial docs: 131,072 contexto (con YaRN), 131,072 output máximo
-         // Free: 90% de 131K contexto = 117,964, 90% de 131K output = 117,964
+         // Free: no disponible (premium only)
          // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
-         freeContextTokens: 117964,
-         freeOutputTokens: 117964,
+         freeContextTokens: 0,
+         freeOutputTokens: 0,
          premiumContextTokens: 124518,
          premiumOutputTokens: 124518,
      },
