@@ -87,14 +87,16 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
   const applyTheme = (dark: boolean) => {
     const root = document.documentElement;
     if (dark) {
-      root.classList.add("dark");
       root.classList.remove("light");
+      root.classList.add("dark");
       root.style.colorScheme = "dark";
     } else {
       root.classList.remove("dark");
       root.classList.add("light");
       root.style.colorScheme = "light";
     }
+    // Force repaint to ensure changes apply
+    void root.offsetHeight;
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {

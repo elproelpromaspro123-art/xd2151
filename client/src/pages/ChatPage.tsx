@@ -106,14 +106,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         const root = document.documentElement;
 
         if (shouldBeDark) {
-            root.classList.add("dark");
             root.classList.remove("light");
+            root.classList.add("dark");
             root.style.colorScheme = "dark";
         } else {
             root.classList.remove("dark");
             root.classList.add("light");
             root.style.colorScheme = "light";
         }
+
+        // Force repaint to ensure theme changes apply immediately
+        void root.offsetHeight;
     }, [chatMode]);
 
     // Listen for theme settings changes
@@ -124,12 +127,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             const root = document.documentElement;
 
             if (shouldBeDark) {
-                root.classList.add("dark");
                 root.classList.remove("light");
+                root.classList.add("dark");
+                root.style.colorScheme = "dark";
             } else {
                 root.classList.remove("dark");
                 root.classList.add("light");
+                root.style.colorScheme = "light";
             }
+
+            // Force repaint
+            void root.offsetHeight;
         };
 
         window.addEventListener('themeSettingsChange', handleThemeChange);
