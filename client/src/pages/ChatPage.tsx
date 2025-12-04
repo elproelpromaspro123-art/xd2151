@@ -639,10 +639,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     };
 
     return (
-        <div className={`flex h-screen w-screen overflow-hidden ${chatMode === 'general'
-                ? 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40'
-                : 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950'
-            }`}>
+        <div className={`flex h-screen w-screen overflow-hidden bg-background`}>
             {/* Sidebar */}
             <ChatSidebar
                 conversations={sortedConversations}
@@ -663,34 +660,26 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b gap-2 sm:gap-0 ${chatMode === 'general'
-                            ? 'border-slate-200/60 bg-white/70 backdrop-blur-xl'
-                            : 'border-zinc-800/50 bg-zinc-900/80 backdrop-blur-xl'
-                        }`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border bg-background/70 backdrop-blur-xl gap-2 sm:gap-0`}>
                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                                className={`hidden lg:flex h-8 w-8 ${chatMode === 'general' ? 'text-slate-600 hover:text-slate-900' : 'text-zinc-400 hover:text-white'
-                                    }`}
+                                className={`hidden lg:flex h-8 w-8 text-foreground/70 hover:text-foreground`}
                             >
                                 {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                             </Button>
 
-                            <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap ${chatMode === 'general'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-primary/20 text-primary'
-                                }`}>
+                            <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap bg-primary/20 text-primary`}>
                                 {chatMode === 'general' ? <MessageCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <Gamepad2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                                 <span className="hidden xs:inline">{chatMode === 'general' ? 'General' : 'Roblox'}</span>
                             </div>
 
-                            <div className={`hidden xs:flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs whitespace-nowrap ${chatMode === 'general' ? 'text-slate-500' : 'text-zinc-500'
-                                }`}>
-                                <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${chatMode === 'general' ? 'text-blue-500' : 'text-primary'}`} />
+                            <div className={`hidden xs:flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs whitespace-nowrap text-muted-foreground`}>
+                                <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 text-primary`} />
                                 <span>{messageRemaining === 999 ? "∞" : messageRemaining}</span>
-                                <span className="text-slate-300 dark:text-zinc-600">|</span>
+                                <span className="text-muted-foreground/50">|</span>
                                 <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 text-emerald-500" />
                                 <span>{webSearchRemaining === 999 ? "∞" : webSearchRemaining}</span>
                             </div>
@@ -702,10 +691,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className={`gap-1.5 h-7 sm:h-8 text-xs ${chatMode === 'general'
-                                                ? 'text-slate-600 hover:text-slate-900'
-                                                : 'text-zinc-400 hover:text-white'
-                                            }`}
+                                        className={`gap-1.5 h-7 sm:h-8 text-xs text-foreground/70 hover:text-foreground`}
                                     >
                                         <UserIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                         <span className="hidden xs:inline max-w-[70px] truncate">{user.email}</span>
@@ -714,10 +700,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             )}
 
                             {isPremium && (
-                                <div className={`hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${chatMode === 'general'
-                                        ? 'bg-amber-100 text-amber-700'
-                                        : 'bg-amber-500/20 text-amber-400'
-                                    }`}>
+                                <div className={`hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-amber-500/20 text-amber-400`}>
                                     <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                     <span className="hidden sm:inline">Pro</span>
                                 </div>
@@ -727,10 +710,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className={`gap-1 h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs ${chatMode === 'general'
-                                            ? 'border-blue-200 text-blue-600 hover:bg-blue-50'
-                                            : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-                                        }`}
+                                    className={`gap-1 h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs border-primary/50 text-primary hover:bg-primary/10`}
                                 >
                                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     <span className="hidden xs:inline">{isPremium ? "Pro" : "Upgrade"}</span>
@@ -742,10 +722,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className={`h-7 w-7 sm:h-8 sm:w-8 ${chatMode === 'general'
-                                                ? 'text-slate-400 hover:text-red-500'
-                                                : 'text-zinc-500 hover:text-red-400'
-                                            }`}
+                                        className={`h-7 w-7 sm:h-8 sm:w-8 text-foreground/70 hover:text-red-500`}
                                     >
                                         <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     </Button>
@@ -756,20 +733,16 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                     {/* Progress Bar when streaming */}
                     {isStreaming && streamProgress && (
-                        <div className={`px-4 py-2 border-b ${chatMode === 'general'
-                                ? 'bg-blue-50/50 border-blue-100'
-                                : 'bg-primary/5 border-zinc-800/50'
-                            }`}>
+                        <div className={`px-4 py-2 border-b bg-muted/50 border-border`}>
                             <div className="flex items-center justify-between max-w-3xl mx-auto">
-                                <div className={`flex items-center gap-2 text-xs ${chatMode === 'general' ? 'text-blue-600' : 'text-primary'
-                                    }`}>
+                                <div className={`flex items-center gap-2 text-xs text-primary`}>
                                     <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
                                     <span>{streamProgress.tokensGenerated} tokens</span>
-                                    <span className={chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'}>•</span>
+                                    <span className={`text-muted-foreground`}>•</span>
                                     <span>{formatTimeRemaining(streamProgress.estimatedSecondsRemaining)}</span>
                                     {webSearchActive && (
                                         <>
-                                            <span className={chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'}>•</span>
+                                            <span className={`text-muted-foreground`}>•</span>
                                             <Globe className="h-3 w-3 text-emerald-500" />
                                             <span className="text-emerald-500">Web</span>
                                         </>
@@ -779,10 +752,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     variant="ghost"
                                     size="sm"
                                     onClick={handleStopGeneration}
-                                    className={`h-7 gap-1.5 text-xs ${chatMode === 'general'
-                                            ? 'text-red-500 hover:text-red-600 hover:bg-red-50'
-                                            : 'text-red-400 hover:text-red-300 hover:bg-red-950/50'
-                                        }`}
+                                    className={`h-7 gap-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10`}
                                 >
                                     <StopCircle className="h-3.5 w-3.5" />
                                     Detener
@@ -859,10 +829,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     </div>
 
                     {/* Input Area */}
-                    <div className={`border-t ${chatMode === 'general'
-                            ? 'border-slate-200/60 bg-white/50 backdrop-blur-xl'
-                            : 'border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl'
-                        }`}>
+                    <div className={`border-t border-border bg-background/50 backdrop-blur-xl`}>
                         <ChatInput
                             onSend={handleSendMessage}
                             isLoading={isStreaming}
@@ -883,8 +850,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                 {/* Artifact Panel */}
                 {artifactState.isOpen && (
-                    <div className={`w-full lg:w-1/2 h-full border-l ${chatMode === 'general' ? 'border-slate-200/60 bg-white' : 'border-zinc-800/50 bg-zinc-900'
-                        }`}>
+                    <div className={`w-full lg:w-1/2 h-full border-l border-border bg-background`}>
                         <ArtifactPanel
                             content={artifactState.content}
                             language={artifactState.language}
