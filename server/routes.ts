@@ -419,13 +419,10 @@ async function streamGeminiCompletion(
         }
 
         // Agregar thinking si está soportado (formato correcto para Gemini 2.5)
-        if (useReasoning && modelInfo.supportsReasoning) {
-            const budgetTokens = isPremium ? 10000 : 5000;
-            requestBody.generationConfig.thinking = {
-                type: "ENABLED",
-                budgetTokens: budgetTokens
-            };
-        }
+         if (useReasoning && modelInfo.supportsReasoning) {
+             const budgetTokens = isPremium ? 10000 : 5000;
+             requestBody.generationConfig.thinkingBudget = budgetTokens;
+         }
 
         const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
