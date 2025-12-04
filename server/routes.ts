@@ -885,7 +885,6 @@ async function streamGroqCompletion(
                 requestBody.temperature = 0.6; // Temperatura baja para thinking mode
                 requestBody.top_k = 20;
                 requestBody.top_p = 0.95;
-                requestBody.min_p = 0;
             } else {
                 requestBody.include_reasoning = true;
             }
