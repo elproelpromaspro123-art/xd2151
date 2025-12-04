@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 
@@ -16,7 +16,15 @@ export function serveStatic(app: Express) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
   }
+  
+  const indexPath = path.join(distPath, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    console.error(`[static] index.html not found at ${indexPath}`);
+    throw new Error(`Could not find index.html at ${indexPath}`);
+  }
+  
   console.log(`[static] Build directory found, serving from ${distPath}`);
+  console.log(`[static] index.html verified at ${indexPath}`);
 
   app.use(express.static(distPath, {
     maxAge: "1d",
@@ -31,8 +39,16 @@ export function serveStatic(app: Express) {
     }
   }));
 
-  app.use("*", (_req, res) => {
+  app.use("*", (req: Request, res: Response, next: NextFunction) => {
+    if (req.originalUrl.startsWith("/api") || req.originalUrl === "/health") {
+      return next();
+    }
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`[static] Error serving index.html:`, err);
+        res.status(500).send("Error loading application");
+      }
+    });
   });
 }

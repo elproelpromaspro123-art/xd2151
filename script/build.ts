@@ -1,9 +1,9 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, access, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
 const allowlist = [
   "@google/generative-ai",
   "@neondatabase/serverless",
@@ -30,24 +30,39 @@ const allowlist = [
   "xlsx",
   "zod",
   "zod-validation-error",
-  "vite",
-  "fs",
-  "path",
-  "crypto",
 ];
 
 async function buildAll() {
   const startTime = Date.now();
   
+  console.log("=".repeat(50));
+  console.log("BUILD STARTED");
+  console.log(`Node version: ${process.version}`);
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log("=".repeat(50));
+  
   try {
+    console.log("\n[1/4] Cleaning dist directory...");
     await rm("dist", { recursive: true, force: true });
+    await mkdir("dist", { recursive: true });
+    console.log("✓ dist directory cleaned");
 
-    console.log("building client...");
+    console.log("\n[2/4] Building client with Vite...");
     const clientStart = Date.now();
-    await viteBuild();
-    console.log(`client build completed in ${Date.now() - clientStart}ms`);
+    await viteBuild({
+      logLevel: "info",
+    });
+    console.log(`✓ Client build completed in ${Date.now() - clientStart}ms`);
 
-    console.log("building server...");
+    const publicPath = path.join(process.cwd(), "dist", "public");
+    const indexPath = path.join(publicPath, "index.html");
+    
+    if (!existsSync(indexPath)) {
+      throw new Error(`Client build failed: ${indexPath} not found`);
+    }
+    console.log(`✓ Verified: ${indexPath} exists`);
+
+    console.log("\n[3/4] Building server with esbuild...");
     const serverStart = Date.now();
     const pkg = JSON.parse(await readFile("package.json", "utf-8"));
     const allDeps = [
@@ -56,7 +71,8 @@ async function buildAll() {
     ];
     const externals = allDeps.filter((dep) => !allowlist.includes(dep));
 
-    console.log(`bundling ${allowlist.length} modules, excluding ${externals.length} external modules`);
+    console.log(`  Bundling ${allowlist.filter(d => allDeps.includes(d)).length} modules`);
+    console.log(`  External: ${externals.length} modules`);
 
     await esbuild({
       entryPoints: ["server/index.ts"],
@@ -70,16 +86,33 @@ async function buildAll() {
       minify: true,
       external: externals,
       logLevel: "info",
+      sourcemap: false,
+      treeShaking: true,
     });
-    console.log(`server build completed in ${Date.now() - serverStart}ms`);
-    console.log(`total build time: ${Date.now() - startTime}ms`);
+    console.log(`✓ Server build completed in ${Date.now() - serverStart}ms`);
+
+    const serverPath = path.join(process.cwd(), "dist", "index.cjs");
+    if (!existsSync(serverPath)) {
+      throw new Error(`Server build failed: ${serverPath} not found`);
+    }
+    console.log(`✓ Verified: ${serverPath} exists`);
+
+    console.log("\n[4/4] Build verification...");
+    console.log("=".repeat(50));
+    console.log("BUILD COMPLETED SUCCESSFULLY");
+    console.log(`Total build time: ${Date.now() - startTime}ms`);
+    console.log("=".repeat(50));
+    
   } catch (error) {
-    console.error("Build error:", error);
+    console.error("\n" + "=".repeat(50));
+    console.error("BUILD FAILED");
+    console.error("=".repeat(50));
+    console.error(error);
     throw error;
   }
 }
 
 buildAll().catch((err) => {
-  console.error(err);
+  console.error("Build process failed:", err.message);
   process.exit(1);
 });

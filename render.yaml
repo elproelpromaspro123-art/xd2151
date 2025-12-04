@@ -3,9 +3,10 @@ services:
     name: roblox-ui-designer
     runtime: node
     plan: free
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: node dist/index.cjs
     healthCheckPath: /health
+    numInstances: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -13,6 +14,8 @@ services:
         value: 10000
       - key: DATA_DIR
         value: /opt/render/project/data
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512
       - key: OPENROUTER_API_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
