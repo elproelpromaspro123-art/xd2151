@@ -589,20 +589,22 @@ export async function registerRoutes(
         });
       }
 
-      const ipCheck = checkIpRestrictions(ip);
-      if (ipCheck.isRestricted) {
+      const ipRestriction = checkIpRestrictions(ip);
+      if (!ipRestriction.allowed) {
         return res.status(403).json({
-          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
+          error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
           code: "IP_RESTRICTED"
         });
       }
 
-      const user = await registerUser(email, password, ip);
-      const verificationCode = generateVerificationCode();
-      saveVerificationData(user.id, verificationCode);
-      await sendVerificationEmail(user.email, verificationCode);
+      const result = await registerUser(email, password, ip);
+      if (!result.success || !result.userId) {
+        return res.status(400).json({ error: result.error || "Registro inválido" });
+      }
 
-      res.status(201).json({ message: "Usuario registrado exitosamente. Por favor, verifica tu correo electrónico." });
+      const session = createSession(result.userId, req.headers['user-agent'], ip);
+      const user = getUserById(result.userId);
+      return res.status(201).json({ token: session.token, user: user ? { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isEmailVerified } : undefined });
     } catch (error: any) {
       console.error("Error during registration:", error);
       if (error.message === "User already exists") {
@@ -629,16 +631,21 @@ export async function registerRoutes(
         });
       }
 
-      const ipCheck = checkIpRestrictions(ip);
-      if (ipCheck.isRestricted) {
+      const ipRestriction = checkIpRestrictions(ip);
+      if (!ipRestriction.allowed) {
         return res.status(403).json({
-          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
+          error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
           code: "IP_RESTRICTED"
         });
       }
 
-      const { user, token } = await loginUser(email, password, ip);
-      res.status(200).json({ token, user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+      const result = loginUser(email, password, ip);
+      if (!result.success || !result.user) {
+        return res.status(401).json({ error: result.error || "Credenciales inválidas" });
+      }
+
+      const session = createSession(result.user.id, req.headers['user-agent'], ip);
+      res.status(200).json({ token: session.token, user: { id: result.user.id, email: result.user.email, isPremium: result.user.isPremium, isVerified: result.user.isEmailVerified } });
     } catch (error: any) {
       console.error("Error during login:", error);
       if (error.message === "Invalid credentials" || error.message === "User not verified") {
@@ -650,10 +657,10 @@ export async function registerRoutes(
 
   app.post("/api/auth/google", async (req: Request, res: Response) => {
     try {
-      const { idToken } = req.body;
+      const { googleId, email } = req.body;
 
-      if (!idToken) {
-        return res.status(400).json({ error: "Token de Google es requerido" });
+      if (!googleId || !email) {
+        return res.status(400).json({ error: "googleId y email son requeridos" });
       }
 
       const ip = getClientIp(req);
@@ -665,16 +672,21 @@ export async function registerRoutes(
         });
       }
 
-      const ipCheck = checkIpRestrictions(ip);
-      if (ipCheck.isRestricted) {
+      const ipRestriction = checkIpRestrictions(ip);
+      if (!ipRestriction.allowed) {
         return res.status(403).json({
-          error: "Acceso denegado desde esta ubicación. Por favor, contacta a soporte si crees que es un error.",
+          error: ipRestriction.reason || "Acceso denegado desde esta ubicación",
           code: "IP_RESTRICTED"
         });
       }
 
-      const { user, token } = await loginWithGoogle(idToken, ip);
-      res.status(200).json({ token, user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+      const result = loginWithGoogle(googleId, email, ip);
+      if (!result.success || !result.user) {
+        return res.status(401).json({ error: result.error || "Login de Google inválido" });
+      }
+
+      const session = createSession(result.user.id, req.headers['user-agent'], ip);
+      res.status(200).json({ token: session.token, user: { id: result.user.id, email: result.user.email, isPremium: result.user.isPremium, isVerified: result.user.isEmailVerified } });
     } catch (error: any) {
       console.error("Error during Google login:", error);
       res.status(500).json({ error: "Error interno del servidor" });
@@ -689,8 +701,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Correo y código de verificación son requeridos" });
       }
 
-      const user = await verifyEmailCode(email, code);
-      res.status(200).json({ message: "Correo verificado exitosamente", user: { id: user.id, email: user.email, isPremium: user.isPremium, isVerified: user.isVerified } });
+      const result = verifyEmailCode(email, code);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error || "Código inválido" });
+      }
+      res.status(200).json({ message: "Correo verificado exitosamente" });
     } catch (error: any) {
       console.error("Error verifying email:", error);
       if (error.message === "Invalid or expired verification code") {
@@ -708,7 +723,10 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Correo electrónico es requerido" });
       }
 
-      await resendVerificationCode(email);
+      const result = await resendVerificationCode(email);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error || "No se pudo reenviar el código" });
+      }
       res.status(200).json({ message: "Código de verificación reenviado. Revisa tu bandeja de entrada." });
     } catch (error: any) {
       console.error("Error resending verification code:", error);
