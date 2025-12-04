@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, MessageSquare, Trash2, X, Menu } from "lucide-react";
+import { Plus, MessageSquare, Trash2, X, Menu, ChevronLeft, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -11,6 +11,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Conversation } from "@shared/schema";
 
 interface ChatSidebarProps {
@@ -23,6 +29,8 @@ interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   chatMode?: "roblox" | "general";
+  isCollapsed?: boolean;
+  onCollapseToggle?: () => void;
 }
 
 export function ChatSidebar({
@@ -35,6 +43,8 @@ export function ChatSidebar({
   isOpen,
   onToggle,
   chatMode = "roblox",
+  isCollapsed = false,
+  onCollapseToggle,
 }: ChatSidebarProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
@@ -67,174 +77,313 @@ export function ChatSidebar({
 
     if (days === 0) return "Hoy";
     if (days === 1) return "Ayer";
-    if (days < 7) return `Hace ${days} días`;
+    if (days < 7) return `${days}d`;
     return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
   };
 
+  const groupConversationsByDate = (convos: Conversation[]) => {
+    const today: Conversation[] = [];
+    const yesterday: Conversation[] = [];
+    const thisWeek: Conversation[] = [];
+    const older: Conversation[] = [];
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    convos.forEach(convo => {
+      const date = new Date(convo.updatedAt);
+      if (date >= todayStart) {
+        today.push(convo);
+      } else if (date >= yesterdayStart) {
+        yesterday.push(convo);
+      } else if (date >= weekStart) {
+        thisWeek.push(convo);
+      } else {
+        older.push(convo);
+      }
+    });
+
+    return { today, yesterday, thisWeek, older };
+  };
+
+  const grouped = groupConversationsByDate(conversations);
+
+  const renderConversationGroup = (title: string, convos: Conversation[]) => {
+    if (convos.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <h3 className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider ${
+          chatMode === "general" ? "text-slate-400" : "text-zinc-500"
+        }`}>
+          {title}
+        </h3>
+        <div className="space-y-0.5">
+          {convos.map((conversation) => (
+            <div
+              key={conversation.id}
+              onClick={() => onSelectConversation(conversation.id)}
+              className={`group flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer transition-all duration-150 ${
+                currentConversationId === conversation.id
+                  ? chatMode === "general"
+                    ? "bg-blue-100 text-blue-900"
+                    : "bg-primary/20 text-white"
+                  : chatMode === "general"
+                    ? "text-slate-700 hover:bg-slate-100"
+                    : "text-zinc-300 hover:bg-zinc-800/60"
+              }`}
+            >
+              <MessageSquare className={`h-4 w-4 flex-shrink-0 ${
+                currentConversationId === conversation.id
+                  ? chatMode === "general" ? "text-blue-600" : "text-primary"
+                  : chatMode === "general" ? "text-slate-400" : "text-zinc-500"
+              }`} />
+              <span className="flex-1 truncate text-sm font-medium">
+                {conversation.title}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${
+                      chatMode === "general" 
+                        ? "text-slate-400 hover:text-slate-600" 
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(conversation.id, e as any);
+                    }}
+                    className="text-red-500 focus:text-red-500"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Collapsed sidebar
+  if (isCollapsed) {
+    return (
+      <div className={`hidden lg:flex flex-col h-full w-16 border-r transition-all duration-300 ${
+        chatMode === "general"
+          ? "bg-white/80 border-slate-200/60"
+          : "bg-zinc-900 border-zinc-800/50"
+      }`}>
+        <div className="p-2 flex flex-col items-center gap-2">
+          <Button
+            onClick={onNewChat}
+            size="icon"
+            className={`h-10 w-10 rounded-xl ${
+              chatMode === "general"
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-primary hover:bg-primary/90"
+            }`}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2">
+          {conversations.slice(0, 10).map((conversation) => (
+            <div
+              key={conversation.id}
+              onClick={() => onSelectConversation(conversation.id)}
+              className={`mx-2 mb-1 p-2 rounded-lg cursor-pointer transition-colors ${
+                currentConversationId === conversation.id
+                  ? chatMode === "general"
+                    ? "bg-blue-100"
+                    : "bg-primary/20"
+                  : chatMode === "general"
+                    ? "hover:bg-slate-100"
+                    : "hover:bg-zinc-800/60"
+              }`}
+              title={conversation.title}
+            >
+              <MessageSquare className={`h-5 w-5 mx-auto ${
+                currentConversationId === conversation.id
+                  ? chatMode === "general" ? "text-blue-600" : "text-primary"
+                  : chatMode === "general" ? "text-slate-400" : "text-zinc-500"
+              }`} />
+            </div>
+          ))}
+        </div>
+
+        <div className="p-2 flex flex-col items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCollapseToggle}
+            className={`h-10 w-10 ${
+              chatMode === "general" ? "text-slate-500 hover:text-slate-700" : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <ChevronLeft className="h-5 w-5 rotate-180" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
+      {/* Mobile toggle button */}
       <Button
         variant="ghost"
         size="icon"
         onClick={onToggle}
-        className="fixed top-4 left-4 z-50 lg:hidden animated-border"
-        data-testid="button-toggle-sidebar"
+        className={`fixed top-3 left-3 z-50 lg:hidden h-10 w-10 rounded-xl shadow-lg ${
+          chatMode === "general"
+            ? "bg-white text-slate-700 border border-slate-200"
+            : "bg-zinc-800 text-zinc-300 border border-zinc-700"
+        }`}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
+      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-40 w-72 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } ${
           chatMode === "general"
-            ? "bg-white/80 backdrop-blur-sm border-r border-indigo-200/30"
-            : "bg-sidebar border-r border-sidebar-border"
+            ? "bg-white/95 backdrop-blur-xl border-r border-slate-200/60"
+            : "bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800/50"
         }`}
       >
+        {/* Header */}
         <div className={`p-4 border-b ${
-          chatMode === "general"
-            ? "border-indigo-200/30 bg-gradient-to-r from-indigo-50/50 to-blue-50/30"
-            : "border-sidebar-border"
+          chatMode === "general" ? "border-slate-200/60" : "border-zinc-800/50"
         }`}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className={`text-sm font-semibold ${
+              chatMode === "general" ? "text-slate-900" : "text-white"
+            }`}>
+              Conversaciones
+            </h2>
+            {onCollapseToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCollapseToggle}
+                className={`hidden lg:flex h-7 w-7 ${
+                  chatMode === "general" ? "text-slate-500 hover:text-slate-700" : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           <Button
             onClick={onNewChat}
-            className={`w-full gap-2 animated-border-strong ${
+            className={`w-full gap-2 h-10 rounded-xl font-medium ${
               chatMode === "general"
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                : ""
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-primary hover:bg-primary/90"
             }`}
-            data-testid="button-new-chat"
           >
             <Plus className="h-4 w-4" />
             Nueva conversación
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-2">
+        {/* Conversations list */}
+        <div className="flex-1 overflow-y-auto py-2 scrollbar-thin">
           {conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full px-4 text-center">
-              <MessageSquare className={`h-10 w-10 mb-3 ${
-                chatMode === "general"
-                  ? "text-indigo-300"
-                  : "text-muted-foreground/50"
-              }`} />
-              <p className={`text-sm ${
-                chatMode === "general"
-                  ? "text-slate-700"
-                  : "text-muted-foreground"
+            <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+                chatMode === "general" ? "bg-slate-100" : "bg-zinc-800"
               }`}>
-                No hay conversaciones aún
+                <MessageSquare className={`h-6 w-6 ${
+                  chatMode === "general" ? "text-slate-400" : "text-zinc-500"
+                }`} />
+              </div>
+              <p className={`text-sm font-medium mb-1 ${
+                chatMode === "general" ? "text-slate-700" : "text-zinc-300"
+              }`}>
+                Sin conversaciones
               </p>
-              <p className={`text-xs mt-1 ${
-                chatMode === "general"
-                  ? "text-slate-500"
-                  : "text-muted-foreground/70"
+              <p className={`text-xs ${
+                chatMode === "general" ? "text-slate-500" : "text-zinc-500"
               }`}>
-                Inicia una nueva conversación para comenzar
+                Inicia una nueva para comenzar
               </p>
             </div>
           ) : (
-            <div className="space-y-1 px-2">
-              {conversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => onSelectConversation(conversation.id)}
-                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all animated-border ${
-                    currentConversationId === conversation.id
-                      ? chatMode === "general"
-                        ? "bg-indigo-100/60 border border-indigo-300/40"
-                        : "bg-sidebar-accent animated-border-strong"
-                      : chatMode === "general"
-                      ? "hover:bg-indigo-50/40"
-                      : "hover:bg-sidebar-accent/50"
-                  }`}
-                  data-testid={`conversation-item-${conversation.id}`}
-                >
-                  <MessageSquare className={`h-4 w-4 flex-shrink-0 ${
-                    chatMode === "general"
-                      ? "text-indigo-500"
-                      : "text-muted-foreground"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${
-                      chatMode === "general"
-                        ? "text-slate-900"
-                        : "text-sidebar-foreground"
-                    }`}>
-                      {conversation.title}
-                    </p>
-                    <p className={`text-xs ${
-                      chatMode === "general"
-                        ? "text-slate-500"
-                        : "text-muted-foreground"
-                    }`}>
-                      {formatDate(conversation.updatedAt)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleDeleteClick(conversation.id, e)}
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                    data-testid={`button-delete-conversation-${conversation.id}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <>
+              {renderConversationGroup("Hoy", grouped.today)}
+              {renderConversationGroup("Ayer", grouped.yesterday)}
+              {renderConversationGroup("Esta semana", grouped.thisWeek)}
+              {renderConversationGroup("Anteriores", grouped.older)}
+            </>
           )}
         </div>
 
+        {/* Footer */}
         {conversations.length > 0 && (
-          <div className={`p-4 border-t ${
-            chatMode === "general"
-              ? "border-indigo-200/30 bg-gradient-to-r from-indigo-50/30 to-blue-50/20"
-              : "border-sidebar-border"
+          <div className={`p-3 border-t ${
+            chatMode === "general" ? "border-slate-200/60" : "border-zinc-800/50"
           }`}>
             <Button
               variant="ghost"
               onClick={() => setDeleteAllDialogOpen(true)}
-              className={`w-full gap-2 animated-border ${
+              className={`w-full gap-2 h-9 text-xs font-medium ${
                 chatMode === "general"
-                  ? "text-slate-600 hover:text-red-600 hover:bg-red-50/30"
-                  : "text-muted-foreground hover:text-destructive"
+                  ? "text-slate-500 hover:text-red-600 hover:bg-red-50"
+                  : "text-zinc-500 hover:text-red-400 hover:bg-red-950/30"
               }`}
-              data-testid="button-delete-all-conversations"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
               Eliminar todas
             </Button>
           </div>
         )}
       </div>
 
+      {/* Overlay for mobile */}
       {isOpen && (
         <div
           className={`fixed inset-0 z-30 lg:hidden ${
-            chatMode === "general"
-              ? "bg-slate-900/20 backdrop-blur-sm"
-              : "bg-background/80 backdrop-blur-sm"
+            chatMode === "general" ? "bg-black/20" : "bg-black/50"
           }`}
           onClick={onToggle}
         />
       )}
 
+      {/* Delete single dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="animated-border-strong">
+        <AlertDialogContent className={chatMode === "general" ? "" : "bg-zinc-900 border-zinc-800"}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar conversación</AlertDialogTitle>
+            <AlertDialogTitle className={chatMode === "general" ? "" : "text-white"}>
+              Eliminar conversación
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. La conversación y todos sus mensajes serán eliminados permanentemente.
+              Esta acción no se puede deshacer. La conversación será eliminada permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className={chatMode === "general" ? "" : "bg-zinc-800 text-zinc-300 border-zinc-700"}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Eliminar
             </AlertDialogAction>
@@ -242,20 +391,24 @@ export function ChatSidebar({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete all dialog */}
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <AlertDialogContent className="animated-border-strong">
+        <AlertDialogContent className={chatMode === "general" ? "" : "bg-zinc-900 border-zinc-800"}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar todas las conversaciones</AlertDialogTitle>
+            <AlertDialogTitle className={chatMode === "general" ? "" : "text-white"}>
+              Eliminar todas las conversaciones
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Todas las conversaciones y sus mensajes serán eliminados permanentemente.
+              Esta acción eliminará todas tus conversaciones permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-all">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className={chatMode === "general" ? "" : "bg-zinc-800 text-zinc-300 border-zinc-700"}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDeleteAll}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete-all"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Eliminar todas
             </AlertDialogAction>

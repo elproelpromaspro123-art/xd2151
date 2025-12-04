@@ -29,6 +29,7 @@ import {
     getUserConversations,
     getUserConversation,
     createUserConversation,
+    updateUserConversation,
     deleteUserConversation,
     deleteAllUserConversations,
     getUserMessages,
@@ -39,54 +40,66 @@ import {
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+// Nuevos modelos de IA con providers específicos
 const AI_MODELS = {
-    "kat-coder-pro": {
-        id: "kwaipilot/kat-coder-pro:free",
-        name: "KAT-Coder Pro",
-        description: "Modelo Free Potente - Excelente para scripts de Roblox",
-        supportsImages: false,
-        supportsReasoning: false,
-        isPremiumOnly: false,
-        maxTokens: 15000,
-        avgTokensPerSecond: 60,
-        category: "programming",
-    },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
-        name: "DeepSeek R1T2",
-        description: "Solo texto - Mejor para programación avanzada",
+        name: "DeepSeek R1T2 Chimera",
+        description: "Modelo potente para programación avanzada y razonamiento",
+        supportsImages: false,
+        supportsReasoning: true,
+        isPremiumOnly: false,
+        maxTokens: 32000,
+        avgTokensPerSecond: 80,
+        category: "programming" as const,
+        provider: "chutes",
+        fallbackProvider: null as string | null,
+    },
+    "glm-4.5-air": {
+        id: "z-ai/glm-4.5-air:free",
+        name: "GLM 4.5 Air",
+        description: "Modelo versátil para conversación y programación",
         supportsImages: false,
         supportsReasoning: false,
         isPremiumOnly: false,
-        maxTokens: 15000,
-        avgTokensPerSecond: 60,
-        category: "programming",
+        maxTokens: 32000,
+        avgTokensPerSecond: 70,
+        category: "general" as const,
+        provider: "chutes/bf16",
+        fallbackProvider: "z-ai" as string | null,
     },
-    "amazon-nova": {
-        id: "amazon/nova-2-lite-v1:free",
-        name: "Amazon Nova 2 Lite",
-        description: "Texto e imágenes - Mejor para uso general",
-        supportsImages: true,
-        supportsReasoning: false,
-        isPremiumOnly: true,
-        maxTokens: 30000,
-        avgTokensPerSecond: 55,
-        category: "general",
-    },
-    "grok-4.1-fast": {
-        id: "x-ai/grok-4.1-fast:free",
-        name: "Grok 4.1 Fast",
-        description: "EL MEJOR PARA ROBLOX - Máxima potencia y razonamiento",
+    "nemotron-nvidia": {
+        id: "nvidia/nemotron-nano-12b-v2-vl:free",
+        name: "Nemotron NVIDIA VL",
+        description: "Modelo NVIDIA con visión - Texto e imágenes",
         supportsImages: true,
         supportsReasoning: true,
         isPremiumOnly: true,
-        maxTokens: 50000,
+        maxTokens: 32000,
+        avgTokensPerSecond: 75,
+        category: "general" as const,
+        provider: "nvidia",
+        fallbackProvider: null as string | null,
+    },
+    "gemma-3-27b": {
+        id: "google/gemma-3-27b-it:free",
+        name: "Gemma 3 27B",
+        description: "Modelo Google premium con visión y alto rendimiento",
+        supportsImages: true,
+        supportsReasoning: false,
+        isPremiumOnly: true,
+        maxTokens: 32000,
         avgTokensPerSecond: 65,
-        category: "general",
+        category: "general" as const,
+        provider: "modelrun",
+        fallbackProvider: null as string | null,
     },
 };
 
 type ModelKey = keyof typeof AI_MODELS;
+
+// Store para manejar las solicitudes activas y permitir cancelación
+const activeRequests = new Map<string, AbortController>();
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
@@ -115,15 +128,14 @@ function detectWebSearchIntent(message: string): boolean {
     return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
-const ROBLOX_SYSTEM_PROMPT = `Eres un asistente de Roblox. Ayuda al usuario con preguntas sobre Roblox, Lua/Luau, scripting y desarrollo en general.`;
+const ROBLOX_SYSTEM_PROMPT = `Eres un asistente experto en desarrollo de Roblox. Ayudas con Lua/Luau, scripting, diseño UI/UX, y desarrollo de juegos. Proporcionas código limpio, moderno y bien comentado. Explicas conceptos de forma clara y ofreces mejores prácticas.`;
 
-const GENERAL_SYSTEM_PROMPT = `Eres un asistente general. Ayuda al usuario con cualquier pregunta que tenga.`;
+const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Ayudas con cualquier tema de forma clara, precisa y útil. Eres amable pero conciso. Proporcionas información actualizada y relevante.`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
     return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
 }
 
-// Ethical content checks disabled - allowing free responses
 function containsUnethicalContent(): boolean {
     return false;
 }
@@ -160,7 +172,6 @@ function getUserIdFromRequest(req: Request): string | null {
     return session.userId;
 }
 
-// Verificar Cloudflare Turnstile
 async function verifyTurnstile(token: string): Promise<boolean> {
     const secretKey = process.env.Secret_Key;
 
@@ -265,11 +276,18 @@ async function streamChatCompletion(
     userId: string | null,
     chatHistory: Array<{ role: string; content: string | MessageContent[] }>,
     apiKey: string,
-    model: ModelKey = "kat-coder-pro",
+    model: ModelKey = "deepseek-r1t2",
     useReasoning: boolean = false,
     webSearchContext?: string,
-    chatMode: "roblox" | "general" = "roblox"
+    chatMode: "roblox" | "general" = "roblox",
+    requestId?: string
 ): Promise<void> {
+    const abortController = new AbortController();
+    
+    if (requestId) {
+        activeRequests.set(requestId, abortController);
+    }
+
     try {
         console.log("[streamChatCompletion] Starting with model:", model, "mode:", chatMode);
         const modelInfo = AI_MODELS[model];
@@ -296,6 +314,12 @@ async function streamChatCompletion(
             stream: true,
             max_tokens: modelInfo.maxTokens,
             temperature: 0.7,
+            provider: {
+                order: modelInfo.fallbackProvider 
+                    ? [modelInfo.provider, modelInfo.fallbackProvider]
+                    : [modelInfo.provider],
+                allow_fallbacks: !!modelInfo.fallbackProvider,
+            },
         };
 
         if (useReasoning && modelInfo.supportsReasoning) {
@@ -311,6 +335,7 @@ async function streamChatCompletion(
                 "X-Title": process.env.OPENROUTER_X_TITLE || "Roblox UI Designer Pro",
             },
             body: JSON.stringify(requestBody),
+            signal: abortController.signal,
         });
 
         if (!response.ok) {
@@ -362,24 +387,6 @@ async function streamChatCompletion(
                             tokenCount += content.split(/\s+/).length;
 
                             if (chunkCount % CHECK_INTERVAL === 0) {
-                                if (containsUnethicalContent(contentBuffer, chatMode)) {
-                                    const ethicalMessage = getEthicalRejectionMessage(chatMode);
-                                    if (userId) {
-                                        createUserMessage(userId, conversationId, "assistant", ethicalMessage);
-                                    } else {
-                                        await storage.createMessage({
-                                            id: randomUUID(),
-                                            conversationId,
-                                            role: "assistant",
-                                            content: ethicalMessage,
-                                        });
-                                    }
-                                    res.write(`data: ${JSON.stringify({ content: "\n\n" + ethicalMessage })}\n\n`);
-                                    res.write("data: [DONE]\n\n");
-                                    res.end();
-                                    return;
-                                }
-
                                 const elapsed = (Date.now() - startTime) / 1000;
                                 const tokensPerSecond = tokenCount / elapsed;
                                 const estimatedRemaining = Math.max(0, Math.ceil((modelInfo.maxTokens / 4 - tokenCount) / tokensPerSecond));
@@ -391,14 +398,13 @@ async function streamChatCompletion(
                         }
                     } catch (parseError) {
                         console.error("Error parsing stream chunk:", parseError);
-                        // Optionally, send an error to the client or handle it differently
                     }
                 }
             }
         }
 
         if (fullContent) {
-            const { sanitized, isClean } = sanitizeAssistantContent(fullContent, chatMode);
+            const { sanitized } = sanitizeAssistantContent(fullContent);
             if (userId) {
                 createUserMessage(userId, conversationId, "assistant", sanitized);
             } else {
@@ -409,15 +415,19 @@ async function streamChatCompletion(
                     content: sanitized,
                 });
             }
-
-            if (!isClean) {
-                res.write(`data: ${JSON.stringify({ content: "\n\n[Contenido filtrado por políticas de seguridad]" })}\n\n`);
-            }
         }
 
         res.write("data: [DONE]\n\n");
         res.end();
-    } catch (error) { // Handle streaming errors
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("[streamChatCompletion] Request was cancelled");
+            res.write(`data: ${JSON.stringify({ cancelled: true })}\n\n`);
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+        }
+        
         console.error("[streamChatCompletion] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
         if (!res.headersSent) {
             res.setHeader("Content-Type", "text/event-stream");
@@ -425,6 +435,10 @@ async function streamChatCompletion(
         res.write(`data: ${JSON.stringify({ error: "Error durante la generación. Intenta de nuevo." })}\n\n`);
         res.write("data: [DONE]\n\n");
         res.end();
+    } finally {
+        if (requestId) {
+            activeRequests.delete(requestId);
+        }
     }
 }
 
@@ -509,27 +523,7 @@ export async function registerRoutes(
                 return res.status(400).json({ error: "Correo y contraseña son requeridos" });
             }
 
-            if (!turnstileToken) {
-                return res.status(400).json({ error: "Verificación de seguridad requerida" });
-            }
-
-            // Verificar Cloudflare Turnstile
-            const turnstileValid = await verifyTurnstile(turnstileToken);
-            if (!turnstileValid) {
-                return res.status(400).json({ error: "Verificación de seguridad fallida. Por favor intenta de nuevo." });
-            }
-
-            if (password.length < 6) {
-                return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
-            }
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                return res.status(400).json({ error: "Correo electrónico inválido" });
-            }
-
             const ip = getClientIp(req);
-
             const vpnCheck = await detectVpnOrProxy(req);
             if (vpnCheck.isVpn) {
                 return res.status(403).json({
@@ -610,11 +604,9 @@ export async function registerRoutes(
             let email = req.body.email;
             const credential = req.body.credential;
 
-            // Si recibimos un credential JWT en lugar de googleId/email, decodificarlo
             if (!googleId || !email) {
                 if (credential) {
                     try {
-                        // Decodificar el JWT de Google sin verificación (ya está verificado por Google)
                         const parts = credential.split('.');
                         if (parts.length === 3) {
                             const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
@@ -845,9 +837,31 @@ export async function registerRoutes(
 
             const { title } = req.body;
             const conversation = await createUserConversation(userId, title || "Nueva Conversación");
-            res.status(201).json({ conversation });
+            res.status(201).json({ conversation, id: conversation.id });
         } catch (error) {
             console.error("Error creating conversation:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    app.patch("/api/conversations/:conversationId", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const { conversationId } = req.params;
+            const { title } = req.body;
+            
+            const updated = await updateUserConversation(userId, conversationId, { title });
+            if (!updated) {
+                return res.status(404).json({ error: "Conversación no encontrada" });
+            }
+            
+            res.status(200).json({ conversation: updated });
+        } catch (error) {
+            console.error("Error updating conversation:", error);
             res.status(500).json({ error: "Error interno del servidor" });
         }
     });
@@ -899,9 +913,54 @@ export async function registerRoutes(
         }
     });
 
+    app.delete("/api/messages/:messageId", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const { messageId } = req.params;
+            const deleted = await deleteUserMessage(userId, messageId);
+            
+            if (!deleted) {
+                return res.status(404).json({ error: "Mensaje no encontrado" });
+            }
+            
+            res.status(204).send();
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    // Endpoint para cancelar una generación en curso
+    app.post("/api/chat/stop", async (req: Request, res: Response) => {
+        try {
+            const { requestId } = req.body;
+            
+            if (!requestId) {
+                return res.status(400).json({ error: "requestId es requerido" });
+            }
+
+            const controller = activeRequests.get(requestId);
+            if (controller) {
+                controller.abort();
+                activeRequests.delete(requestId);
+                res.status(200).json({ success: true, message: "Generación cancelada" });
+            } else {
+                res.status(404).json({ error: "No se encontró la solicitud activa" });
+            }
+        } catch (error) {
+            console.error("Error stopping chat:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
     app.post("/api/chat", async (req: Request, res: Response) => {
         const userId = getUserIdFromRequest(req);
         const fingerprint = getFingerprint(req);
+        const requestId = randomUUID();
 
         try {
             console.log("[chat] Starting chat request", { userId, hasBody: !!req.body });
@@ -909,15 +968,18 @@ export async function registerRoutes(
             const { conversationId: clientConversationId, message, useWebSearch, model, useReasoning, imageBase64, chatMode } = chatRequestSchema.parse(req.body);
             console.log("[chat] Request validated", { conversationId: clientConversationId, model, chatMode });
 
-            const currentConversationId = clientConversationId || randomUUID();
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+            let currentConversationId = clientConversationId;
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "deepseek-r1t2";
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
 
-            if (userId) {
-                const conversationCount = await getUserConversationCount(userId);
-                if (conversationCount === 0 && !clientConversationId) {
-                    await createUserConversation(userId, "Nueva Conversación");
-                }
+            // Si no hay conversationId, crear una nueva conversación
+            if (!currentConversationId && userId) {
+                const title = message.slice(0, 50) + (message.length > 50 ? "..." : "");
+                const newConversation = await createUserConversation(userId, title);
+                currentConversationId = newConversation.id;
+                console.log("[chat] Created new conversation:", currentConversationId);
+            } else if (!currentConversationId) {
+                currentConversationId = randomUUID();
             }
 
             if (typeof message !== "string" || message.trim().length === 0) {
@@ -942,14 +1004,31 @@ export async function registerRoutes(
             res.setHeader("Cache-Control", "no-cache");
             res.setHeader("Connection", "keep-alive");
             res.setHeader("X-Accel-Buffering", "no");
+            res.setHeader("X-Request-Id", requestId);
+
+            // Preparar contenido del mensaje con imagen si existe
+            let messageContent: string | MessageContent[] = message;
+            if (imageBase64 && AI_MODELS[selectedModel]?.supportsImages) {
+                messageContent = [
+                    { type: "text", text: message },
+                    { type: "image_url", image_url: { url: imageBase64 } }
+                ];
+            }
 
             const chatHistory = [
-                { role: "user", content: message }
+                { role: "user", content: messageContent }
             ];
 
+            // Guardar el mensaje del usuario
             if (userId) {
                 try {
-                    createUserMessage(userId, currentConversationId, "user", message);
+                    const contentToSave = imageBase64 
+                        ? JSON.stringify([
+                            { type: "text", text: message },
+                            { type: "image_url", image_url: { url: imageBase64 } }
+                        ])
+                        : message;
+                    createUserMessage(userId, currentConversationId!, "user", contentToSave);
                     console.log("[chat] User message created successfully");
                 } catch (msgError) {
                     console.error("[chat] Error creating user message:", msgError);
@@ -958,23 +1037,27 @@ export async function registerRoutes(
             } else {
                 await storage.createMessage({
                     id: randomUUID(),
-                    conversationId: currentConversationId,
+                    conversationId: currentConversationId!,
                     role: "user",
                     content: message,
                 });
             }
 
+            // Enviar el conversationId y requestId al cliente
+            res.write(`data: ${JSON.stringify({ conversationId: currentConversationId, requestId })}\n\n`);
+
             console.log("[chat] About to stream completion with model:", selectedModel);
             await streamChatCompletion(
                 res,
-                currentConversationId,
+                currentConversationId!,
                 userId,
                 chatHistory,
                 apiKey,
                 selectedModel,
                 useReasoning,
                 webSearchContext,
-                mode
+                mode,
+                requestId
             );
         } catch (error: any) {
             console.error("[chat] Error:", error instanceof Error ? error.message : String(error), error instanceof Error ? error.stack : "");
@@ -986,6 +1069,8 @@ export async function registerRoutes(
 
     app.post("/api/chat/regenerate", async (req: Request, res: Response) => {
         const userId = getUserIdFromRequest(req);
+        const requestId = randomUUID();
+        
         try {
             const { conversationId, lastUserMessage, model, useReasoning, chatMode } = req.body || {};
             if (!conversationId || typeof lastUserMessage !== "string" || lastUserMessage.trim().length === 0) {
@@ -1001,13 +1086,17 @@ export async function registerRoutes(
             res.setHeader("Cache-Control", "no-cache");
             res.setHeader("Connection", "keep-alive");
             res.setHeader("X-Accel-Buffering", "no");
+            res.setHeader("X-Request-Id", requestId);
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "deepseek-r1t2";
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
 
             const chatHistory = [
                 { role: "user", content: lastUserMessage as string }
             ];
+
+            // Enviar requestId al cliente
+            res.write(`data: ${JSON.stringify({ requestId })}\n\n`);
 
             await streamChatCompletion(
                 res,
@@ -1018,7 +1107,8 @@ export async function registerRoutes(
                 selectedModel,
                 Boolean(useReasoning),
                 undefined,
-                mode
+                mode,
+                requestId
             );
         } catch (error: any) {
             console.error("Error en /api/chat/regenerate:", error);

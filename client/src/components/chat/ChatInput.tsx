@@ -1,5 +1,8 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Loader2, Globe, Image, Brain, ChevronDown, X, Gamepad2, MessageCircle } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { 
+  Send, Loader2, Globe, Image, Brain, ChevronDown, X, 
+  Gamepad2, MessageCircle, StopCircle, Sparkles 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -7,6 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import type { AIModel } from "@shared/schema";
 
@@ -29,6 +33,7 @@ interface ChatInputProps {
   isPremium: boolean;
   chatMode: "roblox" | "general";
   onChatModeChange: (mode: "roblox" | "general") => void;
+  onStopGeneration?: () => void;
 }
 
 const WEB_SEARCH_KEYWORDS = [
@@ -51,13 +56,15 @@ export function ChatInput({
   onReasoningChange,
   isPremium,
   chatMode,
-  onChatModeChange
+  onChatModeChange,
+  onStopGeneration
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +84,7 @@ export function ChatInput({
     
     if (pastedText.length > 100) {
       e.preventDefault();
-      const preview = pastedText.slice(0, 80).replace(/\n/g, ' ') + '...';
+      const preview = pastedText.slice(0, 60).replace(/\n/g, ' ') + '...';
       const newChip: PastedChip = {
         id: Date.now().toString(),
         preview,
@@ -130,10 +137,6 @@ export function ChatInput({
     if (fullMessage && !isLoading && !disabled) {
       const shouldUseWebSearch = useWebSearch || (canUseWebSearch && detectWebSearchIntent(fullMessage));
       
-      if (shouldUseWebSearch && !useWebSearch) {
-        setUseWebSearch(true);
-      }
-      
       onSend(fullMessage, shouldUseWebSearch, imageBase64 || undefined);
       setMessage("");
       setPastedChips([]);
@@ -155,45 +158,66 @@ export function ChatInput({
   const canUseWebSearch = webSearchRemaining > 0;
   const hasContent = message.trim() || pastedChips.length > 0;
 
+  // Filtrar modelos por plan (free vs premium)
+  const freeModels = models.filter(m => !m.isPremiumOnly);
+  const premiumModels = models.filter(m => m.isPremiumOnly);
+
   return (
-    <div className={`p-4 border-t transition-colors ${chatMode === 'general' ? 'border-indigo-200/30 bg-gradient-to-r from-white/40 via-indigo-50/20 to-blue-50/20 backdrop-blur-md' : 'border-border/50 bg-background/80 backdrop-blur-sm'}`}>
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-        <div className={`relative rounded-xl animated-border-strong overflow-visible transition-colors ${chatMode === 'general' ? 'bg-white/70 border border-indigo-200/40 shadow-sm hover:border-indigo-300/50' : 'bg-card'}`}>
+    <div className="p-4">
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+        {/* Main input container */}
+        <div className={`relative rounded-2xl transition-all duration-200 ${
+          isFocused 
+            ? chatMode === 'general'
+              ? 'ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/5'
+              : 'ring-2 ring-primary/30 shadow-lg shadow-primary/5'
+            : 'shadow-md'
+        } ${
+          chatMode === 'general'
+            ? 'bg-white border border-slate-200/80'
+            : 'bg-zinc-800/80 border border-zinc-700/50'
+        }`}>
+          
+          {/* Pasted chips */}
           {pastedChips.length > 0 && (
             <div className="flex flex-wrap gap-2 p-3 pb-0">
               {pastedChips.map(chip => (
                 <div 
                   key={chip.id}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs max-w-[200px] group transition-colors ${chatMode === 'general' ? 'bg-indigo-100/60 border border-indigo-200/40' : 'bg-secondary/80'}`}
+                  className={`flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs group ${
+                    chatMode === 'general' 
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200/50' 
+                      : 'bg-primary/10 text-primary border border-primary/20'
+                  }`}
                 >
-                  <span className={`truncate ${chatMode === 'general' ? 'text-slate-700' : 'text-muted-foreground'}`}>{chip.preview}</span>
+                  <span className="truncate max-w-[150px]">{chip.preview}</span>
                   <button
                     type="button"
                     onClick={() => removeChip(chip.id)}
-                    className={`transition-colors opacity-0 group-hover:opacity-100 ${chatMode === 'general' ? 'text-slate-600 hover:text-indigo-600' : 'text-muted-foreground hover:text-foreground'}`}
+                    className="opacity-60 hover:opacity-100 transition-opacity"
                   >
                     <X className="h-3 w-3" />
                   </button>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${chatMode === 'general' ? 'bg-indigo-100 text-indigo-700' : 'bg-primary/10 text-primary'}`}>
-                    PASTED
-                  </span>
                 </div>
               ))}
             </div>
           )}
 
+          {/* Image preview */}
           {imagePreview && (
             <div className="p-3 pb-0">
-              <div className="relative inline-block">
+              <div className="relative inline-block group">
                 <img 
                   src={imagePreview} 
                   alt="Preview" 
-                  className={`h-20 w-auto rounded-lg object-cover border transition-colors ${chatMode === 'general' ? 'border-indigo-200/50' : 'border-border'}`}
+                  className={`h-16 w-auto rounded-xl object-cover border-2 ${
+                    chatMode === 'general' ? 'border-slate-200' : 'border-zinc-700'
+                  }`}
                 />
                 <button
                   type="button"
                   onClick={removeImage}
-                  className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                  className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -201,131 +225,207 @@ export function ChatInput({
             </div>
           )}
 
+          {/* Textarea */}
           <textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder={chatMode === "general" 
-              ? "Preguntame lo que quieras... estoy aqui para ayudarte" 
-              : "Describe el diseño UI/UX que necesitas para Roblox Studio..."}
+              ? "¿En qué puedo ayudarte hoy?" 
+              : "Describe tu interfaz de Roblox..."}
             disabled={isLoading || disabled}
             rows={1}
-            className={`w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm focus:outline-none disabled:opacity-50 min-h-[48px] max-h-[200px] rounded-xl transition-colors ${
+            className={`w-full resize-none bg-transparent px-4 py-3.5 pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[52px] max-h-[200px] ${
               chatMode === 'general' 
-                ? 'text-slate-900 placeholder:text-slate-500' 
-                : 'text-foreground placeholder:text-muted-foreground'
+                ? 'text-slate-900 placeholder:text-slate-400' 
+                : 'text-white placeholder:text-zinc-500'
             }`}
-            data-testid="input-chat-message"
           />
           
-          <div className="absolute right-2 bottom-2 flex items-center gap-2">
+          {/* Action buttons */}
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
-              id="image-upload"
             />
             
-            {canUploadImage && (
+            {canUploadImage && !isLoading && (
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
                 onClick={() => fileInputRef.current?.click()}
-                className={`h-8 w-8 transition-colors ${
+                className={`h-8 w-8 rounded-lg ${
                   chatMode === 'general'
-                    ? 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                    : 'text-zinc-500 hover:text-primary hover:bg-primary/10'
                 }`}
-                title={`Subir imagen (${selectedModelInfo?.name || 'modelo con soporte de imágenes'})`}
               >
                 <Image className="h-4 w-4" />
               </Button>
             )}
             
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!hasContent || isLoading || disabled}
-              className={`h-9 w-9 rounded-lg transition-all ${
-                chatMode === 'general'
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-primary hover:bg-primary/90'
-              }`}
-              data-testid="button-send-message"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+            {isLoading && onStopGeneration ? (
+              <Button
+                type="button"
+                size="icon"
+                onClick={onStopGeneration}
+                className="h-9 w-9 rounded-xl bg-red-500 hover:bg-red-600 text-white"
+              >
+                <StopCircle className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!hasContent || isLoading || disabled}
+                className={`h-9 w-9 rounded-xl transition-all ${
+                  hasContent
+                    ? chatMode === 'general'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                      : 'bg-primary hover:bg-primary/90 shadow-md'
+                    : chatMode === 'general'
+                      ? 'bg-slate-100 text-slate-400'
+                      : 'bg-zinc-700 text-zinc-500'
+                }`}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </div>
         
+        {/* Controls bar */}
         <div className="flex flex-wrap items-center justify-between mt-3 px-1 gap-2">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Model selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  className="h-8 gap-1.5 text-xs"
+                  className={`h-8 gap-1.5 text-xs rounded-lg ${
+                    chatMode === 'general'
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  }`}
                   disabled={isLoading}
                 >
+                  <Sparkles className="h-3 w-3" />
                   <span className="max-w-[100px] truncate">{selectedModelInfo?.name || "Modelo"}</span>
                   <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                {models.map(model => (
-                  <DropdownMenuItem
-                    key={model.key}
-                    onClick={() => {
-                      if (model.available) {
-                        onModelChange(model.key);
-                        if (!model.supportsReasoning) {
-                          onReasoningChange(false);
-                        }
-                      }
-                    }}
-                    className={`flex flex-col items-start gap-1 ${!model.available ? 'opacity-50' : ''}`}
-                    disabled={!model.available}
-                  >
-                    <div className="flex items-center gap-2 w-full">
-                      <span className="font-medium">{model.name}</span>
-                        <div className="ml-auto flex items-center gap-2">
-                          {model.supportsReasoning && (
-                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[10px] font-medium">
-                              WITH REASONING
-                            </span>
-                          )}
-                          {model.isPremiumOnly && (
-                            <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-medium">
-                              PREMIUM
-                            </span>
-                          )}
-                        </div>
+              <DropdownMenuContent align="start" className="w-72">
+                {freeModels.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Free
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{model.description}</span>
-                  </DropdownMenuItem>
-                ))}
+                    {freeModels.map(model => (
+                      <DropdownMenuItem
+                        key={model.key}
+                        onClick={() => {
+                          if (model.available) {
+                            onModelChange(model.key);
+                            if (!model.supportsReasoning) {
+                              onReasoningChange(false);
+                            }
+                          }
+                        }}
+                        className={`flex flex-col items-start gap-0.5 py-2 ${!model.available ? 'opacity-50' : ''}`}
+                        disabled={!model.available}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="font-medium text-sm">{model.name}</span>
+                          <div className="ml-auto flex items-center gap-1">
+                            {model.supportsImages && (
+                              <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
+                                IMG
+                              </span>
+                            )}
+                            {model.supportsReasoning && (
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
+                                R1
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{model.description}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                
+                {premiumModels.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" /> Premium
+                    </div>
+                    {premiumModels.map(model => (
+                      <DropdownMenuItem
+                        key={model.key}
+                        onClick={() => {
+                          if (model.available) {
+                            onModelChange(model.key);
+                            if (!model.supportsReasoning) {
+                              onReasoningChange(false);
+                            }
+                          }
+                        }}
+                        className={`flex flex-col items-start gap-0.5 py-2 ${!model.available ? 'opacity-50' : ''}`}
+                        disabled={!model.available}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="font-medium text-sm">{model.name}</span>
+                          <div className="ml-auto flex items-center gap-1">
+                            {model.supportsImages && (
+                              <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
+                                IMG
+                              </span>
+                            )}
+                            {model.supportsReasoning && (
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
+                                R1
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{model.description}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+            {/* Mode toggle */}
+            <div className={`flex items-center rounded-lg p-0.5 ${
+              chatMode === 'general' ? 'bg-slate-100' : 'bg-zinc-800'
+            }`}>
               <Button
                 type="button"
                 size="sm"
-                variant={chatMode === "roblox" ? "default" : "ghost"}
+                variant="ghost"
                 onClick={() => onChatModeChange("roblox")}
                 disabled={isLoading}
-                className={`h-7 px-2 text-xs gap-1 ${chatMode === "roblox" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-                data-testid="button-mode-roblox"
+                className={`h-7 px-2.5 text-xs gap-1 rounded-md ${
+                  chatMode === "roblox" 
+                    ? "bg-white shadow-sm text-slate-900" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 <Gamepad2 className="h-3 w-3" />
                 <span className="hidden sm:inline">Roblox</span>
@@ -333,72 +433,90 @@ export function ChatInput({
               <Button
                 type="button"
                 size="sm"
-                variant={chatMode === "general" ? "default" : "ghost"}
+                variant="ghost"
                 onClick={() => onChatModeChange("general")}
                 disabled={isLoading}
-                className={`h-7 px-2 text-xs gap-1 ${chatMode === "general" ? "bg-blue-500 text-white hover:bg-blue-500/90" : "text-muted-foreground"}`}
-                data-testid="button-mode-general"
+                className={`h-7 px-2.5 text-xs gap-1 rounded-md ${
+                  chatMode === "general" 
+                    ? "bg-white shadow-sm text-blue-600" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 <MessageCircle className="h-3 w-3" />
                 <span className="hidden sm:inline">General</span>
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Web search toggle */}
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+              chatMode === 'general' ? 'hover:bg-slate-100' : 'hover:bg-zinc-800'
+            }`}>
               <Switch
                 id="web-search"
                 checked={useWebSearch}
                 onCheckedChange={setUseWebSearch}
                 disabled={!canUseWebSearch || isLoading}
-                className="data-[state=checked]:bg-primary scale-90"
+                className="scale-75"
               />
               <label 
                 htmlFor="web-search" 
                 className={`flex items-center gap-1 text-xs cursor-pointer ${
-                  canUseWebSearch ? 'text-muted-foreground' : 'text-muted-foreground/50'
+                  canUseWebSearch 
+                    ? chatMode === 'general' ? 'text-slate-600' : 'text-zinc-400'
+                    : chatMode === 'general' ? 'text-slate-400' : 'text-zinc-600'
                 }`}
               >
                 <Globe className="h-3 w-3" />
                 <span className="hidden sm:inline">Web</span>
-                <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
-                  canUseWebSearch ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                }`}>
-                  {webSearchRemaining === 999 ? "∞" : webSearchRemaining}
-                </span>
               </label>
             </div>
 
+            {/* Reasoning toggle */}
             {canUseReasoning && (
-              <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+                chatMode === 'general' ? 'hover:bg-slate-100' : 'hover:bg-zinc-800'
+              }`}>
                 <Switch
                   id="reasoning"
                   checked={useReasoning}
                   onCheckedChange={onReasoningChange}
                   disabled={isLoading}
-                  className="data-[state=checked]:bg-blue-500 scale-90"
+                  className="scale-75 data-[state=checked]:bg-blue-500"
                 />
                 <label 
                   htmlFor="reasoning" 
-                  className="flex items-center gap-1 text-xs cursor-pointer text-muted-foreground"
+                  className={`flex items-center gap-1 text-xs cursor-pointer ${
+                    chatMode === 'general' ? 'text-slate-600' : 'text-zinc-400'
+                  }`}
                 >
                   <Brain className="h-3 w-3" />
-                  <span className="hidden sm:inline">Reasoning</span>
+                  <span className="hidden sm:inline">Pensar</span>
                 </label>
               </div>
             )}
           </div>
           
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd>
+          {/* Keyboard hints */}
+          <p className={`text-[10px] hidden sm:block ${
+            chatMode === 'general' ? 'text-slate-400' : 'text-zinc-600'
+          }`}>
+            <kbd className={`px-1.5 py-0.5 rounded text-[9px] font-mono ${
+              chatMode === 'general' ? 'bg-slate-100' : 'bg-zinc-800'
+            }`}>Enter</kbd>
             <span className="mx-1">enviar</span>
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Shift+Enter</kbd>
+            <kbd className={`px-1.5 py-0.5 rounded text-[9px] font-mono ${
+              chatMode === 'general' ? 'bg-slate-100' : 'bg-zinc-800'
+            }`}>Shift+Enter</kbd>
             <span className="ml-1">nueva línea</span>
           </p>
         </div>
       </form>
       
-      <p className="text-[10px] text-muted-foreground/60 text-center mt-3 max-w-4xl mx-auto">
-        La IA puede cometer errores. Verifica siempre el código generado antes de usarlo en producción.
+      {/* Disclaimer */}
+      <p className={`text-[10px] text-center mt-3 max-w-3xl mx-auto ${
+        chatMode === 'general' ? 'text-slate-400' : 'text-zinc-600'
+      }`}>
+        La IA puede cometer errores. Verifica la información importante.
       </p>
     </div>
   );

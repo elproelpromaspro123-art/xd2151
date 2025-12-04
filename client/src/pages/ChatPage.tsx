@@ -13,7 +13,10 @@ import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Zap, Crown, Clock, LogOut, User as UserIcon, Settings, Gamepad2, MessageCircle } from "lucide-react";
+import { 
+    Sparkles, Zap, Crown, LogOut, User as UserIcon, Settings, 
+    Gamepad2, MessageCircle, StopCircle, RefreshCw, PanelLeftClose, PanelLeft
+} from "lucide-react";
 import type { Conversation, Message, AIModel, ChatMode } from "@shared/schema";
 import type { User } from "@/lib/auth";
 import { getToken } from "@/lib/auth";
@@ -66,17 +69,27 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const [streamingMessage, setStreamingMessage] = useState<string>("");
     const [streamingReasoning, setStreamingReasoning] = useState<string>("");
     const [isStreaming, setIsStreaming] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<string>("kat-coder-pro");
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<string>("deepseek-r1t2");
     const [useReasoning, setUseReasoning] = useState(false);
-    const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
     const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
     const [currentModelName, setCurrentModelName] = useState<string>("");
     const [chatMode, setChatMode] = useState<ChatMode>("roblox");
     const [artifactState, setArtifactState] = useState<ArtifactState>({ isOpen: false, content: "", language: "text" });
+    const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+    const [lastUserMessage, setLastUserMessage] = useState<string>("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
+
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, []);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [streamingMessage, scrollToBottom]);
 
     const extractLatestCodeBlock = (text: string) => {
         const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
@@ -95,31 +108,32 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         return null;
     };
 
-    const { data: usage, isError: usageError } = useQuery<UsageInfo>({
+    const { data: usage } = useQuery<UsageInfo>({
         queryKey: ["/api/usage"],
         refetchInterval: 30000,
         retry: 3,
         throwOnError: false,
     });
 
-    const { data: modelsData, isError: modelsError } = useQuery<ModelsResponse>({
+    const { data: modelsData } = useQuery<ModelsResponse>({
         queryKey: ["/api/models"],
         retry: 3,
         throwOnError: false,
     });
 
-    const { data: conversations = [], isError: conversationsError } = useQuery<Conversation[]>({
+    const { data: conversations = [] } = useQuery<Conversation[]>({
         queryKey: ["/api/conversations"],
         retry: 3,
         throwOnError: false,
     });
 
-    const { data: messages = [], isError: messagesError } = useQuery<Message[]>({
+    const { data: messages = [] } = useQuery<Message[]>({
         queryKey: ["/api/conversations", currentConversationId, "messages"],
         enabled: !!currentConversationId,
         retry: 3,
         throwOnError: false,
     });
+
     const deleteConversationMutation = useMutation({
         mutationFn: async (id: string) => {
             await apiRequest("DELETE", `/api/conversations/${id}`);
@@ -144,20 +158,38 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         },
     });
 
-    const handleSendMessage = async (content: string, useWebSearch = false, imageBase64?: string) => {
-        let conversationId = currentConversationId;
+    const handleStopGeneration = async () => {
+        if (!currentRequestId) return;
 
-        if (!conversationId) {
-            try {
-                const res = await apiRequest("POST", "/api/conversations", { title: content?.slice(0, 50) || "Chat" });
-                const created = await res.json();
-                conversationId = created.id;
-                setCurrentConversationId(conversationId);
-            } catch (e) {
-                toast({ title: "Error", description: "No se pudo crear la conversación.", variant: "destructive" });
-                return;
+        try {
+            const token = getToken();
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
             }
+
+            await fetch("/api/chat/stop", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ requestId: currentRequestId }),
+            });
+
+            setIsStreaming(false);
+            setStreamingMessage("");
+            setStreamingReasoning("");
+            setCurrentRequestId(null);
+            toast({
+                title: "Generación detenida",
+                description: "Se ha cancelado la generación de la respuesta.",
+            });
+        } catch (error) {
+            console.error("Error stopping generation:", error);
         }
+    };
+
+    const handleSendMessage = async (content: string, useWebSearch = false, imageBase64?: string) => {
+        setLastUserMessage(content);
+        let conversationId = currentConversationId;
 
         let contentToSave = content;
         if (imageBase64) {
@@ -167,24 +199,24 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             ]);
         }
 
-        const ensuredConversationId = conversationId!;
         const tempUserMessage: Message = {
             id: `temp-${Date.now()}`,
-            conversationId: ensuredConversationId,
+            conversationId: conversationId || "pending",
             role: "user",
             content: contentToSave,
             createdAt: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<Message[]>(
-            ["/api/conversations", ensuredConversationId, "messages"],
-            (old = []) => [...old, tempUserMessage]
-        );
+        if (conversationId) {
+            queryClient.setQueryData<Message[]>(
+                ["/api/conversations", conversationId, "messages"],
+                (old = []) => [...old, tempUserMessage]
+            );
+        }
 
         setIsStreaming(true);
         setStreamingMessage("");
         setStreamingReasoning("");
-        setEstimatedTime(null);
         setStreamProgress(null);
         setCurrentModelName("");
 
@@ -199,7 +231,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 method: "POST",
                 headers,
                 body: JSON.stringify({
-                    conversationId: ensuredConversationId,
+                    conversationId,
                     message: content,
                     useWebSearch,
                     model: selectedModel,
@@ -220,7 +252,6 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 setIsStreaming(false);
                 setStreamingMessage("");
                 setStreamingReasoning("");
-                setEstimatedTime(null);
                 setStreamProgress(null);
                 return;
             }
@@ -247,9 +278,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                         try {
                             const parsed = JSON.parse(data);
 
-                            if (parsed.estimatedTime) {
-                                setEstimatedTime(parsed.estimatedTime);
-                                setCurrentModelName(parsed.model || "");
+                            if (parsed.conversationId && !conversationId) {
+                                conversationId = parsed.conversationId;
+                                setCurrentConversationId(conversationId);
+                                queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+                            }
+
+                            if (parsed.requestId) {
+                                setCurrentRequestId(parsed.requestId);
+                            }
+
+                            if (parsed.cancelled) {
+                                setIsStreaming(false);
+                                return;
                             }
 
                             if (parsed.progress) {
@@ -265,14 +306,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 fullMessage += parsed.content;
                                 setStreamingMessage(fullMessage);
 
-                                // Artifact Detection Logic
                                 const codeBlock = extractLatestCodeBlock(fullMessage);
-                                if (codeBlock && codeBlock.code.length > 50) { // Only open for non-trivial code
+                                if (codeBlock && codeBlock.code.length > 50) {
                                     setArtifactState({
                                         isOpen: true,
                                         content: codeBlock.code,
                                         language: codeBlock.language,
-                                        title: "Creando artefacto..."
+                                        title: "Creando código..."
                                     });
                                 }
                             }
@@ -292,9 +332,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 }
             }
 
-            queryClient.invalidateQueries({
-                queryKey: ["/api/conversations", ensuredConversationId, "messages"],
-            });
+            if (conversationId) {
+                queryClient.invalidateQueries({
+                    queryKey: ["/api/conversations", conversationId, "messages"],
+                });
+            }
             queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
             queryClient.invalidateQueries({ queryKey: ["/api/usage"] });
         } catch (error) {
@@ -307,46 +349,70 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             setIsStreaming(false);
             setStreamingMessage("");
             setStreamingReasoning("");
-            setEstimatedTime(null);
             setStreamProgress(null);
+            setCurrentRequestId(null);
         }
     };
 
     const handleRegenerate = async () => {
-        if (!currentConversationId || messages.length < 2) return;
+        if (!currentConversationId) return;
 
-        const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
-        if (!lastUserMessage) return;
+        const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+        if (!lastUserMsg) return;
 
         const lastAssistantMessage = messages[messages.length - 1];
-        if (lastAssistantMessage.role !== "assistant") return;
+        if (lastAssistantMessage?.role === "assistant") {
+            try {
+                const token = getToken();
+                const headers: Record<string, string> = {};
+                if (token) {
+                    headers["Authorization"] = `Bearer ${token}`;
+                }
+                await fetch(`/api/messages/${lastAssistantMessage.id}`, {
+                    method: "DELETE",
+                    headers,
+                });
+            } catch (e) {
+                console.error("Error deleting last message:", e);
+            }
+        }
+
+        queryClient.invalidateQueries({
+            queryKey: ["/api/conversations", currentConversationId, "messages"],
+        });
+
+        setIsStreaming(true);
+        setStreamingMessage("");
+        setStreamingReasoning("");
+        setStreamProgress(null);
 
         try {
-            await apiRequest("DELETE", `/api/messages/${lastAssistantMessage.id}`);
-            queryClient.invalidateQueries({
-                queryKey: ["/api/conversations", currentConversationId, "messages"],
-            });
-
-            setIsStreaming(true);
-            setStreamingMessage("");
-            setStreamingReasoning("");
-            setEstimatedTime(null);
-            setStreamProgress(null);
-
             const token = getToken();
             const headers: Record<string, string> = { "Content-Type": "application/json" };
             if (token) {
                 headers["Authorization"] = `Bearer ${token}`;
             }
 
+            let userContent = lastUserMsg.content;
+            try {
+                if (typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim().startsWith('[')) {
+                    const parsed = JSON.parse(lastUserMsg.content);
+                    if (Array.isArray(parsed)) {
+                        const textPart = parsed.find((p: any) => p.type === "text");
+                        if (textPart) userContent = textPart.text || "";
+                    }
+                }
+            } catch { }
+
             const response = await fetch("/api/chat/regenerate", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({
                     conversationId: currentConversationId,
-                    lastUserMessage: lastUserMessage.content,
+                    lastUserMessage: userContent,
                     model: selectedModel,
                     useReasoning,
+                    chatMode,
                 }),
             });
 
@@ -376,9 +442,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                         try {
                             const parsed = JSON.parse(data);
 
-                            if (parsed.estimatedTime) {
-                                setEstimatedTime(parsed.estimatedTime);
-                                setCurrentModelName(parsed.model || "");
+                            if (parsed.requestId) {
+                                setCurrentRequestId(parsed.requestId);
                             }
 
                             if (parsed.progress) {
@@ -422,8 +487,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             setIsStreaming(false);
             setStreamingMessage("");
             setStreamingReasoning("");
-            setEstimatedTime(null);
             setStreamProgress(null);
+            setCurrentRequestId(null);
         }
     };
 
@@ -452,17 +517,17 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const webSearchRemaining = usage?.limits.webSearchPerWeek === -1
         ? 999
         : (usage?.limits.webSearchPerWeek || 5) - (usage?.webSearchCount || 0);
-    const aiUsageRemaining = usage?.limits.aiUsagePerWeek === -1
-        ? 999
-        : (usage?.limits.aiUsagePerWeek || 50) - (usage?.aiUsageCount || 0);
 
     const selectedModelInfo = modelsData?.models.find(m => m.key === selectedModel);
 
-    // Message remaining per mode
-    const modeMessageLimit = isPremium ? (usage?.messageLimits ? (usage?.messageLimits.roblox && usage?.messageLimits.general ? usage.messageLimits : { roblox: -1, general: -1 }) : { roblox: -1, general: -1 }) : (usage?.messageLimits || { roblox: 20, general: 30 });
+    const modeMessageLimit = isPremium 
+        ? { roblox: -1, general: -1 } 
+        : (usage?.messageLimits || { roblox: 20, general: 30 });
     const messagesUsedRoblox = usage?.robloxMessageCount || 0;
     const messagesUsedGeneral = usage?.generalMessageCount || 0;
-    const messageRemaining = chatMode === 'roblox' ? (modeMessageLimit.roblox === -1 ? 999 : Math.max(0, modeMessageLimit.roblox - messagesUsedRoblox)) : (modeMessageLimit.general === -1 ? 999 : Math.max(0, modeMessageLimit.general - messagesUsedGeneral));
+    const messageRemaining = chatMode === 'roblox' 
+        ? (modeMessageLimit.roblox === -1 ? 999 : Math.max(0, modeMessageLimit.roblox - messagesUsedRoblox)) 
+        : (modeMessageLimit.general === -1 ? 999 : Math.max(0, modeMessageLimit.general - messagesUsedGeneral));
 
     const formatTimeRemaining = (seconds: number): string => {
         if (seconds < 60) return `~${seconds}s`;
@@ -471,38 +536,15 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         return `~${minutes}m ${secs}s`;
     };
 
-    // Mostrar error si las queries fallan
-    if (conversationsError) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="max-w-md w-full text-center">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-destructive/10 mx-auto mb-4">
-                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-destructive" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 8v4M12 16h.01" />
-                        </svg>
-                    </div>
-                    <h1 className="text-lg font-semibold mb-2">Error al cargar</h1>
-                    <p className="text-muted-foreground mb-6">
-                        No se pudieron cargar las conversaciones. Por favor, intenta recargar la página.
-                    </p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                        Recargar página
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div
-            className={`flex h-screen w-full ${chatMode === 'general' ? 'bg-gradient-to-br from-white via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-indigo-950/30 dark:to-blue-950/20 text-slate-900 dark:text-slate-100' : 'bg-background'}`}
-            data-testid="chat-page"
-            style={chatMode === 'general' ? { '--glow-color': '226 70% 55%' } as React.CSSProperties : undefined}
+            className={`flex h-screen w-full overflow-hidden ${
+                chatMode === 'general' 
+                    ? 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40' 
+                    : 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950'
+            }`}
         >
+            {/* Sidebar */}
             <ChatSidebar
                 conversations={sortedConversations}
                 currentConversationId={currentConversationId}
@@ -513,77 +555,91 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 isOpen={sidebarOpen}
                 onToggle={() => setSidebarOpen(!sidebarOpen)}
                 chatMode={chatMode}
+                isCollapsed={sidebarCollapsed}
+                onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
             />
 
-            <div className="flex flex-1 min-w-0 overflow-hidden relative">
-                <div className={`flex-col h-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-[45%] border-r border-border/40' : 'flex w-full'}`}>
-                    <header className={`flex items-center justify-between px-4 py-3 border-b ${chatMode === 'general'
-                            ? 'border-indigo-200/50 dark:border-indigo-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md shadow-sm'
-                            : 'border-border/50 bg-background/80 backdrop-blur-sm'
-                        } lg:px-6`}>
+            {/* Main Content */}
+            <div className="flex flex-1 min-w-0 overflow-hidden">
+                <div className={`flex flex-col h-full transition-all duration-300 ease-in-out ${
+                    artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
+                }`}>
+                    {/* Header */}
+                    <header className={`flex items-center justify-between px-4 py-3 border-b ${
+                        chatMode === 'general'
+                            ? 'border-slate-200/60 bg-white/70 backdrop-blur-xl'
+                            : 'border-zinc-800/50 bg-zinc-900/80 backdrop-blur-xl'
+                    }`}>
                         <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center animated-border-strong ${chatMode === 'general'
-                                    ? 'bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/50 dark:to-blue-900/50'
-                                    : 'bg-primary/10'
-                                }`}>
-                                <svg viewBox="0 0 24 24" fill="none" className={`w-4 h-4 ${chatMode === 'general' ? 'text-indigo-600 dark:text-indigo-400' : 'text-primary'}`} stroke="currentColor" strokeWidth="1.5">
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                                    />
-                                </svg>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                                className={`hidden lg:flex h-8 w-8 ${
+                                    chatMode === 'general' ? 'text-slate-600 hover:text-slate-900' : 'text-zinc-400 hover:text-white'
+                                }`}
+                            >
+                                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                            </Button>
+                            
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                                chatMode === 'general'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-primary/20 text-primary'
+                            }`}>
+                                {chatMode === 'general' ? <MessageCircle className="h-3 w-3" /> : <Gamepad2 className="h-3 w-3" />}
+                                <span>{chatMode === 'general' ? 'General' : 'Roblox'}</span>
                             </div>
-                            <div>
-                                <h1 className={`text-sm font-semibold ${chatMode === 'general' ? 'text-slate-900 dark:text-slate-100' : 'text-foreground'}`} data-testid="text-header-title">
-                                    {chatMode === 'general' ? 'Asistente Pro' : 'Roblox UI/UX Designer Pro'}
-                                </h1>
-                                <p className={`text-xs ${chatMode === 'general' ? 'text-slate-600 dark:text-slate-400' : 'text-muted-foreground'}`}>
-                                    {chatMode === 'general' ? 'Tu asistente inteligente multipropósito' : 'Especializado en diseño de interfaces premium'}
-                                </p>
-                            </div>
-                            <div className={`hidden sm:flex items-center gap-2 text-xs ml-4 ${chatMode === 'general'
-                                    ? 'text-slate-600 dark:text-slate-400'
-                                    : 'text-muted-foreground'
-                                }`}>
-                                <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-indigo-500 dark:text-indigo-400' : 'text-primary'}`} />
-                                <span>{messageRemaining === 999 ? "∞" : messageRemaining} mensajes restantes ({chatMode === 'roblox' ? 'Roblox' : 'General'})</span>
+
+                            <div className={`hidden sm:flex items-center gap-2 text-xs ${
+                                chatMode === 'general' ? 'text-slate-500' : 'text-zinc-500'
+                            }`}>
+                                <Zap className={`h-3.5 w-3.5 ${chatMode === 'general' ? 'text-blue-500' : 'text-primary'}`} />
+                                <span>{messageRemaining === 999 ? "∞" : messageRemaining} msgs</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             {user && (
                                 <ProfileModal user={user} chatMode={chatMode}>
-                                    <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className={`gap-2 h-8 ${
+                                            chatMode === 'general' 
+                                                ? 'text-slate-600 hover:text-slate-900' 
+                                                : 'text-zinc-400 hover:text-white'
+                                        }`}
+                                    >
                                         <UserIcon className="h-3.5 w-3.5" />
-                                        <span className="hidden sm:inline max-w-[100px] truncate">{user.email}</span>
-                                        <Settings className="h-3 w-3 opacity-50" />
+                                        <span className="hidden sm:inline max-w-[80px] truncate text-xs">{user.email}</span>
                                     </Button>
                                 </ProfileModal>
                             )}
 
                             {isPremium && (
-                                <div className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${chatMode === 'general'
-                                        ? 'bg-indigo-100 text-indigo-700'
-                                        : 'bg-amber-500/10 text-amber-500'
-                                    }`}>
-                                    <Crown className="h-3.5 w-3.5" />
-                                    Premium
+                                <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                    chatMode === 'general'
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-amber-500/20 text-amber-400'
+                                }`}>
+                                    <Crown className="h-3 w-3" />
+                                    <span>Pro</span>
                                 </div>
                             )}
 
-                            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                                <Zap className="h-3.5 w-3.5 text-primary" />
-                                <span>{aiUsageRemaining === 999 ? "∞" : aiUsageRemaining} usos</span>
-                            </div>
-
                             <UpgradeModal usage={usage || null} chatMode={chatMode}>
-                                <Button variant="outline" size="sm" className={`gap-2 animated-border ${chatMode === 'general'
-                                        ? 'border-indigo-300/30 text-indigo-600 hover:bg-indigo-50'
-                                        : ''
-                                    }`}>
-                                    <Sparkles className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{isPremium ? "Premium" : "Mejorar"}</span>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className={`gap-1.5 h-8 text-xs ${
+                                        chatMode === 'general'
+                                            ? 'border-blue-200 text-blue-600 hover:bg-blue-50'
+                                            : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <Sparkles className="h-3 w-3" />
+                                    <span className="hidden sm:inline">{isPremium ? "Pro" : "Upgrade"}</span>
                                 </Button>
                             </UpgradeModal>
 
@@ -591,8 +647,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 <LogoutConfirmDialog onConfirm={onLogout}>
                                     <Button
                                         variant="ghost"
-                                        size="sm"
-                                        className="text-muted-foreground hover:text-destructive"
+                                        size="icon"
+                                        className={`h-8 w-8 ${
+                                            chatMode === 'general'
+                                                ? 'text-slate-400 hover:text-red-500'
+                                                : 'text-zinc-500 hover:text-red-400'
+                                        }`}
                                     >
                                         <LogOut className="h-4 w-4" />
                                     </Button>
@@ -601,26 +661,46 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                         </div>
                     </header>
 
-                    {isStreaming && (estimatedTime || streamProgress) && (
-                        <div className="px-4 py-2 bg-primary/5 border-b border-border/50 flex items-center justify-center gap-3">
-                            <Clock className="h-4 w-4 text-primary animate-pulse" />
-                            <span className="text-xs text-muted-foreground">
-                                {currentModelName && <span className="font-medium text-foreground">{currentModelName}</span>}
-                                {streamProgress ? (
-                                    <span> - {streamProgress.tokensGenerated} tokens generados, {formatTimeRemaining(streamProgress.estimatedSecondsRemaining)} restantes</span>
-                                ) : estimatedTime ? (
-                                    <span> - Tiempo estimado: {formatTimeRemaining(estimatedTime)}</span>
-                                ) : null}
-                            </span>
+                    {/* Progress Bar when streaming */}
+                    {isStreaming && streamProgress && (
+                        <div className={`px-4 py-2 border-b ${
+                            chatMode === 'general' 
+                                ? 'bg-blue-50/50 border-blue-100' 
+                                : 'bg-primary/5 border-zinc-800/50'
+                        }`}>
+                            <div className="flex items-center justify-between max-w-3xl mx-auto">
+                                <div className={`flex items-center gap-2 text-xs ${
+                                    chatMode === 'general' ? 'text-blue-600' : 'text-primary'
+                                }`}>
+                                    <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                                    <span>{streamProgress.tokensGenerated} tokens</span>
+                                    <span className={chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'}>•</span>
+                                    <span>{formatTimeRemaining(streamProgress.estimatedSecondsRemaining)}</span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleStopGeneration}
+                                    className={`h-7 gap-1.5 text-xs ${
+                                        chatMode === 'general'
+                                            ? 'text-red-500 hover:text-red-600 hover:bg-red-50'
+                                            : 'text-red-400 hover:text-red-300 hover:bg-red-950/50'
+                                    }`}
+                                >
+                                    <StopCircle className="h-3.5 w-3.5" />
+                                    Detener
+                                </Button>
+                            </div>
                         </div>
                     )}
 
-                    <div className={`flex-1 overflow-hidden ${chatMode === 'general' ? 'bg-gradient-to-b from-white/50 to-indigo-50/30 dark:from-slate-950/50 dark:to-indigo-950/20' : ''}`}>
+                    {/* Messages Area */}
+                    <div className="flex-1 overflow-hidden">
                         {showEmptyState ? (
                             <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
                         ) : (
                             <ScrollArea className="h-full">
-                                <div className={`max-w-4xl mx-auto py-4 ${chatMode === 'general' ? 'px-4' : ''}`}>
+                                <div className="max-w-3xl mx-auto py-6 px-4">
                                     {messages.map((message, index) => (
                                         <MessageBubble
                                             key={message.id}
@@ -630,18 +710,22 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                                 isOpen: true,
                                                 content,
                                                 language,
-                                                title: "Artifact"
+                                                title: "Código"
                                             })}
                                             onRegenerate={
-                                                index === messages.length - 1 && message.role === "assistant"
+                                                index === messages.length - 1 && message.role === "assistant" && !isStreaming
                                                     ? handleRegenerate
                                                     : undefined
                                             }
                                         />
                                     ))}
 
-                                    {isStreaming && useReasoning && (
-                                        <ThinkingIndicator reasoning={streamingReasoning || undefined} modelName={currentModelName || selectedModelInfo?.name} chatMode={chatMode} />
+                                    {isStreaming && useReasoning && streamingReasoning && (
+                                        <ThinkingIndicator 
+                                            reasoning={streamingReasoning} 
+                                            modelName={currentModelName || selectedModelInfo?.name} 
+                                            chatMode={chatMode} 
+                                        />
                                     )}
 
                                     {isStreaming && streamingMessage && (
@@ -659,20 +743,27 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                                 isOpen: true,
                                                 content,
                                                 language,
-                                                title: "Generating Artifact..."
+                                                title: "Generando..."
                                             })}
                                         />
                                     )}
 
-                                    {isStreaming && !streamingMessage && <TypingIndicator chatMode={chatMode} />}
+                                    {isStreaming && !streamingMessage && !streamingReasoning && (
+                                        <TypingIndicator chatMode={chatMode} />
+                                    )}
 
-                                    <div ref={messagesEndRef} />
+                                    <div ref={messagesEndRef} className="h-4" />
                                 </div>
                             </ScrollArea>
                         )}
                     </div>
 
-                    <div className={`border-t ${chatMode === 'general' ? 'border-indigo-200/30 bg-gradient-to-r from-white/50 via-indigo-50/40 to-blue-50/30' : 'border-border/50 bg-background/50'}`}>
+                    {/* Input Area */}
+                    <div className={`border-t ${
+                        chatMode === 'general'
+                            ? 'border-slate-200/60 bg-white/50 backdrop-blur-xl'
+                            : 'border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl'
+                    }`}>
                         <ChatInput
                             onSend={handleSendMessage}
                             isLoading={isStreaming}
@@ -686,11 +777,16 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             isPremium={isPremium}
                             chatMode={chatMode}
                             onChatModeChange={setChatMode}
+                            onStopGeneration={isStreaming ? handleStopGeneration : undefined}
                         />
                     </div>
                 </div>
+
+                {/* Artifact Panel */}
                 {artifactState.isOpen && (
-                    <div className="w-full lg:w-[55%] h-full bg-background animate-in slide-in-from-right-5 duration-300 shadow-xl z-10 border-l border-border/40">
+                    <div className={`w-full lg:w-1/2 h-full border-l ${
+                        chatMode === 'general' ? 'border-slate-200/60 bg-white' : 'border-zinc-800/50 bg-zinc-900'
+                    }`}>
                         <ArtifactPanel
                             content={artifactState.content}
                             language={artifactState.language}
