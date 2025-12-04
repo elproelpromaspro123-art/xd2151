@@ -65,7 +65,7 @@ app.use((req, res, next) => {
     log("Starting server...");
     log(`Environment: ${process.env.NODE_ENV}`);
     
-    await registerRoutes(httpServer, app);
+    registerRoutes(httpServer, app);
     log("Routes registered");
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

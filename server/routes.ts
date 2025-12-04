@@ -475,10 +475,10 @@ async function streamChatCompletion(
     }
 }
 
-export async function registerRoutes(
+export function registerRoutes(
     httpServer: Server,
     app: Express
-): Promise<Server> {
+): void {
 
     app.get("/health", (_req: Request, res: Response) => {
         res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
@@ -1297,6 +1297,4 @@ export async function registerRoutes(
             }
         }
     });
-
-    return httpServer;
 }
