@@ -129,12 +129,19 @@ export function useRateLimitStream(options: UseRateLimitStreamOptions = {}) {
     }, []);
 
     useEffect(() => {
-        connect();
+        // Solo conectar si modelKey cambió, no en cada render
+        // Usar un ref para evitar reconexiones innecesarias
+        let shouldConnect = true;
+
+        if (shouldConnect) {
+            connect();
+        }
 
         return () => {
+            shouldConnect = false;
             disconnect();
         };
-    }, [modelKey, connect, disconnect]);
+    }, [modelKey]); // Solo depender de modelKey, no de connect/disconnect
 
     return {
         isConnected,

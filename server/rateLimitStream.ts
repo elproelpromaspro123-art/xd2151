@@ -15,6 +15,12 @@ interface RateLimitSubscriber {
 // Store de suscriptores activos
 const subscribers = new Set<RateLimitSubscriber>();
 
+// Almacena el último estado enviado para cada modelo (evita envíos duplicados)
+const lastSentState = new Map<string, any>();
+
+// Intervalo de actualización en milisegundos (por defecto 30 segundos, no 1 segundo)
+const UPDATE_INTERVAL_MS = 30000; // 30 segundos
+
 /**
  * Crea una suscripción SSE para actualizaciones de rate limit en tiempo real
  * @param res - Response object de Express
@@ -89,7 +95,8 @@ export function notifyRateLimitUpdate(modelKey: string) {
 
 /**
  * Inicia el broadcasting periódico de actualizaciones de countdown
- * Se ejecuta cada segundo para actualizar los tiempos restantes
+ * Se ejecuta cada 30 segundos (configurable) para actualizar los tiempos restantes
+ * Solo envía si el estado ha cambiado (evita spam de mensajes)
  */
 export function startRateLimitBroadcaster() {
     setInterval(() => {
@@ -101,24 +108,38 @@ export function startRateLimitBroadcaster() {
 
                 // Obtener data actualizada
                 let updateData;
+                let cacheKey: string;
+                
                 if (subscriber.modelKey) {
                     updateData = getRateLimitInfo(subscriber.modelKey);
+                    cacheKey = `model_${subscriber.modelKey}`;
                 } else {
                     updateData = getAllRateLimitedModels();
+                    cacheKey = 'all_models';
                 }
 
-                // Enviar actualización
-                if (subscriber.modelKey) {
-                    sendSSEMessage(subscriber.res, "rate-limit-tick", updateData);
-                } else {
-                    sendSSEMessage(subscriber.res, "rate-limits-tick", { models: updateData });
+                // Comparar con el último estado enviado
+                const lastState = lastSentState.get(cacheKey);
+                const newStateStr = JSON.stringify(updateData);
+                const lastStateStr = lastState ? JSON.stringify(lastState) : null;
+
+                // Solo enviar si cambió
+                if (newStateStr !== lastStateStr) {
+                    lastSentState.set(cacheKey, updateData);
+
+                    // Enviar actualización
+                    if (subscriber.modelKey) {
+                        sendSSEMessage(subscriber.res, "rate-limit-tick", updateData);
+                    } else {
+                        sendSSEMessage(subscriber.res, "rate-limits-tick", { models: updateData });
+                    }
                 }
             } catch (error) {
                 console.error("[SSE] Error in broadcaster:", error);
                 subscribers.delete(subscriber);
             }
         });
-    }, 1000); // Actualizar cada segundo
+    }, UPDATE_INTERVAL_MS); // Actualizar cada 30 segundos (configurable)
 }
 
 /**

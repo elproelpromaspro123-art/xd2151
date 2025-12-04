@@ -216,11 +216,23 @@ export function getModelAvailabilityStatus(modelKey: string): ProviderLimitStatu
             }
         }
 
+        // Determinar mensaje según el tiempo restante
+        let reason = "Límite de rate limit alcanzado. Intenta de nuevo pronto.";
+        const remainingHours = remainingTime / (1000 * 60 * 60);
+        
+        // Si el tiempo restante es mayor a 23 horas, indica que hay que esperar aproximadamente 24h
+        if (remainingHours > 23) {
+            reason = "Límite de rate limit alcanzado. Tendrás que esperar aproximadamente 24 horas.";
+        } else if (remainingHours > 1) {
+            const hours = Math.floor(remainingHours);
+            reason = `Límite de rate limit alcanzado. Espera ${hours}+ horas.`;
+        }
+
         return {
             isAvailable: false,
             remainingTime,
             resetTime: modelData.backoffUntil,
-            reason: "Límite de rate limit alcanzado. Intenta de nuevo pronto.",
+            reason,
             retryAfterSeconds: modelData.retryAfterSeconds,
             headers,
         };

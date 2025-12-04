@@ -1179,6 +1179,12 @@ export function registerRoutes(
                 const isAccessible = !model.isPremiumOnly || isPremium;
                 const rateLimitStatus = getModelAvailabilityStatus(key);
                 
+                // Obtener información completa de rate limit
+                let rateLimitInfo: any = null;
+                if (!rateLimitStatus.isAvailable) {
+                    rateLimitInfo = getRateLimitInfo(key);
+                }
+                
                 return {
                     key,
                     id: model.id,
@@ -1192,6 +1198,8 @@ export function registerRoutes(
                     isRateLimited: !rateLimitStatus.isAvailable,
                     remainingTime: rateLimitStatus.remainingTime,
                     resetTime: rateLimitStatus.resetTime,
+                    rateLimitInfo: rateLimitInfo, // Info completa de rate limit
+                    reason: rateLimitStatus.reason, // Razón de la indisponibilidad
                 };
             });
 
