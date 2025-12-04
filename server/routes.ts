@@ -552,6 +552,15 @@ export async function registerRoutes(
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Auth Configuration Endpoints
+  app.get("/api/auth/google-client-id", (_req: Request, res: Response) => {
+    res.json({ clientId: process.env.GOOGLE_CLIENT_ID });
+  });
+
+  app.get("/api/auth/turnstile-site-key", (_req: Request, res: Response) => {
+    res.json({ siteKey: process.env.Site_Key });
+  });
+
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { email, password, turnstileToken } = req.body;
