@@ -135,7 +135,24 @@ const AI_MODELS = {
          premiumContextTokens: 131072,
          premiumOutputTokens: 32768,
      },
-    };
+     "gpt-oss-120b": {
+         id: "openai/gpt-oss-120b",
+         name: "GPT OSS 120B",
+         description: "OpenAI GPT-OSS 120B - Modelo MoE ultra potente con 131K contexto, tool use, razonamiento avanzado y ejecución de código (Groq ~500 tokens/seg)",
+         supportsImages: false,
+         supportsReasoning: true,
+         isPremiumOnly: false,
+         category: "general" as const,
+         provider: "groq",
+         fallbackProvider: null as string | null,
+         apiProvider: "groq" as const,
+         // Groq: 131K contexto, 65K output máximo
+         freeContextTokens: 131072, // 131K full context window
+         freeOutputTokens: 65536, // 65K max output
+         premiumContextTokens: 131072,
+         premiumOutputTokens: 65536,
+     },
+     };
 
 type ModelKey = keyof typeof AI_MODELS;
 
@@ -421,7 +438,10 @@ async function streamGeminiCompletion(
         // Agregar thinking si está soportado (formato correcto para Gemini 2.5)
          if (useReasoning && modelInfo.supportsReasoning) {
              const budgetTokens = isPremium ? 10000 : 5000;
-             requestBody.generationConfig.thinkingBudget = budgetTokens;
+             requestBody.thinkingConfig = {
+                 type: "enabled",
+                 budgetTokens
+             };
          }
 
         const endpoint = `${GEMINI_API_URL}/${modelInfo.id}:streamGenerateContent?key=${apiKey}&alt=sse`;
@@ -831,7 +851,17 @@ async function streamGroqCompletion(
             stream: true,
             max_tokens: maxTokens || 32000,
             temperature: 0.7,
+            top_p: 0.95,
         };
+
+        // Agregar razonamiento si el modelo lo soporta
+        if (useReasoning && modelInfo.supportsReasoning) {
+            const reasoningBudget = isPremium ? 10000 : 5000;
+            requestBody.thinking = {
+                type: "enabled",
+                budget_tokens: reasoningBudget
+            };
+        }
 
         const response = await fetch(GROQ_API_URL, {
             method: "POST",
@@ -899,27 +929,33 @@ async function streamGroqCompletion(
                 if (!jsonStr) continue;
 
                 try {
-                    const parsed = JSON.parse(jsonStr);
-                    const delta = parsed.choices?.[0]?.delta;
+                     const parsed = JSON.parse(jsonStr);
+                     const delta = parsed.choices?.[0]?.delta;
 
-                    // Manejar contenido normal
-                    if (delta?.content) {
-                        fullContent += delta.content;
-                        chunkCount++;
-                        tokenCount += delta.content.split(/\s+/).length;
+                     // Manejar razonamiento (thinking)
+                     if (delta?.thinking) {
+                         fullReasoning += delta.thinking;
+                         res.write(`data: ${JSON.stringify({ thinking: delta.thinking })}\n\n`);
+                     }
 
-                        if (chunkCount % CHECK_INTERVAL === 0) {
-                            const elapsed = (Date.now() - startTime) / 1000;
-                            const tokensPerSecond = tokenCount / elapsed;
-                            const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
-                            res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
-                        }
+                     // Manejar contenido normal
+                     if (delta?.content) {
+                         fullContent += delta.content;
+                         chunkCount++;
+                         tokenCount += delta.content.split(/\s+/).length;
 
-                        res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
-                    }
-                } catch (parseError) {
-                    // Ignorar errores de parsing
-                }
+                         if (chunkCount % CHECK_INTERVAL === 0) {
+                             const elapsed = (Date.now() - startTime) / 1000;
+                             const tokensPerSecond = tokenCount / elapsed;
+                             const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
+                             res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                         }
+
+                         res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
+                     }
+                 } catch (parseError) {
+                     // Ignorar errores de parsing
+                 }
             }
         }
 
