@@ -187,6 +187,25 @@ const AI_MODELS = {
          premiumContextTokens: 124518,
          premiumOutputTokens: 124518,
      },
+     "gemini-3-pro-preview": {
+         id: "gemini-3-pro-preview",
+         name: "Gemini 3 Pro Preview",
+         description: "Google Gemini 3 Pro Preview - Modelo avanzado con multimodal completo (texto, imágenes, video, audio, PDF), pensamiento mejorado, ejecución de código, búsqueda y procesamiento estructurado - 1M+ contexto/65K output",
+         supportsImages: true,
+         supportsReasoning: true,
+         isPremiumOnly: false,
+         category: "general" as const,
+         provider: "google",
+         fallbackProvider: null as string | null,
+         apiProvider: "gemini" as const,
+         // Oficial docs: 1,048,576 contexto entrada, 65,536 output máximo
+         // Free: 90% de 1M = 943,718 contexto, 90% de 65K = 58,982 output
+         // Premium: 98% de 1M = 1,027,581 contexto, 98% de 65K = 64,223 output
+         freeContextTokens: 943718,
+         freeOutputTokens: 58982,
+         premiumContextTokens: 1027581,
+         premiumOutputTokens: 64223,
+     },
      };
 
 type ModelKey = keyof typeof AI_MODELS;
@@ -372,13 +391,16 @@ async function searchTavily(query: string): Promise<string> {
 }
 
 interface MessageContent {
-    type: "text" | "image_url";
+    type: "text" | "image_url" | "video_url" | "audio_url" | "document_url";
     text?: string;
     image_url?: { url: string };
+    video_url?: { url: string };
+    audio_url?: { url: string };
+    document_url?: { url: string; mimeType: string };
 }
 
 interface GeminiMessageContent {
-    type: "text" | "image_data";
+    type: "text" | "image_data" | "video_data" | "audio_data" | "document_data";
     text?: string;
     inlineData?: { mimeType: string; data: string };
 }
@@ -425,7 +447,7 @@ async function streamGeminiCompletion(
                     if (part.type === "text") {
                         parts.push({ text: part.text });
                     } else if (part.type === "image_url" && part.image_url?.url) {
-                        // Convertir data URL a formato Gemini
+                        // Convertir data URL a formato Gemini para imágenes
                         const dataUrl = part.image_url.url;
                         if (dataUrl.startsWith("data:")) {
                             const matches = dataUrl.match(/data:([^;]+);base64,(.+)/);
@@ -433,6 +455,48 @@ async function streamGeminiCompletion(
                                 parts.push({
                                     inlineData: {
                                         mimeType: matches[1],
+                                        data: matches[2],
+                                    }
+                                });
+                            }
+                        }
+                    } else if (part.type === "video_url" && part.video_url?.url) {
+                        // Soporte para video - Gemini 3 Pro puede procesar videos
+                        const dataUrl = part.video_url.url;
+                        if (dataUrl.startsWith("data:")) {
+                            const matches = dataUrl.match(/data:([^;]+);base64,(.+)/);
+                            if (matches) {
+                                parts.push({
+                                    inlineData: {
+                                        mimeType: matches[1],
+                                        data: matches[2],
+                                    }
+                                });
+                            }
+                        }
+                    } else if (part.type === "audio_url" && part.audio_url?.url) {
+                        // Soporte para audio - Gemini 3 Pro puede procesar audio
+                        const dataUrl = part.audio_url.url;
+                        if (dataUrl.startsWith("data:")) {
+                            const matches = dataUrl.match(/data:([^;]+);base64,(.+)/);
+                            if (matches) {
+                                parts.push({
+                                    inlineData: {
+                                        mimeType: matches[1],
+                                        data: matches[2],
+                                    }
+                                });
+                            }
+                        }
+                    } else if (part.type === "document_url" && part.document_url?.url) {
+                        // Soporte para documentos (PDF) - Gemini 3 Pro puede procesar PDFs
+                        const dataUrl = part.document_url.url;
+                        if (dataUrl.startsWith("data:")) {
+                            const matches = dataUrl.match(/data:([^;]+);base64,(.+)/);
+                            if (matches) {
+                                parts.push({
+                                    inlineData: {
+                                        mimeType: part.document_url.mimeType || matches[1],
                                         data: matches[2],
                                     }
                                 });
@@ -459,10 +523,14 @@ async function streamGeminiCompletion(
                 maxOutputTokens: maxTokens || 8192,
                 temperature: 0.7,
                 topP: 0.95,
+                topK: 40,
             },
             systemInstruction: {
                 parts: [{ text: systemPrompt }]
             },
+            // Habilitar todas las capacidades del modelo Gemini 3 Pro Preview
+            tools: [],
+            toolConfig: {},
         };
 
         // Agregar contexto de búsqueda web si está disponible
@@ -470,12 +538,37 @@ async function streamGeminiCompletion(
             requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
         }
 
-        // Agregar thinking si está soportado (formato correcto para Gemini 2.5)
+        // Agregar thinking si está soportado (Gemini 3 Pro Preview tiene pensamiento mejorado)
+        // Para Gemini 3 Pro Preview, usar presupuesto adaptativo según plan
         if (useReasoning && modelInfo.supportsReasoning) {
-            const budgetTokens = isPremium ? 10000 : 5000;
+            // Free: 8K tokens de thinking, Premium: 15K tokens
+            const budgetTokens = isPremium ? 15000 : 8000;
             requestBody.generationConfig.thinkingConfig = {
                 thinkingBudget: budgetTokens,
                 includeThoughts: true
+            };
+        }
+
+        // Optimizaciones específicas para Gemini 3 Pro Preview
+        if (model === "gemini-3-pro-preview") {
+            // Habilitar capacidades avanzadas de búsqueda y ejecución de código
+            requestBody.tools = [
+                {
+                    googleSearch: {}
+                },
+                {
+                    codeExecution: {
+                        language: "PYTHON"
+                    }
+                }
+            ];
+            
+            // Configurar búsqueda con estructura
+            requestBody.toolConfig = {
+                functionCallingConfig: {
+                    mode: "ANY",
+                    allowedFunctionNames: []
+                }
             };
         }
 
