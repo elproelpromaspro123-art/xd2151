@@ -800,4 +800,45 @@
   .prose-chat th {
     @apply bg-muted font-semibold;
   }
+
+  /* Google Sign-in Button Styling */
+  #google-signin-button {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  #google-signin-button > div {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  #google-signin-button > div > div {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  #google-signin-button iframe {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  #google-signin-button div[data-is_touch_device="false"] iframe {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove outline/border from Google button */
+  #google-signin-button div {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure container doesn't have unwanted styling */
+  #google-signin-button .gsi-material {
+    outline: none !important;
+    border: none !important;
+  }
 }

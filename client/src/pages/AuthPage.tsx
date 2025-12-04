@@ -452,7 +452,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                 </div>
               </div>
 
-              <div id="google-signin-button" className="flex justify-center"></div>
+              <div id="google-signin-button" className="flex justify-center w-full" style={{ outline: 'none', border: 'none' }}></div>
 
               <p className="text-center text-sm text-muted-foreground mt-6">
                 {mode === "login" ? (
