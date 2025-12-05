@@ -62,61 +62,12 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// Configuración de modelos con tokens específicos para FREE y PREMIUM
+// Configuración exclusiva de modelos Google Gemini
 const AI_MODELS: Record<string, ModelConfig> = {
-    "kat-coder-pro": {
-        id: "meta-llama/llama-3.1-8b-instruct:free",
-        name: "Kat Coder Pro",
-        description: "Modelo avanzado de codificación con capacidades superiores de razonamiento y generación de código",
-        supportsImages: false,
-        supportsReasoning: false,
-        isPremiumOnly: false,
-        category: "programming" as const,
-        provider: "meta",
-        fallbackProvider: null as string | null,
-        apiProvider: "openrouter" as const,
-        // Llama 3.1 8B specs
-        freeContextTokens: 128000,
-        freeOutputTokens: 4096,
-        premiumContextTokens: 128000,
-        premiumOutputTokens: 4096,
-    },
-    "deepseek-r1t2": {
-        id: "tngtech/deepseek-r1t2-chimera:free",
-        name: "DeepSeek R1T2 Chimera",
-        description: "Modelo premium para programación avanzada con razonamiento",
-        supportsImages: false,
-        supportsReasoning: true,
-        isPremiumOnly: true,
-        category: "programming" as const,
-        provider: "chutes",
-        fallbackProvider: null as string | null,
-        apiProvider: "openrouter" as const,
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
-        premiumContextTokens: 155000, // 95% de 163.8k
-        premiumOutputTokens: 155000,
-    },
-    "gemma-3-27b": {
-        id: "google/gemma-3-27b-it:free",
-        name: "Gemma 3 27B",
-        description: "Modelo Google con visión y alto rendimiento",
-        supportsImages: true,
-        supportsReasoning: false,
-        isPremiumOnly: true,
-        category: "general" as const,
-        provider: "modelrun",
-        fallbackProvider: null as string | null,
-        apiProvider: "openrouter" as const,
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
-        premiumContextTokens: 129761, // 99% de 131,072
-        premiumOutputTokens: 129761,
-    },
     "gemini-2.5-flash": {
         id: "gemini-2.5-flash",
         name: "Gemini 2.5 Flash",
-        description: "Google Gemini 2.5 Flash - El mejor modelo actual para programación y general - 1M contexto/65K output",
+        description: "El mejor modelo gratuito para programación y uso general - 1M contexto/65K output con capacidades avanzadas de razonamiento",
         supportsImages: true,
         supportsReasoning: true,
         isPremiumOnly: false,
@@ -125,36 +76,34 @@ const AI_MODELS: Record<string, ModelConfig> = {
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
         // Oficial docs: 1,048,576 contexto, 65,536 output
-        // Free: 95% de 1M = 996,147 contexto, 95% de 65,536 = 62,259 output
-        // Premium: 99% de 1M = 1,038,090 contexto, 99% de 65,536 = 64,880 output
+        // Free: 95% de capacidad máxima
         freeContextTokens: 996147,
         freeOutputTokens: 62259,
         premiumContextTokens: 1038090,
         premiumOutputTokens: 64880,
     },
-     "llama-3.3-70b": {
-         id: "llama-3.3-70b-versatile",
-         name: "Llama 3.3 70B",
-         description: "Meta Llama 3.3 70B - Rápido, excelente en código y multilingüe (Groq ultra-rápido 500 tokens/seg)",
-         supportsImages: false,
-         supportsReasoning: false,
-         isPremiumOnly: false,
-         category: "general" as const,
-         availableModes: ["general"] as const,
-         provider: "groq",
-         fallbackProvider: null as string | null,
-         apiProvider: "groq" as const,
-         // Groq: 128K contexto, sin límites de output (hasta 32K razonable)
-         // Usar 99% de tokens disponibles
-         freeContextTokens: 129761, // 99% de 131,072
-         freeOutputTokens: 32495, // 99% de 32,768
-         premiumContextTokens: 129761,
-         premiumOutputTokens: 32495,
-     },
+    "gemini-flash-2": {
+        id: "gemini-1.5-flash",
+        name: "Gemini Flash 2",
+        description: "Modelo ultrarrápido optimizado para conversaciones generales y tareas creativas",
+        supportsImages: true,
+        supportsReasoning: false,
+        isPremiumOnly: false,
+        category: "general" as const,
+        availableModes: ["general"] as const, // Solo disponible en modo general
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        // Flash 2 specs: 1M contexto, 8K output
+        freeContextTokens: 1048576,
+        freeOutputTokens: 8192,
+        premiumContextTokens: 1048576,
+        premiumOutputTokens: 8192,
+    },
     "gemini-2.5-pro": {
         id: "gemini-2.5-pro",
         name: "Gemini 2.5 Pro",
-        description: "Google Gemini 2.5 Pro - Multimodal (audio, imágenes, video, texto y PDF), pensamiento avanzado, ejecución de código, búsqueda y resultados estructurados - 1M contexto / 65K salida",
+        description: "El modelo más avanzado actualmente para programar y resolver problemas complejos - 1M contexto/65K output con pensamiento avanzado",
         supportsImages: true,
         supportsReasoning: true,
         isPremiumOnly: true,
@@ -163,8 +112,7 @@ const AI_MODELS: Record<string, ModelConfig> = {
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
         // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
-        // Free: no disponible (premium only)
-        // Premium: usar 99%
+        // Premium: usar 99% de capacidad máxima
         freeContextTokens: 0,
         freeOutputTokens: 0,
         premiumContextTokens: 1038090,
@@ -231,7 +179,7 @@ function detectWebSearchIntent(message: string): boolean {
 
         const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
 
-IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código.
+IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.
 
 REGLAS CRÍTICAS DE SALIDA
 - Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
@@ -2001,7 +1949,7 @@ export function registerRoutes(
             }
 
             let currentConversationId = clientConversationId;
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "gemini-2.5-flash";
 
             // Verificar si el modelo requiere premium
             if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
@@ -2022,13 +1970,8 @@ export function registerRoutes(
                 return res.status(400).json({ error: "El mensaje debe ser texto." });
             }
 
-            // Detectar intención de búsqueda web
-            let isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
-            if (mode === "roblox" && !isWebSearchIntent) {
-                // Para Roblox, buscar documentación solo si el mensaje parece necesitar información externa
-                const robloxKeywords = ["api", "documentacion", "funcion", "metodo", "propiedad", "evento", "clase", "como", "tutorial"];
-                isWebSearchIntent = robloxKeywords.some(keyword => message.toLowerCase().includes(keyword));
-            }
+            // Solo usar búsqueda web cuando se solicita explícitamente
+            let isWebSearchIntent = Boolean(useWebSearch);
             let webSearchContext: string | undefined;
             let webSearchUsed = false;
 
@@ -2204,7 +2147,7 @@ export function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "gemini-2.5-flash";
             const modelInfo = AI_MODELS[selectedModel];
             const isGeminiModel = modelInfo.apiProvider === "gemini";
             const isGroqModel = modelInfo.apiProvider === "groq";

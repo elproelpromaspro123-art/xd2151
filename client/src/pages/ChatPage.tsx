@@ -90,7 +90,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const [isStreaming, setIsStreaming] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<string>("qwen-coder");
+    const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
     const [useReasoning, setUseReasoning] = useState(false);
     const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
     const [currentModelName, setCurrentModelName] = useState<string>("");
@@ -733,7 +733,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl gap-3 sm:gap-0 shadow-sm`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl gap-3 sm:gap-0 shadow-sm relative overflow-hidden`}>
+                        {/* Powered by Gemini branding */}
+                        <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
+                            <svg viewBox="0 0 24 24" className="w-full h-full text-blue-500">
+                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <Button
                                 variant="ghost"
@@ -747,6 +753,13 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap bg-primary/20 text-primary`}>
                                 {chatMode === 'general' ? <MessageCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <Gamepad2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                                 <span className="hidden xs:inline">{chatMode === 'general' ? 'General' : 'Roblox'}</span>
+                            </div>
+
+                            {/* Powered by Gemini badge */}
+                            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-blue-400/30 text-blue-600 dark:text-blue-300">
+                                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                <span className="hidden xs:inline">Powered by Gemini</span>
+                                <span className="xs:hidden">Gemini</span>
                             </div>
                             {selectedModel === 'gemini-2.5-pro' || selectedModel === 'gemini-2.5-flash' ? (
                                 <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 border border-blue-400/20 text-blue-600">

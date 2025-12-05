@@ -369,41 +369,44 @@ export function ChatInput({
                                             
                                             const isGeminiPro = model.key === "gemini-2.5-pro";
                                             const isGeminiFlash = model.key === "gemini-2.5-flash";
+                                            const isGeminiFlash2 = model.key === "gemini-flash-2";
+                                            const isFlash2Blocked = isGeminiFlash2 && chatMode !== "general";
+
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
                                                 onClick={() => {
-                                                    if (model.available) {
+                                                    if (model.available && !isFlash2Blocked) {
                                                         onModelChange(model.key);
                                                         if (!model.supportsReasoning) {
                                                             onReasoningChange(false);
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
-                                                disabled={!model.available}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available || isFlash2Blocked ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
+                                                disabled={!model.available || isFlash2Blocked}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
                                                         {isGeminiPro && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap animate-pulse">
-                                                                ⭐ Estrella
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                🏆 Mejor para programar
                                                             </span>
                                                         )}
                                                         {isGeminiFlash && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap animate-pulse">
-                                                                ✨ Segundo
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 dark:text-green-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                💚 Mejor para plan free
+                                                            </span>
+                                                        )}
+                                                        {isGeminiFlash2 && isFlash2Blocked && (
+                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                🔒 Solo modo general
                                                             </span>
                                                         )}
                                                         {model.isRateLimited && (
                                                             <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 No disponible ({formattedTime})
-                                                            </span>
-                                                        )}
-                                                        {!model.isRateLimited && model.key === "qwen-coder" && (
-                                                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap cursor-help" title="Limitado por tener plan free">
-                                                                95%
                                                             </span>
                                                         )}
                                                         {model.supportsImages && (
@@ -446,7 +449,6 @@ export function ChatInput({
                                                 : '';
                                             
                                             const isGeminiPro = model.key === "gemini-2.5-pro";
-                                            const isGeminiFlash = model.key === "gemini-2.5-flash";
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
@@ -458,30 +460,20 @@ export function ChatInput({
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGeminiPro ? 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-md border border-amber-400/20 hover:border-amber-400/40 transition-all' : ''}`}
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${isGeminiPro ? 'bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
                                                         {isGeminiPro && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                ⭐ Mejor
-                                                            </span>
-                                                        )}
-                                                        {isGeminiFlash && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                ✨ Segundo
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                🏆 Mejor actualmente
                                                             </span>
                                                         )}
                                                         {model.isRateLimited && (
                                                             <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 No disponible ({formattedTime})
-                                                            </span>
-                                                        )}
-                                                        {!model.isRateLimited && model.key === "qwen-coder" && (
-                                                            <span className="px-2 py-0.5 bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                95%
                                                             </span>
                                                         )}
                                                         {model.supportsImages && (
