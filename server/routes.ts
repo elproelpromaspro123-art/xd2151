@@ -59,6 +59,9 @@ import {
 } from "./rateLimitStream";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { registerRealtimeRoutes } from "./routes-realtime";
+import { registerReferralRoutes } from "./routes-referral";
+import { logChatToDiscord } from "./webhook-logs";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -2667,4 +2670,12 @@ export function registerRoutes(
     // Se ejecuta una sola vez cuando el servidor inicia
     console.log("[Rate Limit Broadcaster] Starting real-time rate limit updates");
     startRateLimitBroadcaster();
+
+    // Registrar rutas de tiempo real (SSE, webhooks, rate limits)
+    console.log("[Routes] Registering realtime routes");
+    registerRealtimeRoutes(app);
+
+    // Registrar rutas de referrals
+    console.log("[Routes] Registering referral routes");
+    registerReferralRoutes(app);
 }
