@@ -391,6 +391,7 @@ async function searchTavily(query: string): Promise<string> {
     }
 
     try {
+        const truncatedQuery = query.length > 400 ? query.substring(0, 400) : query;
         const response = await fetch(TAVILY_API_URL, {
             method: "POST",
             headers: {
@@ -398,7 +399,7 @@ async function searchTavily(query: string): Promise<string> {
             },
             body: JSON.stringify({
                 api_key: apiKey,
-                query: query,
+                query: truncatedQuery,
                 search_depth: "advanced",
                 include_answer: true,
                 include_raw_content: true,
@@ -1990,7 +1991,10 @@ export function registerRoutes(
             }
 
             // Detectar intención de búsqueda web
-            const isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
+            let isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
+            if (mode === "roblox") {
+                isWebSearchIntent = true;
+            }
             let webSearchContext: string | undefined;
             let webSearchUsed = false;
 
