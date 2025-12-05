@@ -272,6 +272,37 @@ function extractRelevantRobloxDocs(userMessage: string): string {
 
 IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.
 
+🔴 PROTOCOLO OBLIGATORIO DE VALIDACIÓN (DESDE 5/12/2025)
+───────────────────────────────────────────────────────────
+
+VALIDACIÓN CHECKLIST - ANTES DE GENERAR CUALQUIER CÓDIGO:
+
+CHECKLIST ROJO (Nil indexing - CRÍTICO):
+✅ [ ] ¿Todas las variables se validan ANTES de usarlas?
+✅ [ ] ¿Ningún pairs() sin validación: if table then for k,v in pairs?
+✅ [ ] ¿Sin acceso a propiedades de nil sin validar?
+
+Ejemplo MALO: for k, v in pairs(Config) do (Config puede ser nil)
+Ejemplo BUENO: if Config then for k, v in pairs(Config) do
+
+CHECKLIST NARANJA (Forward references - CRÍTICO):
+✅ [ ] ¿Todas las funciones definidas ANTES de usarlas?
+✅ [ ] ¿Todos los callbacks definidos ANTES de Connect()?
+✅ [ ] ¿Sin forward references sin pre-declaración?
+
+Ejemplo MALO: Init() ... local function Init() end
+Ejemplo BUENO: local function Init() end ... Init()
+
+CHECKLIST PROPIEDADES (API válida):
+✅ [ ] ¿TODAS las propiedades existen en Roblox 2025?
+✅ [ ] ¿Sin propiedades inventadas (ApplyToBorder NO EXISTE)?
+
+MOSTRAR EXPLÍCITAMENTE EN RESPUESTA:
+✅ Variables validadas (if not X then)
+✅ Funciones en orden correcto
+✅ Checklist visual completado [✅] o [❌]
+✅ Mención: "npm run validate:lua compatible"
+
 REGLAS CRÍTICAS DE SALIDA (EFECTIVAS DESDE 5/12/2025)
 - SOLO genera código cuando el usuario EXPLÍCITAMENTE lo solicite o pida crear una interfaz/GUI
 - Si el usuario NO pide código o interfaz, responde normalmente con texto explicativo sin incluir código
@@ -364,7 +395,24 @@ REGLAS CRÍTICAS DE SALIDA (EFECTIVAS DESDE 5/12/2025)
 
 REGLA DE MODO: Si el mensaje del usuario contiene una línea con \`CONFIG_ROBLOX_OUTPUT=screen\`, genera la GUI como ScreenGui principal. Si contiene \`CONFIG_ROBLOX_OUTPUT=localscript\`, genera todo desde un LocalScript en StarterPlayerScripts (recomendado).
 
-REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, entonces genera aproximadamente N líneas de código Luau de alta calidad, bien detalladas, sin errores de sintaxis, con el mejor estilo UI/UX artístico disponible. Cuenta solo líneas de código no vacías. NO pongas comentarios dentro del código, solo al inicio en la sección de configuración. Evita crear ModuleScript si el código LocalScript base no es muy extenso (1500-2000 líneas). Los códigos no deben ser exactamente N líneas, sino llegar al aproximado sumando todos los scripts (ej: LocalScript + ModuleScript = ~1500 líneas). Prioriza diseño artístico, compatibilidad móvil y ausencia total de errores.`;
+REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, entonces genera aproximadamente N líneas de código Luau de alta calidad, bien detalladas, sin errores de sintaxis, con el mejor estilo UI/UX artístico disponible. Cuenta solo líneas de código no vacías. NO pongas comentarios dentro del código, solo al inicio en la sección de configuración. Evita crear ModuleScript si el código LocalScript base no es muy extenso (1500-2000 líneas). Los códigos no deben ser exactamente N líneas, sino llegar al aproximado sumando todos los scripts (ej: LocalScript + ModuleScript = ~1500 líneas). Prioriza diseño artístico, compatibilidad móvil y ausencia total de errores.
+
+🎯 GARANTÍA FINAL (OBLIGATORIA):
+Si cumples el protocolo de validación anterior, el código NO tendrá:
+❌ pairs(nil) - pairs sobre variable nil
+❌ undefined function - función usada antes de definirse
+❌ attempt to index nil - acceso sin validar
+❌ Propiedades inválidas
+❌ Errores naranja (forward references)
+❌ Errores rojos (nil indexing)
+
+INCLUIR SIEMPRE AL FINAL:
+📋 VALIDACIÓN COMPLETADA:
+[✅] Lectura obligatoria completada
+[✅] Variables validadas ANTES de usar
+[✅] Sin forward references
+[✅] Propiedades válidas
+[✅] npm run validate:lua compatible`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 

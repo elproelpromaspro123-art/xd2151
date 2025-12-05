@@ -22,9 +22,9 @@
 - UI: shadcn/ui + Radix primitives, Lucide icons, TailwindCSS
 - Error responses: `{ error: "message" }` with appropriate HTTP status codes
 
-## ROBLOX Mode (🔴 OBLIGATORIO DESDE 5/12/2025)
+## ROBLOX Mode (🔴 OBLIGATORIO DESDE 5/12/2025 - VERSIÓN 2.0)
 
-### ⚡ REGLA ABSOLUTA - PRINCIPIO FUNDAMENTAL
+### ⚡ PROTOCOLO DE 3 FASES PARA CÓDIGO 100% CORRECTO
 
 **📌 LOCALSCRIPTS DEBEN SER AUTOCONTENIDOS**
 - ✅ TODO el código en UN SOLO archivo LocalScript
@@ -33,64 +33,114 @@
 - ❌ Sin comentarios en el código (código limpio)
 - ✅ Funciona 100% independiente
 
-### ⚡ REGLA ABSOLUTA
-**ANTES de generar CUALQUIER código Roblox/Lua:**
+### FASE 1: PRE-GENERACIÓN (Lectura Obligatoria)
 
-1. **DEBES leer**: `CONTRATO_ROBLOX.md` (aceptación obligatoria)
-2. **DEBES leer**: `ROBLOX_DOCUMENTATION.md` (API Reference)
-3. **DEBES leer**: `.amp/ROBLOX_API_REAL.md` (propiedades válidas)
-4. **DEBES validar**: `npm run validate:lua <archivo.lua>`
-5. **DEBES validar**: `npm run validate:api <archivo.lua>`
-6. **DEBES cumplir**: `ROBLOX_VALIDATION.md` (checklist)
+**ANTES de generar CUALQUIER código Roblox/Lua, DEBO leer:**
 
-**Si no cumplo estos requisitos, NO genero código.**
+1. ✅ `CONTRATO_ROBLOX.md` (aceptación obligatoria)
+2. ✅ `ROBLOX_DOCUMENTATION.md` (API Reference)
+3. ✅ `ROBLOX_VALIDATION.md` (checklist de errores)
+4. ✅ `.amp/ROBLOX_API_REAL.md` (propiedades válidas)
+5. ✅ `.amp/ESTRATEGIA_GENERACION.md` (metodología)
+6. ✅ `.amp/SOLUCION_ERRORES_OMEGA.md` (garantía)
 
-### 📋 Validación Obligatoria
+### FASE 2: GENERACIÓN (3 Reglas Obligatorias)
 
-**Errores ROJOS detectados**:
+**Regla 1: Validar SIEMPRE antes de usar**
+```lua
+-- ❌ NUNCA: pairs(Config) sin validar
+local function Create()
+    for k, v in pairs(Config) do
+        print(v)
+    end
+end
+
+-- ✅ SIEMPRE: Validar primero
+local function Create()
+    if not Config then Config = {} end
+    for k, v in pairs(Config) do
+        print(v)
+    end
+end
 ```
-❌ Nil indexing: Acceso a propiedades sin validar
-❌ Variables undefined: Usar variable que no existe
-❌ Syntax errors: Paréntesis/end desbalanceados
-❌ Method calls sin validación: Llamar métodos en nil
+
+**Regla 2: Definir ANTES de usar**
+```lua
+-- ❌ NUNCA: Usar antes de definir
+Init()
+local function Init() end
+
+-- ✅ SIEMPRE: Definir primero
+local function Init() end
+Init()
 ```
 
-**Errores NARANJAS detectados**:
+**Regla 3: Estructura en 5 zonas**
+```lua
+-- Zona 1 (líneas 1-20): Variables locales
+-- Zona 2 (líneas 21-50): Funciones helper
+-- Zona 3 (líneas 51-100): Métodos de tabla
+-- Zona 4 (líneas 101-150): Event handlers
+-- Zona 5 (líneas 151+): Inicialización
 ```
-⚠️ Forward references: Usar función antes de definirla
-⚠️ Undefined functions: Función llamada pero no definida
+
+### FASE 3: POST-VALIDACIÓN (Ejecución Obligatoria)
+
+```bash
+npm run validate:lua ./mi_script.lua
+npm run validate:api ./mi_script.lua
+
+# DEBE mostrar:
+# ✅ SIN ERRORES DETECTADOS
+# ✅ Orden de declaración correcto
 ```
 
-### 🔄 Workflow Obligatorio
+### 🔴 REGLA CRÍTICA: PROTOCOLO DEBE SER VISIBLE
 
-1. Leo `CONTRATO_ROBLOX.md` → Acepto términos
-2. Leo `ROBLOX_DOCUMENTATION.md` → Aprendo patrones
-3. Genero código siguiendo orden de declaración
-4. Ejecuto: `npm run validate:lua script.lua`
-5. Debe mostrar: `✅ SIN ERRORES DETECTADOS`
-6. Si hay errores → Corrijo y repito paso 4
-7. Solo entrego si `npm run validate:lua` retorna 0
+**Cuando genero código Roblox, DEBO mostrar EXPLÍCITAMENTE:**
 
-### ✅ Checklist de Validación (Obligatorio)
+1. ✅ **Lectura de documentación** (en el reasoning)
+   - Menciono cada archivo que leo
+   - Muestro que lo procesé
 
-**ANTES de CUALQUIER código**:
+2. ✅ **Análisis de variables** (visible)
+   - Listo variables a usar
+   - Identifico cuáles pueden ser nil
+   - Planeo validaciones
+
+3. ✅ **Validaciones del código** (visible)
+   - Muestro las validaciones añadidas
+   - Verifico orden de funciones
+   - Verifico propiedades válidas
+
+4. ✅ **Resultado de validadores** (visible)
+   - Ejecuto npm run validate:lua
+   - Ejecuto npm run validate:api
+   - Muestro resultado ✅
+
+**Si no vés esto → El código NO cumple el protocolo**
+
+Ver: `.amp/PROTOCOLO_VISIBLE.md` para ejemplos
+Ver: `.amp/COMO_EXIGIR_CALIDAD.md` para cómo rechazar código deficiente
+
+### ✅ Checklist de Validación (10 puntos)
+
+**Lectura obligatoria**:
 - [ ] ¿Leí CONTRATO_ROBLOX.md?
-- [ ] ¿Leí ROBLOX_DOCUMENTATION.md completamente?
-- [ ] ¿Ejecuté npm run validate:lua?
+- [ ] ¿Leí ROBLOX_DOCUMENTATION.md?
+- [ ] ¿Leí ROBLOX_VALIDATION.md?
+- [ ] ¿Leí ROBLOX_API_REAL.md?
 
-**Errores ROJOS**:
+**Errores ROJOS (Nil indexing)**:
 - [ ] ¿Valido variables ANTES de usarlas?
-- [ ] ¿Uso if/then para nil checks?
-- [ ] ¿Uso :WaitForChild() o :FindFirstChild()?
-- [ ] ¿Sin accesos a propiedades de nil?
+- [ ] ¿Valido ANTES de iterar con pairs()?
+- [ ] ¿No hay acceso a nil sin validación?
 
-**Errores NARANJAS**:
+**Errores NARANJAS (Forward references)**:
 - [ ] ¿Funciones definidas ANTES de usarlas?
-- [ ] ¿Métodos definidos ANTES de render()?
 - [ ] ¿Callbacks definidos ANTES de Connect()?
 - [ ] ¿Sin forward references?
 
-**Resultado final**:
+**Validación final**:
 - [ ] ¿npm run validate:lua retorna ✅ SIN ERRORES?
-- [ ] ¿Código compilable en Roblox Studio?
-- [ ] ¿Listo para producción?
+- [ ] ¿npm run validate:api retorna ✅ API VÁLIDA?
