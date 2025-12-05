@@ -682,12 +682,13 @@ export function ChatInput({
 
             {/* Disclaimer */}
             <div className="mt-4 sm:mt-6 text-center">
-                <p className={`text-[10px] sm:text-xs px-4 py-2 rounded-full inline-block ${chatMode === 'general'
-                        ? 'bg-muted/80 text-muted-foreground border border-border/50'
-                        : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50'
-                    } backdrop-blur-sm`}>
-                    <span className="opacity-75">⚠️</span> La IA puede cometer errores. Verifica el código antes de usarlo en producción.
-                </p>
+                <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-200 hover:scale-105 ${chatMode === 'general'
+                        ? 'bg-gradient-to-r from-muted/60 to-muted/40 text-muted-foreground border border-border/30 hover:border-border/50'
+                        : 'bg-gradient-to-r from-zinc-800/40 to-zinc-700/40 text-zinc-400 border border-zinc-700/30 hover:border-zinc-600/50'
+                    } backdrop-blur-sm shadow-sm hover:shadow-md`}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
+                    <span className="text-[10px] sm:text-xs font-medium">La IA puede cometer errores. Verifica el código antes de usarlo en producción.</span>
+                </div>
             </div>
         </div>
     );

@@ -84,7 +84,7 @@ const AI_MODELS: Record<string, ModelConfig> = {
         premiumOutputTokens: 65536,
     },
     "gemini-flash-2": {
-        id: "gemini-2.0-flash-exp",
+        id: "gemini-2.0-flash",
         name: "Gemini Flash 2",
         description: "Modelo ultrarrápido optimizado para conversaciones generales y tareas creativas - Gemini 2.0 Flash Experimental con capacidades avanzadas",
         supportsImages: true,

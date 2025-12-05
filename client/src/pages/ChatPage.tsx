@@ -733,12 +733,16 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-3 sm:gap-4 lg:gap-0 shadow-lg relative overflow-hidden`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-3 sm:gap-4 lg:gap-0 shadow-lg relative overflow-hidden transition-all duration-300`}>
                         {/* Background pattern */}
-                        <div className="absolute inset-0 opacity-[0.02]">
+                        <div className="absolute inset-0 opacity-[0.03]">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
-                            <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-radial from-blue-400/20 to-transparent rounded-full blur-3xl"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-radial from-blue-400/20 to-transparent rounded-full blur-3xl animate-pulse"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-radial from-violet-400/15 to-transparent rounded-full blur-2xl"></div>
                         </div>
+
+                        {/* Animated border gradient */}
+                        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
                         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto relative z-10 overflow-x-auto">
                             <Button
