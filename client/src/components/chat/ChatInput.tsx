@@ -61,6 +61,11 @@ export function ChatInput({
     onStopGeneration
 }: ChatInputProps) {
     const [message, setMessage] = useState("");
+    const [robloxScriptMode, setRobloxScriptMode] = useState<'screen' | 'localscript'>(() => {
+        if (typeof window === 'undefined') return 'localscript';
+        const saved = localStorage.getItem('robloxScriptMode');
+        return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
+    });
     const [useWebSearch, setUseWebSearch] = useState(false);
     const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -139,7 +144,11 @@ export function ChatInput({
         e.preventDefault();
 
         const chipContents = pastedChips.map(c => c.fullContent).join('\n\n');
-        const fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
+        let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
+        if (chatMode === 'roblox') {
+            const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
+            fullMessage = `${configLine}\n${fullMessage}`;
+        }
 
         if (fullMessage && !isLoading && !disabled) {
             const shouldUseWebSearch = useWebSearch || (canUseWebSearch && detectWebSearchIntent(fullMessage));
@@ -384,7 +393,7 @@ export function ChatInput({
                                                         )}
                                                         {!model.isRateLimited && model.key === "qwen-coder" && (
                                                             <span className="px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded text-[8px] font-semibold whitespace-nowrap cursor-help" title="Limitado por tener plan free">
-                                                                90%
+                                                                95%
                                                             </span>
                                                         )}
                                                         {model.supportsImages && (
@@ -512,6 +521,37 @@ export function ChatInput({
                                 <span className="hidden xs:inline">General</span>
                             </Button>
                         </div>
+
+                        {chatMode === 'roblox' && (
+                            <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg hover:bg-zinc-800`}>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={robloxScriptMode === 'screen' ? 'default' : 'ghost'}
+                                    onClick={() => {
+                                        setRobloxScriptMode('screen');
+                                        if (typeof window !== 'undefined') localStorage.setItem('robloxScriptMode', 'screen');
+                                    }}
+                                    disabled={isLoading}
+                                    className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs gap-0.5 sm:gap-1 rounded-md ${robloxScriptMode === 'screen' ? 'bg-white shadow-sm text-slate-900' : ''}`}
+                                >
+                                    ScreenGui
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={robloxScriptMode === 'localscript' ? 'default' : 'ghost'}
+                                    onClick={() => {
+                                        setRobloxScriptMode('localscript');
+                                        if (typeof window !== 'undefined') localStorage.setItem('robloxScriptMode', 'localscript');
+                                    }}
+                                    disabled={isLoading}
+                                    className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs gap-0.5 sm:gap-1 rounded-md ${robloxScriptMode === 'localscript' ? 'bg-white shadow-sm text-slate-900' : ''}`}
+                                >
+                                    LocalScript
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Web search toggle */}
                         <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg ${chatMode === 'general' ? 'hover:bg-slate-100' : 'hover:bg-zinc-800'

@@ -23,6 +23,7 @@ import type { Conversation, Message, AIModel, ChatMode } from "@shared/schema";
 import type { User } from "@/lib/auth";
 import { getToken } from "@/lib/auth";
 import { ArtifactPanel } from "@/components/chat/ArtifactPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface ArtifactState {
     isOpen: boolean;
@@ -101,6 +102,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [showAnnouncement, setShowAnnouncement] = useState(false);
 
     // Suscribirse a actualizaciones de rate limit en tiempo real
     const { limitInfo } = useRateLimitStream({
@@ -701,6 +703,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     };
 
     return (
+        <>
         <div className={`flex h-screen w-screen overflow-hidden bg-background`}>
             {/* Sidebar */}
             <ChatSidebar
@@ -943,5 +946,42 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 )}
             </div>
         </div>
+
+        {/* Announcement Modal */}
+        <Dialog open={showAnnouncement} onOpenChange={setShowAnnouncement}>
+            <DialogContent className="sm:max-w-[500px] bg-background/95 backdrop-blur-xl border-border shadow-2xl">
+                <DialogHeader>
+                    <DialogTitle className="text-xl flex items-center gap-2">
+                        Presentamos...
+                        <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[10px] font-semibold">Actualización</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-sm">
+                        Nuevos modelos estrella para tu trabajo diario.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="p-3 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold">⭐ Gemini 2.5 Pro</p>
+                                <p className="text-xs text-muted-foreground">Multimodal, reasoning y 1M contexto</p>
+                            </div>
+                            <span className="px-2 py-0.5 bg-blue-500/15 text-blue-600 rounded text-[10px]">Premium</span>
+                        </div>
+                    </div>
+                    <div className="p-3 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold">✨ Gemini 2.5 Flash</p>
+                                <p className="text-xs text-muted-foreground">Rápido y excelente en código</p>
+                            </div>
+                            <span className="px-2 py-0.5 bg-blue-500/15 text-blue-600 rounded text-[10px]">Premium</span>
+                        </div>
+                    </div>
+                    <Button onClick={() => setShowAnnouncement(false)} className="w-full">Entendido</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }

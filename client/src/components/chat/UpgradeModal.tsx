@@ -192,7 +192,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                     <div className="flex items-center gap-1.5">
                       <span>Qwen 3 Coder</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">90% capacidad (235K contexto)</span>
+                    <span className="text-xs text-muted-foreground">95% capacidad (248K contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">

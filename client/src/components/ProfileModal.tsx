@@ -154,7 +154,7 @@ export function ProfileModal({ user, children, onUserUpdate, chatMode = "roblox"
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          currentPassword,
+          oldPassword: currentPassword,
           newPassword,
         }),
       });
