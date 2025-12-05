@@ -862,6 +862,156 @@ return Counter
 
 ## Best Practices
 
+### 🔴 CRÍTICO: Orden de Declaración de Funciones
+
+**Regla Absoluta**: Declara TODAS las funciones antes de usarlas. Esto evita errores naranja de Roblox.
+
+#### ❌ INCORRECTO (Genera errores naranja)
+```lua
+-- Error: functionB no existe cuando se declara functionA
+local function functionA()
+    functionB()  -- ⚠️ Roblox: functionB undefined (naranja warning)
+end
+
+local function functionB()
+    print("Hello")
+end
+
+functionA()
+```
+
+#### ✅ CORRECTO (Sin errores naranja)
+```lua
+-- Opción 1: Declarar antes de usar
+local function functionB()
+    print("Hello")
+end
+
+local function functionA()
+    functionB()  -- ✅ functionB ya existe
+end
+
+functionA()
+```
+
+#### ✅ ALTERNATIVA: Forward Declaration con locals
+```lua
+-- Opción 2: Pre-declarar variables (más común en Roblox)
+local functionA
+local functionB
+
+function functionA()
+    functionB()
+end
+
+function functionB()
+    print("Hello")
+end
+
+functionA()
+```
+
+#### ✅ ALTERNATIVA AVANZADA: Usar tablas
+```lua
+-- Opción 3: Tablas (permite referencias cruzadas)
+local Module = {}
+
+function Module.functionA()
+    Module.functionB()  -- Referencia via tabla
+end
+
+function Module.functionB()
+    print("Hello")
+end
+
+Module.functionA()
+return Module
+```
+
+### Patrones de Código Roblox Correcto
+
+#### Component con inicialización correcta
+```lua
+-- ✅ CORRECTO: Todo definido antes de usar
+local Button = {}
+Button.__index = Button
+
+-- Declarar métodos ANTES de usarlos en el constructor
+function Button:Click()
+    self:OnClick()
+end
+
+function Button:OnClick()
+    print("Clicked!")
+end
+
+function Button.new(props)
+    local self = setmetatable({}, Button)
+    self.props = props
+    return self
+end
+
+-- Ahora es seguro usarlos
+local btn = Button.new({text = "Click me"})
+btn:Click()
+```
+
+#### Callback correcto en eventos
+```lua
+-- ✅ CORRECTO: Función definida antes del evento
+local function onButtonClicked()
+    print("Button clicked")
+end
+
+local button = Instance.new("TextButton")
+button.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+
+-- Ahora conectamos el evento
+button.Activated:Connect(onButtonClicked)
+```
+
+#### Roact component correcto
+```lua
+-- ✅ CORRECTO: Métodos definidos antes de render
+local Counter = Roact.Component:extend("Counter")
+
+function Counter:init()
+    self.state = {count = 0}
+end
+
+-- Definir métodos ANTES del render
+function Counter:incrementCount()
+    self:setState({count = self.state.count + 1})
+end
+
+function Counter:decrementCount()
+    self:setState({count = self.state.count - 1})
+end
+
+-- Ahora es seguro usarlos en render
+function Counter:render()
+    return Roact.createElement("Frame", {}, {
+        IncrementBtn = Roact.createElement("TextButton", {
+            [Roact.Event.Activated] = function()
+                self:incrementCount()  -- ✅ Método ya existe
+            end
+        })
+    })
+end
+
+return Counter
+```
+
+### 📋 Checklist para evitar errores naranja
+
+- [ ] ¿Todas las funciones que usas están definidas ANTES?
+- [ ] ¿Todos los métodos de clase están definidos ANTES de `render()`?
+- [ ] ¿Si necesitas referencias cruzadas, usas tablas o pre-declaración?
+- [ ] ¿Validas que los callbacks existan antes de conectarlos?
+- [ ] ¿Ejecutas `local function` ANTES de `Roact.createElement()`?
+
+## Best Practices
+
 ### UI Layout Best Practices
 ```lua
 -- Use UIListLayout for dynamic lists

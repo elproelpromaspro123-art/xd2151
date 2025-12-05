@@ -34,4 +34,13 @@
 1. Lee `ROBLOX_DOCUMENTATION.md` completamente
 2. Valida sintaxis Lua contra ejemplos del documento
 3. Usa patrones del documento (no improvises)
-4. Si no lo encuentras en el documento, advierte al usuario que necesita actualizar ROBLOX_DOCUMENTATION.md
+4. **VERIFICA ORDEN DE DECLARACIÓN**: Todas las funciones ANTES de usarlas (evita errores naranja)
+5. Si no lo encuentras en el documento, advierte al usuario que necesita actualizar ROBLOX_DOCUMENTATION.md
+
+**Checklist de validación Roblox** (ver `ROBLOX_VALIDATION.md` para detalles):
+- ✅ Funciones definidas antes de ser llamadas
+- ✅ Métodos de clase definidos antes de `render()`
+- ✅ Callbacks declarados antes de conectarlos a eventos
+- ✅ No hay forward references sin pre-declaración (tablas o pre-declaración local)
+- ✅ Código sigue patrones de ROBLOX_DOCUMENTATION.md
+- ✅ Sin errores naranja (orange warnings)

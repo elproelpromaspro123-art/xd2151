@@ -24,11 +24,18 @@ Toda solicitud de código en este proyecto requiere:
 
 ## ✅ CHECKLIST ANTES DE RESPONDER
 
+### Todos los códigos
 - [ ] ¿Leíste AGENTS.md completamente?
-- [ ] ¿Es código Roblox? ¿Leíste ROBLOX_DOCUMENTATION.md?
 - [ ] ¿El código sigue los patrones del proyecto?
 - [ ] ¿Validaste contra ejemplos reales?
 - [ ] ¿Incluiste comentarios en Español si el proyecto es Español?
+
+### Solo para código Roblox/Lua
+- [ ] ¿Leíste ROBLOX_DOCUMENTATION.md?
+- [ ] **¿Todas las funciones se definen ANTES de usarlas?**
+- [ ] ¿Los métodos de clase están antes de `render()`?
+- [ ] ¿No hay forward references?
+- [ ] ¿El código pasa la validación "Orden de Declaración"?
 
 ## 📋 REFERENCIA RÁPIDA AGENTS.md
 
