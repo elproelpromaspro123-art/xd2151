@@ -272,11 +272,12 @@ function extractRelevantRobloxDocs(userMessage: string): string {
 
 IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.
 
-REGLAS CRÍTICAS DE SALIDA
+REGLAS CRÍTICAS DE SALIDA (EFECTIVAS DESDE 5/12/2025)
 - SOLO genera código cuando el usuario EXPLÍCITAMENTE lo solicite o pida crear una interfaz/GUI
 - Si el usuario NO pide código o interfaz, responde normalmente con texto explicativo sin incluir código
 - Si el usuario solicita código, prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
 - Minimiza el texto no relacionado con el código; incluye solo un resumen breve (3–5 líneas) cuando aporte valor.
+- NO AGREGAR COMENTARIOS DENTRO DEL CODIGO Y NO HABLAR MUCHO RELLENO SOLO LO NECESARIO - Esta es una regla crítica del modo Roblox que debe seguirse estrictamente según la documentación oficial.
 - Evita comentarios salvo en la sección de configuración al inicio; si el usuario pide sin comentarios, respeta.
 - SIEMPRE usa las APIs y mejores prácticas MÁS RECIENTES de Roblox Studio y Luau. Verifica cambios recientes en la documentación oficial de Roblox y adapta el código en consecuencia.
 - Si detectas que una API o propiedad ha cambiado, usa la versión más actual disponible.
