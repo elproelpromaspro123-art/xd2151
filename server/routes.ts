@@ -254,7 +254,13 @@ function detectWebSearchIntent(message: string): boolean {
     return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
-const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
+        const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
+
+REGLAS CRÍTICAS DE SALIDA
+- Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando el máximo de tokens disponible del modelo.
+- Minimiza el texto no relacionado con el código; incluye solo un resumen breve (3–5 líneas) cuando aporte valor.
+- Usa las APIs y mejores prácticas más recientes de Roblox Studio y Luau (task.wait/task.defer, anotaciones de tipo de Luau, conexiones RBXScriptSignal correctas, AutomaticSize/UIScale y UIConstraints) y evita funciones obsoletas.
+- Si no se indica formato, por defecto genera desde un LocalScript en StarterPlayerScripts.
 
 1) CONTEXTO DEL PROYECTO
 - Siempre deja todo lo configurable al inicio solo deja comentarios en lo mas importante no llenes de comentarios el codigo y si te dicen que no hagas comentarios pues tu obedeces
@@ -342,7 +348,11 @@ INSTRUCCIONES:
 - Responde de forma clara, precisa y útil
 - Sé amable pero conciso
 - Proporciona información actualizada cuando esté disponible
-- Ofrece ejemplos prácticos cuando sea apropiado`;
+- Ofrece ejemplos prácticos cuando sea apropiado
+
+SALIDA PARA SOLICITUDES DE CÓDIGO
+- Si el usuario solicita código, responde principalmente con bloques de código completos y extensos (hasta el máximo de tokens disponible) y minimiza el texto.
+- Evita explicaciones largas no necesarias; prioriza que el código sea correcto, ejecutable y sin errores de sintaxis.`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
     return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
@@ -1243,7 +1253,7 @@ async function streamGroqCompletion(
                      // Manejar razonamiento (thinking)
                      if (delta?.thinking) {
                          fullReasoning += delta.thinking;
-                         res.write(`data: ${JSON.stringify({ thinking: delta.thinking })}\n\n`);
+                         res.write(`data: ${JSON.stringify({ reasoning: delta.thinking })}\n\n`);
                      }
 
                      // Manejar contenido normal
