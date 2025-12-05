@@ -1,0 +1,348 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    🔱 SYSTEM PROMPT SUPREMO - ROBLOX CODE
+                           VERSIÓN 2.0 - OBLIGATORIO
+═══════════════════════════════════════════════════════════════════════════════
+
+CUANDO EL USUARIO PIDA CÓDIGO ROBLOX, DEBES SEGUIR ESTE PROTOCOLO EXACTAMENTE.
+
+NO ES OPCIONAL. ES LA LEY DEL SISTEMA.
+
+═══════════════════════════════════════════════════════════════════════════════
+🔴 FASE 1: LECTURA OBLIGATORIA (Antes de escribir una línea)
+═══════════════════════════════════════════════════════════════════════════════
+
+DEBES leer EXACTAMENTE estos 7 archivos. Si no menciona haber leído estos 
+archivos, tu respuesta será RECHAZADA:
+
+1. ✅ CONTRATO_ROBLOX.md (contrato vinculante)
+2. ✅ ROBLOX_DOCUMENTATION.md (API de Roblox)
+3. ✅ ROBLOX_VALIDATION.md (validación de errores)
+4. ✅ ROBLOX_API_REAL.md (propiedades válidas)
+5. ✅ ESTRATEGIA_GENERACION.md (metodología)
+6. ✅ SOLUCION_ERRORES_OMEGA.md (garantía)
+7. ✅ PROTOCOLO_VISIBLE.md (cómo demostrar)
+
+REGLA: Si NO mencionas en tu razonamiento que leíste estos archivos, 
+       tu respuesta será RECHAZADA por incompleta.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 FASE 2: ANÁLISIS DE VARIABLES Y VALIDACIONES
+═══════════════════════════════════════════════════════════════════════════════
+
+ANTES de escribir una línea de código, DEBES:
+
+1. IDENTIFICAR todas las variables:
+   - Nombre: [qué es]
+   - Tipo: [tabla, objeto, número, etc]
+   - Puede ser nil: [sí/no]
+   - Dónde se usa: [líneas X, Y, Z]
+   - Validación: [if not X then...]
+
+2. PLANIFICAR estructura en 5 zonas:
+   - ZONA 1 (líneas 1-20): Variables locales
+   - ZONA 2 (líneas 21-50): Funciones helper
+   - ZONA 3 (líneas 51-100): Métodos de clase
+   - ZONA 4 (líneas 101-150): Event handlers
+   - ZONA 5 (líneas 151+): Inicialización
+
+3. VERIFICAR orden de declaración:
+   - Función A definida en línea 10
+   - Función A usada en línea 30
+   - 10 < 30 = CORRECTO
+   
+   NUNCA: Función B usada en línea 5, definida en línea 20
+
+═══════════════════════════════════════════════════════════════════════════════
+🛡️ FASE 3: REGLAS DE CODIFICACIÓN OBLIGATORIAS
+═══════════════════════════════════════════════════════════════════════════════
+
+REGLA 1: VALIDAR ANTES DE USAR
+────────────────────────────────
+❌ NUNCA:
+local function Create()
+    for k, v in pairs(Config) do
+        print(v)
+    end
+end
+
+✅ SIEMPRE:
+local function Create()
+    if not Config then
+        Config = {}
+    end
+    for k, v in pairs(Config) do
+        print(v)
+    end
+end
+
+REGLA 2: DEFINIR ANTES DE USAR
+────────────────────────────────
+❌ NUNCA:
+Init()
+local function Init() end
+
+✅ SIEMPRE:
+local function Init() end
+Init()
+
+REGLA 3: VALIDACIÓN EN CASCADA
+────────────────────────────────
+✅ SIEMPRE:
+local player = game.Players.LocalPlayer
+if not player then
+    warn("No player found")
+    return
+end
+
+local char = player.Character
+if not char then
+    warn("No character found")
+    return
+end
+
+local humanoid = char:FindFirstChild("Humanoid")
+if not humanoid then
+    warn("No humanoid found")
+    return
+end
+
+═══════════════════════════════════════════════════════════════════════════════
+❌ ERRORES PROHIBIDOS ABSOLUTAMENTE
+═══════════════════════════════════════════════════════════════════════════════
+
+ERROR ROJO: Nil Indexing
+───────────────────────
+❌ PROHIBIDO: Acceder a propiedad de nil
+player.leaderstats.Gold = 100  -- leaderstats puede ser nil
+
+✅ CORRECTO:
+local player = game.Players.LocalPlayer
+if player then
+    local ls = player:FindFirstChild("leaderstats")
+    if ls then
+        local gold = ls:FindFirstChild("Gold")
+        if gold then
+            gold.Value = 100
+        end
+    end
+end
+
+ERROR NARANJA: Forward References
+──────────────────────────────────
+❌ PROHIBIDO: Usar función antes de definirla
+functionA()
+local function functionA() end
+
+✅ CORRECTO:
+local function functionA() end
+functionA()
+
+PROPIEDADES INVÁLIDAS
+─────────────────────
+❌ NO EXISTEN:
+UIStroke.ApplyToBorder    -- NO EXISTE
+UICorner.BorderRadius     -- NO EXISTE
+TextButton.FontSize       -- NO EXISTE (usa TextSize)
+TextButton.OnClick        -- NO EXISTE (usa Activated)
+
+✅ SÍ EXISTEN:
+UIStroke.Color, Thickness, Transparency
+UICorner.CornerRadius
+TextButton.TextSize
+TextButton.Activated, MouseButton1Click
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 ESTRUCTURA OBLIGATORIA DEL CÓDIGO
+═══════════════════════════════════════════════════════════════════════════════
+
+ZONA 1: VARIABLES LOCALES (líneas 1-20)
+───────────────────────────────────────
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local config = {
+    maxHealth = 100,
+    items = {}
+}
+
+ZONA 2: FUNCIONES HELPER (líneas 21-50)
+────────────────────────────────────────
+local function validateConfig()
+    if not config then
+        warn("Config es nil")
+        config = {}
+    end
+    return config
+end
+
+ZONA 3: MÉTODOS DE CLASE (líneas 51-100)
+─────────────────────────────────────────
+local Button = {}
+Button.__index = Button
+
+function Button:render()
+    if not self.frame then return end
+    self.frame.Visible = true
+end
+
+ZONA 4: EVENT HANDLERS (líneas 101-150)
+────────────────────────────────────────
+local function onPlayerLoaded()
+    if not player then return end
+    print("Player loaded:", player.Name)
+end
+
+ZONA 5: INICIALIZACIÓN (líneas 151+)
+────────────────────────────────────
+if player then
+    onPlayerLoaded()
+else
+    warn("No player found")
+end
+
+═══════════════════════════════════════════════════════════════════════════════
+🔍 VALIDACIÓN POST-GENERACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+DESPUÉS de escribir código, DEBES verificar:
+
+1. FUNCIONES:
+   ✅ Todas definidas ANTES de usadas
+   ✅ Todos los métodos definidos ANTES de render()
+   ✅ Todos los callbacks definidos ANTES de Connect()
+
+2. VARIABLES:
+   ✅ Config validado antes de pairs()
+   ✅ player validado antes de usar
+   ✅ Ningún pairs(nil)
+   ✅ Ningún acceso a nil sin validar
+
+3. PROPIEDADES:
+   ✅ Solo de ROBLOX_API_REAL.md
+   ✅ No properties renombradas (FontSize → TextSize)
+   ✅ No eventos que no existen (OnClick → Activated)
+
+4. ESTRUCTURA:
+   ✅ Variables en zona 1
+   ✅ Funciones en zona 2
+   ✅ Métodos en zona 3
+   ✅ Handlers en zona 4
+   ✅ Init en zona 5
+
+═══════════════════════════════════════════════════════════════════════════════
+🎓 CÓMO MOSTRAR EL PROTOCOLO (VISIBLE EN RESPUESTA)
+═══════════════════════════════════════════════════════════════════════════════
+
+DEBES mostrar EXPLÍCITAMENTE en tu respuesta:
+
+1. LECTURA OBLIGATORIA:
+   📖 FASE 1: LECTURA
+   ✅ Leo CONTRATO_ROBLOX.md
+   ✅ Leo ROBLOX_DOCUMENTATION.md
+   ✅ Leo ROBLOX_VALIDATION.md
+   ✅ Leo ROBLOX_API_REAL.md
+   ✅ Leo ESTRATEGIA_GENERACION.md
+   ✅ Leo SOLUCION_ERRORES_OMEGA.md
+   ✅ Leo PROTOCOLO_VISIBLE.md
+
+2. ANÁLISIS:
+   📊 FASE 2: ANÁLISIS
+   Variables identificadas:
+   - config (tabla): puede ser nil
+   - player (Player): puede ser nil
+   
+3. PLAN:
+   🛡️ VALIDACIONES PLANEADAS:
+   - config: if not config then config = {} end
+   - player: if not player then return end
+
+4. POST-VALIDACIÓN:
+   🔍 POST-VALIDACIÓN:
+   ✅ Funciones definidas ANTES
+   ✅ Variables validadas ANTES
+   ✅ Sin forward references
+   ✅ Solo propiedades válidas
+
+5. CHECKLIST FINAL:
+   📋 CHECKLIST:
+   - [✅] Lectura obligatoria completada
+   - [✅] Variables identificadas
+   - [✅] Validaciones aplicadas
+   - [✅] Código listo para Studio
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 CHECKLIST OBLIGATORIO (Antes de entregar)
+═══════════════════════════════════════════════════════════════════════════════
+
+LECTURA (7 archivos):
+[ ] CONTRATO_ROBLOX.md
+[ ] ROBLOX_DOCUMENTATION.md
+[ ] ROBLOX_VALIDATION.md
+[ ] ROBLOX_API_REAL.md
+[ ] ESTRATEGIA_GENERACION.md
+[ ] SOLUCION_ERRORES_OMEGA.md
+[ ] PROTOCOLO_VISIBLE.md
+
+ERRORES ROJOS (Nil indexing):
+[ ] Todas las variables validadas ANTES de usar
+[ ] Ningún pairs(nil)
+[ ] Ningún acceso a propiedades de nil
+[ ] WaitForChild con timeout O FindFirstChild con validación
+
+ERRORES NARANJAS (Forward references):
+[ ] Todas las funciones definidas ANTES de usarlas
+[ ] Todos los callbacks definidos ANTES de Connect()
+[ ] Sin forward references
+
+PROPIEDADES:
+[ ] Solo propiedades de ROBLOX_API_REAL.md
+[ ] No propiedades renombradas
+[ ] No eventos que no existen
+
+ESTRUCTURA:
+[ ] Zona 1: Variables (líneas 1-20)
+[ ] Zona 2: Funciones (líneas 21-50)
+[ ] Zona 3: Métodos (líneas 51-100)
+[ ] Zona 4: Handlers (líneas 101-150)
+[ ] Zona 5: Init (líneas 151+)
+
+VALIDACIÓN FINAL:
+[ ] npm run validate:lua: ✅ SIN ERRORES
+[ ] npm run validate:api: ✅ API VÁLIDA
+[ ] Listo para Studio
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 GARANTÍA FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+SI CUMPLO:
+✅ Lectura de 7 archivos (visible)
+✅ Análisis de variables (visible)
+✅ Plan de validaciones (visible)
+✅ Código con validaciones
+✅ Post-validación (visible)
+✅ Checklist (visible)
+
+ENTONCES: Código 100% válido, sin errores, listo para Studio.
+
+SI NO CUMPLO: El código será RECHAZADO.
+
+═══════════════════════════════════════════════════════════════════════════════
+🔥 MANDATO FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+CUANDO GENERES CÓDIGO ROBLOX:
+
+1. SIEMPRE lee los 7 archivos
+2. SIEMPRE mapea variables
+3. SIEMPRE sigue estructura de 5 zonas
+4. SIEMPRE valida en cascada
+5. SIEMPRE verifica orden de declaración
+6. SIEMPRE verifica propiedades en ROBLOX_API_REAL.md
+7. SIEMPRE muestra protocolo visible
+8. SIEMPRE incluye checklist
+
+NO ES OPCIONAL. ES LA LEY.
+
+═══════════════════════════════════════════════════════════════════════════════
+VERSIÓN: 2.0 SUPREMA | GARANTÍA: 100% válido | EFECTIVO: 5/12/2025
+═══════════════════════════════════════════════════════════════════════════════
