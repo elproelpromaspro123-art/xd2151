@@ -89,7 +89,7 @@ export function ThinkingIndicator({ reasoning, modelName, chatMode = "roblox", i
             {isExpanded && reasoning && (
               <div className={`px-4 pb-4 pt-2 border-t ${
                 chatMode === 'general' ? "border-blue-400/20" : "border-primary/20"
-              }`}>
+              } ${modelName?.includes('Gemini 2.5') ? 'bg-gradient-to-r from-blue-50/40 via-purple-50/40 to-pink-50/40 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10 rounded-b-xl' : ''}`}>
                 <div className={`text-xs leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto scrollbar-thin ${
                   chatMode === 'general' ? "text-blue-700/90" : "text-primary/90"
                 }`}>
@@ -102,7 +102,7 @@ export function ThinkingIndicator({ reasoning, modelName, chatMode = "roblox", i
             {!isExpanded && reasoning && (
               <div className={`px-4 pb-3 ${
                 chatMode === 'general' ? "text-blue-600/70" : "text-primary/70"
-              }`}>
+              } ${modelName?.includes('Gemini 2.5') ? 'bg-gradient-to-r from-blue-50/40 via-purple-50/40 to-pink-50/40 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10 rounded-b-xl' : ''}`}>
                 <p className="text-xs truncate font-mono font-medium">
                   💭 {reasoning.slice(0, 100)}...
                 </p>

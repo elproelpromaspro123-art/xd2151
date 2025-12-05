@@ -368,12 +368,12 @@ export function ChatInput({
                                                     <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
                                                         {isGeminiPro && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap animate-pulse">
                                                                 ⭐ Estrella
                                                             </span>
                                                         )}
                                                         {isGeminiFlash && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap animate-pulse">
                                                                 ✨ Segundo
                                                             </span>
                                                         )}

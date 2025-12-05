@@ -536,13 +536,12 @@ async function streamGeminiCompletion(
             requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
         }
 
-        // Agregar thinking si está soportado (Gemini 3 Pro Preview tiene pensamiento mejorado)
-        // Para Gemini 3 Pro Preview, usar presupuesto adaptativo según plan
-        if (useReasoning && modelInfo.supportsReasoning) {
+        // Agregar reasoning para Gemini (top-level thinkingConfig)
+        if (useReasoning && modelInfo.supportsReasoning && modelInfo.apiProvider === "gemini") {
             const budgetTokens = isPremium ? 15000 : 8000;
-            requestBody.thinking_config = {
-                thinking_budget: budgetTokens,
-                include_thoughts: true
+            requestBody.thinkingConfig = {
+                budgetTokens: budgetTokens,
+                includeThoughts: true
             };
         }
         
