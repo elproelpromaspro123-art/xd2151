@@ -77,12 +77,11 @@ const AI_MODELS: Record<string, ModelConfig> = {
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
-        // Oficial docs: 1,048,576 contexto, 65,536 output
-        // Free: 95% de capacidad máxima
-        freeContextTokens: 996147,
-        freeOutputTokens: 62259,
-        premiumContextTokens: 1038090,
-        premiumOutputTokens: 64880,
+        // Oficial docs: 1,048,576 contexto, 65,536 output - Usando capacidad máxima completa
+        freeContextTokens: 1048576,
+        freeOutputTokens: 65536,
+        premiumContextTokens: 1048576,
+        premiumOutputTokens: 65536,
     },
     "gemini-flash-2": {
         id: "gemini-1.5-flash",
@@ -113,12 +112,11 @@ const AI_MODELS: Record<string, ModelConfig> = {
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
-        // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
-        // Premium: usar 99% de capacidad máxima
+        // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida - Usando capacidad máxima completa
         freeContextTokens: 0,
         freeOutputTokens: 0,
-        premiumContextTokens: 1038090,
-        premiumOutputTokens: 64880,
+        premiumContextTokens: 1048576,
+        premiumOutputTokens: 65536,
     },
 };
 
@@ -569,6 +567,23 @@ async function streamGeminiCompletion(
             throw new Error(`Model ${model} not found`);
         }
 
+        // Extract last user message from chat history for system prompt
+        let lastUserMessage = "";
+        for (let i = chatHistory.length - 1; i >= 0; i--) {
+            const msg = chatHistory[i];
+            if (msg.role === "user") {
+                if (typeof msg.content === "string") {
+                    lastUserMessage = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                    const textPart = msg.content.find((part: any) => part.type === "text");
+                    if (textPart && textPart.text) {
+                        lastUserMessage = textPart.text;
+                    }
+                }
+                break;
+            }
+        }
+
         const systemPrompt = getSystemPrompt(chatMode, lastUserMessage);
 
         // Convertir historial OpenRouter a formato Gemini
@@ -923,7 +938,25 @@ async function streamChatCompletion(
             console.error("[streamChatCompletion] Model not found:", model);
             throw new Error(`Model ${model} not found`);
         }
-        const systemPrompt = getSystemPrompt(chatMode, parsed.message);
+
+        // Extract last user message from chat history for system prompt
+        let lastUserMessage = "";
+        for (let i = chatHistory.length - 1; i >= 0; i--) {
+            const msg = chatHistory[i];
+            if (msg.role === "user") {
+                if (typeof msg.content === "string") {
+                    lastUserMessage = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                    const textPart = msg.content.find((part: any) => part.type === "text");
+                    if (textPart && textPart.text) {
+                        lastUserMessage = textPart.text;
+                    }
+                }
+                break;
+            }
+        }
+
+        const systemPrompt = getSystemPrompt(chatMode, lastUserMessage);
 
         const messagesWithContext = webSearchContext
             ? [
@@ -1152,7 +1185,25 @@ async function streamGroqCompletion(
             console.error("[streamGroqCompletion] Model not found:", model);
             throw new Error(`Model ${model} not found`);
         }
-        const systemPrompt = getSystemPrompt(chatMode, message);
+
+        // Extract last user message from chat history for system prompt
+        let lastUserMessage = "";
+        for (let i = chatHistory.length - 1; i >= 0; i--) {
+            const msg = chatHistory[i];
+            if (msg.role === "user") {
+                if (typeof msg.content === "string") {
+                    lastUserMessage = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                    const textPart = msg.content.find((part: any) => part.type === "text");
+                    if (textPart && textPart.text) {
+                        lastUserMessage = textPart.text;
+                    }
+                }
+                break;
+            }
+        }
+
+        const systemPrompt = getSystemPrompt(chatMode, lastUserMessage);
 
         const messagesWithContext = webSearchContext
             ? [

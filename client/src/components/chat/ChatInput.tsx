@@ -198,7 +198,7 @@ export function ChatInput({
                             : 'ring-2 ring-primary/40 shadow-2xl shadow-primary/10 border-primary/30'
                         : 'shadow-xl border'
                     } ${chatMode === 'general'
-                        ? 'bg-white/95 border-slate-200/60'
+                        ? 'bg-card/95 border-border/60'
                         : 'bg-zinc-900/95 border-zinc-700/60'
                     } backdrop-blur-xl`}>
 
@@ -499,7 +499,7 @@ export function ChatInput({
 
                         {/* Mode toggle */}
                         <div className={`flex items-center rounded-xl p-1 border ${chatMode === 'general'
-                                ? 'bg-blue-50 border-blue-200 shadow-sm'
+                                ? 'bg-card border-border shadow-sm'
                                 : 'bg-zinc-800/50 border-zinc-700 shadow-lg'
                             } transition-all duration-200`}>
                             <Button
@@ -632,10 +632,10 @@ export function ChatInput({
                         {/* Web search toggle */}
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${canUseWebSearch
                                 ? chatMode === 'general'
-                                    ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-card border-border hover:bg-card/80'
                                     : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
                                 : chatMode === 'general'
-                                    ? 'bg-slate-50/50 border-slate-200/50'
+                                    ? 'bg-card/50 border-border/50'
                                     : 'bg-zinc-800/20 border-zinc-700/30'
                             }`}>
                             <Switch
@@ -663,7 +663,7 @@ export function ChatInput({
                         {/* Reasoning toggle */}
                         {showReasoningToggle && (
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${chatMode === 'general'
-                                    ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-card border-border hover:bg-card/80'
                                     : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
                                 }`}>
                                 <Switch
@@ -701,7 +701,7 @@ export function ChatInput({
             {/* Disclaimer */}
             <div className="mt-4 sm:mt-6 text-center">
                 <p className={`text-[10px] sm:text-xs px-4 py-2 rounded-full inline-block ${chatMode === 'general'
-                        ? 'bg-slate-100/80 text-slate-500 border border-slate-200/50'
+                        ? 'bg-muted/80 text-muted-foreground border border-border/50'
                         : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50'
                     } backdrop-blur-sm`}>
                     <span className="opacity-75">⚠️</span> La IA puede cometer errores. Verifica el código antes de usarlo en producción.

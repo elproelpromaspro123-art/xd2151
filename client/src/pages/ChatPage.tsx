@@ -1037,7 +1037,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             <p className="text-sm font-semibold text-foreground mb-3">Planes Disponibles</p>
                             <div className="flex justify-center gap-3 text-xs">
                                 <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md font-medium border border-green-200 dark:border-green-800">Free: 10 mensajes/día</span>
-                                <span className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-md font-medium border border-amber-200 dark:border-amber-800">Premium: Ilimitado</span>
+                                <span className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-md font-medium border border-amber-200 dark:border-amber-800">Premium: Próximamente</span>
                             </div>
                         </div>
                     </div>
