@@ -57,6 +57,8 @@ import {
     subscribeToRateLimits,
     startRateLimitBroadcaster,
 } from "./rateLimitStream";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -177,6 +179,97 @@ function detectWebSearchIntent(message: string): boolean {
     return WEB_SEARCH_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
 }
 
+// Cache para la documentación de Roblox
+let robloxDocumentationCache: string | null = null;
+
+function getRobloxDocumentation(): string {
+    if (robloxDocumentationCache) {
+        return robloxDocumentationCache;
+    }
+
+    try {
+        const docPath = join(process.cwd(), "ROBLOX_DOCUMENTATION.md");
+        robloxDocumentationCache = readFileSync(docPath, "utf-8");
+        return robloxDocumentationCache;
+    } catch (error) {
+        console.error("Error loading Roblox documentation:", error);
+        return "Documentación de Roblox no disponible.";
+    }
+}
+
+function extractRelevantRobloxDocs(userMessage: string): string {
+    const fullDocs = getRobloxDocumentation();
+    const lowerMessage = userMessage.toLowerCase();
+
+    // Keywords para diferentes secciones
+    const keywordMappings = {
+        // UI/GUI keywords
+        ui: ["gui", "interfaz", "botón", "button", "textlabel", "textbox", "frame", "screen", "image", "scroll", "layout", "color", "position", "size", "anchor", "udim2", "uicorner", "uistroke", "uigradient"],
+        // Events keywords
+        events: ["evento", "event", "clicked", "activated", "mouseenter", "mouseleave", "input", "touch", "mouse"],
+        // Services keywords
+        services: ["service", "players", "replicatedstorage", "serverscriptservice", "starterplayer", "workspace", "lighting", "sound", "tween", "http", "datastore"],
+        // Instances/Objects keywords
+        instances: ["part", "model", "humanoid", "tool", "spawnlocation", "seat", "terrain"],
+        // Animation/Tween keywords
+        animation: ["tween", "animación", "animation", "easing", "tweenservice"],
+        // Physics keywords
+        physics: ["física", "physics", "collision", "gravity", "velocity", "force", "body"],
+        // Scripting keywords
+        scripting: ["script", "localscript", "modulescript", "require", "function", "variable", "table", "loop", "if", "task", "wait", "defer", "spawn"],
+        // Best practices keywords
+        bestpractices: ["mejor", "práctica", "practice", "performance", "optimización", "optimization", "seguridad", "security", "clean", "code"]
+    };
+
+    const relevantSections: string[] = [];
+    const lines = fullDocs.split('\n');
+    let currentSection = '';
+    let inRelevantSection = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Detect section headers
+        if (line.startsWith('#')) {
+            currentSection = line.toLowerCase();
+            inRelevantSection = false;
+
+            // Check if this section is relevant
+            for (const [category, keywords] of Object.entries(keywordMappings)) {
+                if (keywords.some(keyword => lowerMessage.includes(keyword))) {
+                    if (currentSection.includes(category) ||
+                        keywords.some(keyword => currentSection.includes(keyword))) {
+                        inRelevantSection = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (inRelevantSection) {
+            relevantSections.push(line);
+            // Limit section size to avoid token overflow
+            if (relevantSections.length > 100) {
+                relevantSections.push("... (sección truncada para optimización)");
+                break;
+            }
+        }
+    }
+
+    // If no specific sections found, provide general overview
+    if (relevantSections.length === 0) {
+        // Extract introduction and core concepts
+        const introStart = fullDocs.indexOf("## Introduction");
+        const coreStart = fullDocs.indexOf("## Core Objects and Classes");
+        if (introStart !== -1 && coreStart !== -1) {
+            const introSection = fullDocs.substring(introStart, coreStart);
+            relevantSections.push(introSection.substring(0, 2000)); // Limit to 2000 chars
+        }
+    }
+
+    return relevantSections.join('\n').substring(0, 4000); // Limit total to 4000 chars
+}
+
         const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
 
 IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.
@@ -286,8 +379,26 @@ SALIDA PARA SOLICITUDES DE CÓDIGO
 - Evita comentarios largos; usa comentarios cortos solo cuando sean absolutamente necesarios
 - Prioriza que el código sea correcto, ejecutable y sin errores de sintaxis`;
 
-function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
-    return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
+function getSystemPrompt(mode: "roblox" | "general" = "roblox", userMessage: string = ""): string {
+    if (mode === "general") {
+        return GENERAL_SYSTEM_PROMPT;
+    }
+
+    // For Roblox mode, include relevant documentation
+    const relevantDocs = extractRelevantRobloxDocs(userMessage);
+    const enhancedPrompt = ROBLOX_SYSTEM_PROMPT.replace(
+        "IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.",
+        `IMPORTANTE: Usa la siguiente documentación actualizada de Roblox Studio para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código.
+
+DOCUMENTACIÓN DE ROBLOX STUDIO (extraída según tu consulta):
+${relevantDocs}
+
+INSTRUCCIONES ADICIONALES:
+- Si la documentación proporcionada no cubre completamente tu consulta, usa tu conocimiento general de Roblox Studio pero prioriza las mejores prácticas mostradas arriba.
+- Para consultas sobre APIs específicas no mencionadas, infiere basándote en los patrones y convenciones de Roblox.`
+    );
+
+    return enhancedPrompt;
 }
 
 function getVisitorId(req: Request): string {
@@ -458,7 +569,7 @@ async function streamGeminiCompletion(
             throw new Error(`Model ${model} not found`);
         }
 
-        const systemPrompt = getSystemPrompt(chatMode);
+        const systemPrompt = getSystemPrompt(chatMode, lastUserMessage);
 
         // Convertir historial OpenRouter a formato Gemini
         const geminiMessages: any[] = [];
@@ -812,7 +923,7 @@ async function streamChatCompletion(
             console.error("[streamChatCompletion] Model not found:", model);
             throw new Error(`Model ${model} not found`);
         }
-        const systemPrompt = getSystemPrompt(chatMode);
+        const systemPrompt = getSystemPrompt(chatMode, parsed.message);
 
         const messagesWithContext = webSearchContext
             ? [
@@ -1041,7 +1152,7 @@ async function streamGroqCompletion(
             console.error("[streamGroqCompletion] Model not found:", model);
             throw new Error(`Model ${model} not found`);
         }
-        const systemPrompt = getSystemPrompt(chatMode);
+        const systemPrompt = getSystemPrompt(chatMode, message);
 
         const messagesWithContext = webSearchContext
             ? [

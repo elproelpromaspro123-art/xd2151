@@ -733,14 +733,14 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl gap-3 sm:gap-0 shadow-sm relative overflow-hidden`}>
-                        {/* Powered by Gemini branding */}
-                        <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-                            <svg viewBox="0 0 24 24" className="w-full h-full text-blue-500">
-                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-4 sm:gap-0 shadow-lg relative overflow-hidden`}>
+                        {/* Background pattern */}
+                        <div className="absolute inset-0 opacity-[0.02]">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-radial from-blue-400/20 to-transparent rounded-full blur-3xl"></div>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+
+                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto relative z-10">
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -750,51 +750,71 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                             </Button>
 
-                            <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap bg-primary/20 text-primary`}>
-                                {chatMode === 'general' ? <MessageCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <Gamepad2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
-                                <span className="hidden xs:inline">{chatMode === 'general' ? 'General' : 'Roblox'}</span>
+                            {/* Mode indicator */}
+                            <div className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shadow-md ${
+                                chatMode === 'general'
+                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                                    : 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+                            }`}>
+                                {chatMode === 'general' ? <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Gamepad2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                                <span className="hidden xs:inline">{chatMode === 'general' ? 'Modo General' : 'Modo Roblox'}</span>
+                                <span className="xs:hidden">{chatMode === 'general' ? 'General' : 'Roblox'}</span>
                             </div>
 
-                            {/* Powered by Gemini badge */}
-                            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-blue-400/30 text-blue-600 dark:text-blue-300">
-                                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                <span className="hidden xs:inline">Powered by Gemini</span>
+                            {/* AI Provider badge */}
+                            <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 border-2 border-blue-400/30 text-blue-600 dark:text-blue-300 shadow-md backdrop-blur-sm">
+                                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500" />
+                                <span className="hidden xs:inline">Powered by Gemini AI</span>
                                 <span className="xs:hidden">Gemini</span>
                             </div>
+
+                            {/* Model indicator */}
                             {selectedModel === 'gemini-2.5-pro' || selectedModel === 'gemini-2.5-flash' ? (
-                                <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 border border-blue-400/20 text-blue-600">
-                                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-2 border-amber-400/30 text-amber-600 dark:text-amber-300 shadow-md backdrop-blur-sm">
+                                    <Crown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500" />
                                     <span className="hidden xs:inline">{selectedModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash'}</span>
+                                    <span className="xs:hidden">{selectedModel === 'gemini-2.5-pro' ? 'Pro' : 'Flash'}</span>
                                 </div>
                             ) : null}
 
-                            <div className={`hidden xs:flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs whitespace-nowrap text-muted-foreground`}>
-                                <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 text-primary`} />
-                                <span>{messageRemaining === 999 ? "∞" : messageRemaining}</span>
-                                <span className="text-muted-foreground/50">|</span>
-                                <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 text-emerald-500" />
-                                <span>{webSearchRemaining === 999 ? "∞" : webSearchRemaining}</span>
+                            {/* Usage indicators */}
+                            <div className="hidden xs:flex items-center gap-3 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-border/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium">
+                                    <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${messageRemaining === 999 ? 'text-amber-500' : messageRemaining > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                                    <span className={messageRemaining === 999 ? 'text-amber-600' : messageRemaining > 0 ? 'text-green-600' : 'text-red-600'}>
+                                        {messageRemaining === 999 ? "∞" : messageRemaining}
+                                    </span>
+                                    <span className="text-muted-foreground/60">mensajes</span>
+                                </div>
+                                <div className="w-px h-3 bg-border/30"></div>
+                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium">
+                                    <Globe className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${webSearchRemaining === 999 ? 'text-amber-500' : webSearchRemaining > 0 ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                    <span className={webSearchRemaining === 999 ? 'text-amber-600' : webSearchRemaining > 0 ? 'text-emerald-600' : 'text-gray-500'}>
+                                        {webSearchRemaining === 999 ? "∞" : webSearchRemaining}
+                                    </span>
+                                    <span className="text-muted-foreground/60">web</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-end">
+                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end relative z-10">
                             {user && (
                                 <ProfileModal user={user} chatMode={chatMode}>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className={`gap-1.5 h-7 sm:h-8 text-xs text-foreground/70 hover:text-foreground`}
+                                        className="gap-2 h-8 sm:h-9 px-3 text-xs font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-full transition-all duration-200"
                                     >
-                                        <UserIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                        <span className="hidden xs:inline max-w-[70px] truncate">{user.email}</span>
+                                        <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        <span className="hidden xs:inline max-w-[80px] truncate">{user.email}</span>
                                     </Button>
                                 </ProfileModal>
                             )}
 
                             {isPremium && (
-                                <div className={`hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-amber-500/20 text-amber-400`}>
-                                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                    <span className="hidden sm:inline">Pro</span>
+                                <div className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-400/30 shadow-sm">
+                                    <Crown className="h-3 w-3 text-amber-500" />
+                                    <span>Premium</span>
                                 </div>
                             )}
 
@@ -802,10 +822,14 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className={`gap-1 h-7 sm:h-8 px-1.5 sm:px-2 text-[11px] sm:text-xs border-primary/50 text-primary hover:bg-primary/10`}
+                                    className={`gap-2 h-8 sm:h-9 px-3 text-xs font-semibold rounded-full border-2 transition-all duration-200 ${
+                                        isPremium
+                                            ? 'border-amber-400/50 text-amber-400 hover:bg-amber-400/10 hover:border-amber-400'
+                                            : 'border-primary/60 text-primary hover:bg-primary/10 hover:border-primary'
+                                    }`}
                                 >
-                                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    <span className="hidden xs:inline">{isPremium ? "Pro" : "Upgrade"}</span>
+                                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <span className="hidden xs:inline">{isPremium ? "Premium" : "Mejorar"}</span>
                                 </Button>
                             </UpgradeModal>
 
@@ -814,9 +838,9 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className={`h-7 w-7 sm:h-8 sm:w-8 text-foreground/70 hover:text-red-500`}
+                                        className="h-8 w-8 sm:h-9 sm:w-9 text-foreground/70 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all duration-200"
                                     >
-                                        <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        <LogOut className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                                     </Button>
                                 </LogoutConfirmDialog>
                             )}
