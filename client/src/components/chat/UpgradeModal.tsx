@@ -41,10 +41,10 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
 
   useEffect(() => {
     if (!usage?.weekStartDate) return;
-    
+
     const update = () => {
       const start = new Date(usage.weekStartDate);
-      const target = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const target = new Date(start.getTime() + 3 * 24 * 60 * 60 * 1000);
       const diff = Math.max(0, target.getTime() - Date.now());
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -52,7 +52,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
     };
-    
+
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
@@ -190,23 +190,26 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Kat Coder Pro</span>
+                      <span>Gemini 2.5 Flash</span>
+                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
+                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Modelo avanzado de codificación (128K contexto)</span>
+                    <span className="text-xs text-muted-foreground">1M contexto + 65K salida - Pensamiento avanzado</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Llama 3.3 70B</span>
+                      <span>Gemini Flash 2</span>
+                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Rápido y multilingüe (128K contexto)</span>
+                    <span className="text-xs text-muted-foreground">Solo modo General - Ultra-rápido (1M contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Reset cada 24 horas</span>
+                  <span>Reset cada 3 días</span>
                 </li>
               </ul>
             </div>
@@ -240,46 +243,12 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                       <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K salida)</span>
+                    <span className="text-xs text-muted-foreground">1M contexto + 65K salida - Pensamiento avanzado</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span>🚀 Llama 3.3 70B</span>
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">GEN</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Solo modo General - Ultra-rápido (128K contexto)</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span>GPT OSS 120B</span>
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (124K contexto + output)</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span>Qwen 3 32B</span>
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (124K contexto + output)</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>DeepSeek R1T2, Gemma 3 27B y otros</span>
-                </li>
-                <li className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span>Reset cada 24 horas</span>
+                  <span>Sin límites de tiempo</span>
                 </li>
               </ul>
               
