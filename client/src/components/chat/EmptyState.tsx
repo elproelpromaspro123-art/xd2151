@@ -72,22 +72,22 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
       </div>
 
       {/* Logo/Icon */}
-      <div className="relative mb-6 sm:mb-8 animate-float">
-        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift`}>
-          <Zap className={`w-8 h-8 sm:w-10 sm:h-10 text-primary`} />
+      <div className="relative mb-8 sm:mb-12 animate-float">
+        <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center bg-gradient-to-br from-primary/25 to-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover-lift border border-primary/20`}>
+          <Zap className={`w-10 h-10 sm:w-12 sm:h-12 text-primary`} />
         </div>
-        <div className={`absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center bg-primary shadow-md animate-pulse`}>
-          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
+        <div className={`absolute -bottom-2 -right-2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/80 shadow-lg animate-pulse border border-primary/50`}>
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
       </div>
 
       {/* Title */}
-      <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-3 text-center text-foreground px-2`}>
+      <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-center text-foreground px-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80`}>
         {chatMode === 'general' ? '¿En qué puedo ayudarte?' : 'Roblox UI Designer'}
       </h1>
 
       {/* Subtitle */}
-      <p className={`text-center mb-4 sm:mb-6 max-w-md text-sm sm:text-base text-muted-foreground px-2`}>
+      <p className={`text-center mb-8 sm:mb-10 max-w-lg text-base sm:text-lg text-muted-foreground px-2 leading-relaxed`}>
         {chatMode === 'general'
           ? 'Pregunta lo que quieras. Estoy aquí para ayudarte.'
           : 'Describe tu interfaz ideal y obtén código Luau profesional.'}
@@ -106,32 +106,32 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
 
       {/* Suggestions grid */}
       {suggestions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-4xl px-2 sm:px-4 overflow-visible">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full max-w-4xl px-2 sm:px-4 overflow-visible">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               onClick={() => onSuggestionClick(suggestion.prompt)}
-              className={`group flex items-start gap-3 p-3 sm:p-4 rounded-xl text-left transition-all duration-300 bg-card hover:bg-card/90 border border-card-border hover:border-primary/40 shadow-sm hover:shadow-lg hover-lift relative overflow-hidden`}
+              className={`group flex items-start gap-4 p-4 sm:p-5 rounded-2xl text-left transition-all duration-300 bg-card/70 hover:bg-card border border-card-border hover:border-primary/50 shadow-md hover:shadow-xl hover-lift relative overflow-hidden backdrop-blur-sm`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Subtle background gradient on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${suggestion.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 rounded-xl`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-br ${suggestion.gradient} opacity-0 group-hover:opacity-8 transition-opacity duration-300 rounded-2xl`}></div>
 
-              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${suggestion.gradient} text-white shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative z-10`}>
-                <suggestion.icon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-300" />
+              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${suggestion.gradient} text-white shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 relative z-10`}>
+                <suggestion.icon className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" />
               </div>
               <div className="flex-1 min-w-0 relative z-10">
-                <h3 className={`text-sm font-semibold mb-0.5 text-card-foreground group-hover:text-primary transition-colors duration-200`}>
+                <h3 className={`text-sm sm:text-base font-semibold mb-1.5 text-card-foreground group-hover:text-primary transition-colors duration-200`}>
                   {suggestion.title}
                 </h3>
-                <p className={`text-xs line-clamp-2 text-muted-foreground group-hover:text-muted-foreground/80 transition-colors duration-200`}>
+                <p className={`text-xs sm:text-sm line-clamp-2 text-muted-foreground group-hover:text-muted-foreground/90 transition-colors duration-200`}>
                   {suggestion.prompt}
                 </p>
               </div>
 
               {/* Subtle shine effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/8 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
               </div>
             </button>
           ))}
@@ -139,14 +139,16 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
       )}
 
       {/* Footer hint */}
-      <p className={`mt-8 sm:mt-10 text-xs sm:text-sm text-center max-w-sm text-muted-foreground/70 px-2`}>
-        Escribe un mensaje para comenzar
-        {chatMode === 'roblox' && (
-          <span className="block mt-1 text-primary/60">
-            Para mejores respuestas te recomendamos ser bastante detallado
-          </span>
-        )}
-      </p>
+      <div className={`mt-12 sm:mt-16 px-3 py-3 sm:py-4 rounded-xl bg-primary/8 border border-primary/20 max-w-sm mx-2 backdrop-blur-sm`}>
+        <p className={`text-xs sm:text-sm text-center text-muted-foreground leading-relaxed`}>
+          <span className="text-foreground/80 font-medium">Escribe un mensaje para comenzar</span>
+          {chatMode === 'roblox' && (
+            <span className="block mt-2 text-primary/70 text-xs sm:text-sm">
+              💡 Para mejores respuestas sé detallado: incluye colores, estilos y animaciones
+            </span>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
