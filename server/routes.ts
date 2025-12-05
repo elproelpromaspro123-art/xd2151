@@ -132,6 +132,22 @@ const AI_MODELS = {
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
     },
+    "gemini-2.5-flash-image": {
+        id: "gemini-2.5-flash-image",
+        name: "Gemini 2.5 Flash Image",
+        description: "Generación de imágenes de alta calidad con Gemini 2.5 Flash Image (premium)",
+        supportsImages: true,
+        supportsReasoning: false,
+        isPremiumOnly: true,
+        category: "general" as const,
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        freeContextTokens: 0,
+        freeOutputTokens: 0,
+        premiumContextTokens: 995746,
+        premiumOutputTokens: 7782,
+    },
      "llama-3.3-70b": {
          id: "llama-3.3-70b-versatile",
          name: "Llama 3.3 70B",
@@ -205,6 +221,22 @@ const AI_MODELS = {
         freeOutputTokens: 0,
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
+    },
+    "gemini-2.0-flash-image": {
+        id: "gemini-2.0-flash-preview-image-generation",
+        name: "Gemini 2.0 Flash Image",
+        description: "Generación de imágenes rápida y confiable con Gemini 2.0 Flash Image (free)",
+        supportsImages: true,
+        supportsReasoning: false,
+        isPremiumOnly: false,
+        category: "general" as const,
+        provider: "google",
+        fallbackProvider: null as string | null,
+        apiProvider: "gemini" as const,
+        freeContextTokens: 943718,
+        freeOutputTokens: 7373,
+        premiumContextTokens: 1027581,
+        premiumOutputTokens: 8028,
     },
      };
 
@@ -546,9 +578,7 @@ async function streamGeminiCompletion(
             };
         }
 
-        // Optimizaciones específicas para Gemini 3 Pro Preview
-        // Activar herramientas para modelos Gemini 2.5 (Pro/Flash)
-        if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.id.startsWith("gemini-2.5-")) {
+        if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.supportsReasoning) {
             requestBody.tools = [
                 { google_search: {} },
                 { code_execution: {} }
@@ -680,7 +710,6 @@ async function streamGeminiCompletion(
                                     continue;
                                 }
 
-                                // Contenido normal
                                 if (part.text) {
                                     fullContent += part.text;
                                     chunkCount++;
@@ -695,6 +724,15 @@ async function streamGeminiCompletion(
                                     }
 
                                     res.write(`data: ${JSON.stringify({ content: part.text })}\n\n`);
+                                } else if (part.inlineData && part.inlineData.mimeType && part.inlineData.data) {
+                                    const mime = part.inlineData.mimeType;
+                                    const dataB64 = part.inlineData.data;
+                                    if (mime.startsWith("image/")) {
+                                        const dataUrl = `data:${mime};base64,${dataB64}`;
+                                        const markdownImage = `![Imagen generada](${dataUrl})`;
+                                        fullContent += markdownImage;
+                                        res.write(`data: ${JSON.stringify({ content: markdownImage })}\n\n`);
+                                    }
                                 }
                             }
                         }
