@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Brain, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ThinkingIndicatorProps {
   reasoning?: string;
@@ -35,77 +36,92 @@ export function ThinkingIndicator({ reasoning, modelName, chatMode = "roblox", i
 
         {/* Thinking content */}
         <div className="flex-1 min-w-0">
-          <div className={`text-xs font-medium mb-1.5 flex items-center gap-1 ${
-            chatMode === 'general' ? "text-slate-600" : "text-zinc-400"
-          }`}>
-            <Zap className="w-3 h-3" />
-            {modelName || "Asistente"} está pensando...
+          {/* Header with enhanced styling */}
+          <div className="text-xs font-bold mb-3 text-purple-400 flex items-center gap-2">
+            <div className="p-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+              <Zap className="h-3 w-3" />
+            </div>
+            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              Pensamiento de {modelName || "Asistente"}
+            </span>
+            {isStreaming && (
+              <div className="flex items-center gap-1">
+                <span className="animate-pulse text-purple-400">●</span>
+                <span className="text-xs text-purple-300/70">pensando</span>
+              </div>
+            )}
           </div>
 
-          <div className={`rounded-2xl rounded-tl-md overflow-hidden backdrop-blur-sm ${
-            chatMode === 'general'
-              ? "bg-gradient-to-br from-blue-500/10 to-purple-500/5 border border-blue-400/20 shadow-lg shadow-blue-500/5"
-              : "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 shadow-lg shadow-primary/5"
-          }`}>
-            {/* Header */}
-            <Button
-              variant="ghost"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 h-auto transition-all ${
-                chatMode === 'general'
-                  ? "text-blue-700 hover:bg-blue-500/10"
-                  : "text-primary hover:bg-primary/10"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        chatMode === 'general' 
-                          ? "bg-gradient-to-r from-blue-500 to-purple-500" 
-                          : "bg-gradient-to-r from-primary to-primary/70"
-                      }`}
-                      style={{
-                        animation: isStreaming ? `pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite` : 'none',
-                        animationDelay: `${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
+          {/* Reasoning Box with beautiful design */}
+          <div
+            className={cn(
+              "rounded-3xl rounded-tl-lg px-5 py-4 transition-all duration-300",
+              "bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-cyan-500/5",
+              "border border-purple-500/20 backdrop-blur-md",
+              "shadow-xl shadow-purple-500/5",
+              "hover:shadow-purple-500/10 hover:border-purple-500/30"
+            )}
+          >
+            {/* Preview Mode - Collapsed */}
+            {!isExpanded && (
+              <button
+                onClick={() => setIsExpanded(true)}
+                className={cn(
+                  "w-full text-left group cursor-pointer",
+                  "hover:bg-gradient-to-r hover:from-purple-500/5 hover:to-blue-500/5",
+                  "p-3 rounded-2xl transition-all duration-200 -m-1"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words font-medium">
+                      {reasoning || "Procesando pensamiento..."}
+                    </p>
+                    {reasoning && reasoning.length > 100 && (
+                      <div className="flex items-center gap-2 mt-3 text-xs text-purple-300 font-semibold group-hover:text-purple-200 transition-colors">
+                        <div className="p-1 rounded-full bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                          <ChevronDown className="h-3 w-3 group-hover:translate-y-0.5 transition-transform" />
+                        </div>
+                        Ver razonamiento completo
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xs font-semibold">
-                  🧠 Razonamiento en progreso
-                </span>
-              </div>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
+              </button>
+            )}
 
-            {/* Expandable content */}
-            {isExpanded && reasoning && (
-              <div className={`px-4 pb-4 pt-2 border-t ${
-                chatMode === 'general' ? "border-blue-400/20" : "border-primary/20"
-              } ${modelName?.includes('Gemini 2.5') ? 'bg-gradient-to-r from-blue-50/40 via-purple-50/40 to-pink-50/40 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10 rounded-b-xl' : ''}`}>
-                <div className={`text-xs leading-relaxed whitespace-pre-wrap font-mono max-h-64 overflow-y-auto scrollbar-thin ${
-                  chatMode === 'general' ? "text-blue-700/90" : "text-primary/90"
-                }`}>
+            {/* Expanded Mode */}
+            {isExpanded && (
+              <div className="space-y-4">
+                <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words max-h-[500px] overflow-y-auto pr-3 scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent">
                   {reasoning}
                 </div>
+
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className={cn(
+                    "flex items-center gap-2 text-xs font-semibold",
+                    "text-purple-300 hover:text-purple-200 transition-colors",
+                    "mt-4 pt-4 border-t border-purple-500/20",
+                    "hover:bg-purple-500/5 px-3 py-2 rounded-xl -mx-3 -mb-2"
+                  )}
+                >
+                  <ChevronDown className="h-3 w-3 rotate-180 transition-transform" />
+                  Ocultar razonamiento
+                </button>
               </div>
             )}
 
-            {/* Preview when collapsed */}
-            {!isExpanded && reasoning && (
-              <div className={`px-4 pb-3 ${
-                chatMode === 'general' ? "text-blue-600/70" : "text-primary/70"
-              } ${modelName?.includes('Gemini 2.5') ? 'bg-gradient-to-r from-blue-50/40 via-purple-50/40 to-pink-50/40 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10 rounded-b-xl' : ''}`}>
-                <p className="text-xs truncate font-mono font-medium">
-                  💭 {reasoning.slice(0, 100)}...
-                </p>
+            {/* Streaming Indicator with enhanced animation */}
+            {isStreaming && (
+              <div className="mt-4 pt-4 border-t border-purple-500/20">
+                <div className="flex items-center gap-3 text-xs text-purple-300">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-blue-400 animate-ping opacity-30"></div>
+                    <div className="relative w-2 h-2 rounded-full bg-gradient-to-r from-purple-400 to-blue-400"></div>
+                  </div>
+                  <span className="font-medium">Procesando pensamiento...</span>
+                </div>
               </div>
             )}
           </div>

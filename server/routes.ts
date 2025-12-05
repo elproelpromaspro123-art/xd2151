@@ -65,21 +65,21 @@ const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 // Configuración de modelos con tokens específicos para FREE y PREMIUM
 const AI_MODELS: Record<string, ModelConfig> = {
     "kat-coder-pro": {
-        id: "kwaipilot/kat-coder-pro:free",
+        id: "meta-llama/llama-3.1-8b-instruct:free",
         name: "Kat Coder Pro",
         description: "Modelo avanzado de codificación con capacidades superiores de razonamiento y generación de código",
         supportsImages: false,
-        supportsReasoning: true,
+        supportsReasoning: false,
         isPremiumOnly: false,
         category: "programming" as const,
-        provider: "kwaipilot",
+        provider: "meta",
         fallbackProvider: null as string | null,
         apiProvider: "openrouter" as const,
-        // Basado en documentación de OpenRouter - ajustar según specs reales
+        // Llama 3.1 8B specs
         freeContextTokens: 128000,
-        freeOutputTokens: 128000,
+        freeOutputTokens: 4096,
         premiumContextTokens: 128000,
-        premiumOutputTokens: 128000,
+        premiumOutputTokens: 4096,
     },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
@@ -211,24 +211,17 @@ const MESSAGE_LIMITS = {
     },
 };
 
-// Keywords ampliados para detectar búsqueda web
+// Keywords más restrictivos para detectar búsqueda web
 const WEB_SEARCH_KEYWORDS = [
-    // Español
+    // Español - más específicos
     "busca en la web", "buscar en la web", "busca en internet", "buscar en internet",
-    "busca online", "buscar online", "busca informacion", "buscar informacion",
-    "busca sobre", "buscar sobre", "que hay de nuevo", "ultimas noticias",
-    "tendencias actuales", "actualidad", "busca en google", "googlealo",
-    "investigar", "investiga", "informacion reciente", "datos actuales",
-    "noticias de", "novedades sobre", "¿qué hay sobre", "que sabes de",
-    "informacion sobre", "dime sobre", "encuentra", "busqueda",
-    // Específicos
-    "precio de", "cotización de", "clima en", "tiempo en", "hora en",
+    "busca en google", "googlealo", "investigar", "investiga",
     "últimas actualizaciones", "versión actual de", "novedades de",
-    "noticias recientes", "eventos actuales", "qué pasó con",
-    // English
+    "noticias recientes", "qué pasó con",
+    // English - más específicos
     "search the web", "search online", "web search", "google",
     "find information", "look up", "search for", "latest news",
-    "current", "recent", "what's new", "updates on"
+    "what's new", "updates on"
 ];
 
 function detectWebSearchIntent(message: string): boolean {
@@ -237,6 +230,8 @@ function detectWebSearchIntent(message: string): boolean {
 }
 
         const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
+
+IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código.
 
 REGLAS CRÍTICAS DE SALIDA
 - Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
@@ -434,10 +429,10 @@ async function searchTavily(query: string): Promise<string> {
             body: JSON.stringify({
                 api_key: apiKey,
                 query: processedQuery,
-                search_depth: "advanced",
+                search_depth: "basic",
                 include_answer: true,
-                include_raw_content: true,
-                max_results: 7,
+                include_raw_content: false,
+                max_results: 3,
                 include_domains: [],
                 exclude_domains: [],
                 topic: "general"
@@ -2029,8 +2024,10 @@ export function registerRoutes(
 
             // Detectar intención de búsqueda web
             let isWebSearchIntent = Boolean(useWebSearch) || detectWebSearchIntent(message);
-            if (mode === "roblox") {
-                isWebSearchIntent = true;
+            if (mode === "roblox" && !isWebSearchIntent) {
+                // Para Roblox, buscar documentación solo si el mensaje parece necesitar información externa
+                const robloxKeywords = ["api", "documentacion", "funcion", "metodo", "propiedad", "evento", "clase", "como", "tutorial"];
+                isWebSearchIntent = robloxKeywords.some(keyword => message.toLowerCase().includes(keyword));
             }
             let webSearchContext: string | undefined;
             let webSearchUsed = false;

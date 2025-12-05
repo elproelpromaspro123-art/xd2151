@@ -733,7 +733,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border bg-background/70 backdrop-blur-xl gap-2 sm:gap-0`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl gap-3 sm:gap-0 shadow-sm`}>
                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             <Button
                                 variant="ghost"
@@ -812,8 +812,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                     {/* Progress Bar when streaming */}
                     {isStreaming && streamProgress && (
-                        <div className={`px-4 py-2 border-b bg-muted/50 border-border`}>
-                            <div className="flex items-center justify-between max-w-3xl mx-auto">
+                        <div className={`px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-secondary/5 border-border/50 backdrop-blur-sm`}>
+                            <div className="flex items-center justify-between max-w-4xl mx-auto">
                                 <div className={`flex items-center gap-2 text-xs text-primary`}>
                                     <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
                                     <span>{streamProgress.tokensGenerated} tokens</span>
@@ -846,7 +846,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
                         ) : (
                             <ScrollArea className="h-full">
-                                <div className="w-full max-w-3xl mx-auto py-3 sm:py-6 px-2 sm:px-4">
+                                <div className="w-full max-w-4xl mx-auto py-4 sm:py-8 px-3 sm:px-6">
                                     {messages.map((message, index) => (
                                         <MessageBubble
                                             key={message.id}
@@ -910,8 +910,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                     {/* Rate Limit Alert */}
                     {isModelRateLimited && selectedModelInfo && (
-                        <div className="px-3 sm:px-4 py-2 border-b border-border bg-background/50">
-                            <div className="max-w-3xl mx-auto">
+                        <div className="px-3 sm:px-4 py-3 border-b border-border/50 bg-gradient-to-r from-destructive/5 to-orange/5 backdrop-blur-sm">
+                            <div className="max-w-4xl mx-auto">
                                 <RateLimitAlert 
                                     modelKey={selectedModel}
                                     modelName={selectedModelInfo.name}
@@ -922,7 +922,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     )}
 
                     {/* Input Area */}
-                    <div className={`border-t border-border bg-background/50 backdrop-blur-xl`}>
+                    <div className={`border-t border-border/50 bg-background/80 backdrop-blur-xl shadow-lg`}>
                         <ChatInput
                             onSend={handleSendMessage}
                             isLoading={isStreaming}
@@ -992,7 +992,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 <p className="text-sm font-semibold text-foreground">✨ Gemini 2.5 Flash</p>
                                 <p className="text-xs text-muted-foreground">Ultra-rápido, excelente en código, con capacidades de reasoning avanzado</p>
                             </div>
-                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded text-[10px] font-medium">Premium</span>
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-600 dark:text-green-400 rounded text-[10px] font-medium">Free</span>
                         </div>
                     </div>
                     <div className="p-4 rounded-lg bg-card border border-border">
