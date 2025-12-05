@@ -21,3 +21,17 @@
 - Drizzle ORM for DB operations; use `createInsertSchema` from drizzle-zod
 - UI: shadcn/ui + Radix primitives, Lucide icons, TailwindCSS
 - Error responses: `{ error: "message" }` with appropriate HTTP status codes
+
+## ROBLOX Mode (Obligatorio desde 5/12/2025)
+**CONTEXTO OBLIGATORIO**: Antes de generar cualquier código Roblox/Lua, **SIEMPRE** lee y contextualízate con `ROBLOX_DOCUMENTATION.md`. Este documento contiene:
+- API oficial de Roblox Studio 2025.1
+- Patrones correctos de UI (Roact, Fusion, componentes modernos)
+- Best practices y métodos validados
+- Enumeraciones, propiedades y eventos actualizados
+- Código de ejemplo funcional 2025
+
+**Workflow Roblox**:
+1. Lee `ROBLOX_DOCUMENTATION.md` completamente
+2. Valida sintaxis Lua contra ejemplos del documento
+3. Usa patrones del documento (no improvises)
+4. Si no lo encuentras en el documento, advierte al usuario que necesita actualizar ROBLOX_DOCUMENTATION.md
