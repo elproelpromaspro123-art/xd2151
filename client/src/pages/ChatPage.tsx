@@ -103,6 +103,14 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [showAnnouncement, setShowAnnouncement] = useState(false);
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const seen = localStorage.getItem("announcementShown_gemini25_v1");
+            if (!seen) {
+                setShowAnnouncement(true);
+            }
+        }
+    }, []);
 
     // Suscribirse a actualizaciones de rate limit en tiempo real
     const { limitInfo } = useRateLimitStream({
@@ -948,7 +956,15 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         </div>
 
         {/* Announcement Modal */}
-        <Dialog open={showAnnouncement} onOpenChange={setShowAnnouncement}>
+        <Dialog
+            open={showAnnouncement}
+            onOpenChange={(open) => {
+                setShowAnnouncement(open);
+                if (!open && typeof window !== "undefined") {
+                    localStorage.setItem("announcementShown_gemini25_v1", "1");
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-[500px] bg-background/95 backdrop-blur-xl border-border shadow-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl flex items-center gap-2">

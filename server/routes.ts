@@ -75,11 +75,11 @@ const AI_MODELS = {
         provider: "venice/beta",
         fallbackProvider: null as string | null,
         apiProvider: "openrouter" as const,
-        // Free/Premium: 95% de 262k ≈ 248,880
-        freeContextTokens: 248880,
-        freeOutputTokens: 248880,
-        premiumContextTokens: 248880,
-        premiumOutputTokens: 248880,
+        // Free/Premium: 99% de 262k ≈ 259,380
+        freeContextTokens: 259380,
+        freeOutputTokens: 259380,
+        premiumContextTokens: 259380,
+        premiumOutputTokens: 259380,
     },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
@@ -110,8 +110,8 @@ const AI_MODELS = {
         apiProvider: "openrouter" as const,
         freeContextTokens: 0,
         freeOutputTokens: 0,
-        premiumContextTokens: 124000, // 95% de 131k
-        premiumOutputTokens: 124000,
+        premiumContextTokens: 129761, // 99% de 131,072
+        premiumOutputTokens: 129761,
     },
     "gemini-2.5-flash": {
         id: "gemini-2.5-flash",
@@ -124,13 +124,13 @@ const AI_MODELS = {
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
-        // Oficial docs: 1,048,576 contexto, 65,535 output
+        // Oficial docs: 1,048,576 contexto, 65,536 output
         // Free: no disponible (premium only)
-        // Premium: 95% de 1M = 995,746 contexto, 95% de 65K = 62,259 output
+        // Premium: 99% de 1M = 1,038,090 contexto, 99% de 65,536 = 64,880 output
         freeContextTokens: 0,
         freeOutputTokens: 0,
-        premiumContextTokens: 995746,
-        premiumOutputTokens: 62259,
+        premiumContextTokens: 1038090,
+        premiumOutputTokens: 64880,
     },
      "llama-3.3-70b": {
          id: "llama-3.3-70b-versatile",
@@ -160,13 +160,29 @@ const AI_MODELS = {
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
-         // Oficial docs: 131,072 contexto, 131,072 output máximo
-         // Free: no disponible (premium only)
-         // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
+         // Oficial docs: 131,072 contexto
+         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
          freeContextTokens: 0,
          freeOutputTokens: 0,
          premiumContextTokens: 124518,
-         premiumOutputTokens: 124518,
+         premiumOutputTokens: 64880,
+     },
+     "gpt-oss-20b": {
+         id: "openai/gpt-oss-20b",
+         name: "GPT-OSS 20B",
+         description: "Groq GPT-OSS 20B (MoE) con razonamiento. 131K contexto, salida máx 65,536",
+         supportsImages: false,
+         supportsReasoning: true,
+         isPremiumOnly: false,
+         category: "general" as const,
+         provider: "groq",
+         fallbackProvider: null as string | null,
+         apiProvider: "groq" as const,
+         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
+         freeContextTokens: 124518,
+         freeOutputTokens: 64880,
+         premiumContextTokens: 124518,
+         premiumOutputTokens: 64880,
      },
      "qwen3-32b": {
          id: "qwen/qwen3-32b",
@@ -179,13 +195,12 @@ const AI_MODELS = {
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
-         // Oficial docs: 131,072 contexto (con YaRN), 131,072 output máximo
-         // Free: no disponible (premium only)
-         // Premium: 95% de 131K contexto = 124,518, 95% de 131K output = 124,518
+         // Oficial docs: 131,072 contexto (YaRN)
+         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
          freeContextTokens: 0,
          freeOutputTokens: 0,
          premiumContextTokens: 124518,
-         premiumOutputTokens: 124518,
+         premiumOutputTokens: 64880,
      },
     "gemini-2.5-pro": {
         id: "gemini-2.5-pro",
@@ -200,13 +215,13 @@ const AI_MODELS = {
         apiProvider: "gemini" as const,
         // Oficial docs: 1,048,576 contexto de entrada, 65,536 tokens de salida
         // Free: no disponible (premium only)
-        // Premium: usar 95% para margen de seguridad
+        // Premium: usar 99%
         freeContextTokens: 0,
         freeOutputTokens: 0,
-        premiumContextTokens: 995746,
-        premiumOutputTokens: 62259,
+        premiumContextTokens: 1038090,
+        premiumOutputTokens: 64880,
     },
-     };
+};
 
 type ModelKey = keyof typeof AI_MODELS;
 
@@ -257,8 +272,9 @@ function detectWebSearchIntent(message: string): boolean {
         const ROBLOX_SYSTEM_PROMPT = `SYSTEM: Eres un asistente especializado en diseño y desarrollo de interfaces (GUI) para Roblox. Responde en español y entrega código listo para pegar en Roblox Studio. Tu tarea: generar una GUI completa creada íntegramente desde un LocalScript (puedes añadir ModuleScript si es necesario) según las especificaciones del usuario.
 
 REGLAS CRÍTICAS DE SALIDA
-- Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando el máximo de tokens disponible del modelo.
+- Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
 - Minimiza el texto no relacionado con el código; incluye solo un resumen breve (3–5 líneas) cuando aporte valor.
+- Evita comentarios salvo en la sección de configuración al inicio; si el usuario pide sin comentarios, respeta.
 - Usa las APIs y mejores prácticas más recientes de Roblox Studio y Luau (task.wait/task.defer, anotaciones de tipo de Luau, conexiones RBXScriptSignal correctas, AutomaticSize/UIScale y UIConstraints) y evita funciones obsoletas.
 - Si no se indica formato, por defecto genera desde un LocalScript en StarterPlayerScripts.
 
@@ -340,7 +356,9 @@ REGLAS CRÍTICAS DE SALIDA
 - Al final agrega la guía de instalación, lista de assets y ejemplo de uso.
 - Si alguna parte es opcional (ej. partículas, sonidos), indícalo claramente y comenta cómo activarla.
 
-REGLA DE MODO: Si el mensaje del usuario contiene una línea con \`CONFIG_ROBLOX_OUTPUT=screen\`, genera la GUI como ScreenGui principal. Si contiene \`CONFIG_ROBLOX_OUTPUT=localscript\`, genera todo desde un LocalScript en StarterPlayerScripts (recomendado).`;
+REGLA DE MODO: Si el mensaje del usuario contiene una línea con \`CONFIG_ROBLOX_OUTPUT=screen\`, genera la GUI como ScreenGui principal. Si contiene \`CONFIG_ROBLOX_OUTPUT=localscript\`, genera todo desde un LocalScript en StarterPlayerScripts (recomendado).
+
+REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, genera aproximadamente N líneas de código Luau, contando solo líneas de código no vacías y evitando comentarios innecesarios (excepto configuración al inicio). Prioriza diseño, compatibilidad y ausencia de errores de sintaxis.`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 
@@ -597,13 +615,15 @@ async function streamGeminiCompletion(
             }
         }
 
-        // Determinar tokens según plan
-        const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+        // Determinar tokens según plan y limitar por proveedor
+        const requestedMax = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+        const providerCap = 65536;
+        const maxTokens = Math.min(requestedMax || 32000, providerCap);
 
         const requestBody: any = {
             contents: geminiMessages,
             generationConfig: {
-                maxOutputTokens: maxTokens || 8192,
+                maxOutputTokens: maxTokens,
                 temperature: 0.7,
                 topP: 0.95,
                 topK: 40,
@@ -879,14 +899,16 @@ async function streamChatCompletion(
                 ...chatHistory,
             ];
 
-        // Determinar tokens según plan
-        const maxTokens = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+        // Determinar tokens según plan y limitar por proveedor
+        const requestedMax = isPremium ? modelInfo.premiumOutputTokens : modelInfo.freeOutputTokens;
+        const providerCap = 65536;
+        const maxTokens = Math.min(requestedMax || 8192, providerCap);
 
         const requestBody: any = {
             model: modelInfo.id,
             messages: messagesWithContext,
             stream: true,
-            max_tokens: maxTokens || 32000,
+            max_tokens: maxTokens,
             temperature: 0.7,
             provider: {
                 order: modelInfo.fallbackProvider
@@ -1357,6 +1379,7 @@ export function registerRoutes(
                     rateLimitInfo = getRateLimitInfo(key);
                 }
                 
+                const maxOutputTokens = isPremium ? model.premiumOutputTokens : model.freeOutputTokens;
                 return {
                     key,
                     id: model.id,
@@ -1372,6 +1395,8 @@ export function registerRoutes(
                     resetTime: rateLimitStatus.resetTime,
                     rateLimitInfo: rateLimitInfo, // Info completa de rate limit
                     reason: rateLimitStatus.reason, // Razón de la indisponibilidad
+                    maxTokens: maxOutputTokens || 0,
+                    avgTokensPerSecond: model.provider === "groq" ? 500 : 100,
                 };
             });
 

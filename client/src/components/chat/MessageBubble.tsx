@@ -52,6 +52,11 @@ export const MessageBubble = memo(function MessageBubble({
     } catch (e) {
       textContent = message.content;
     }
+    if (typeof textContent === 'string') {
+      const lines = textContent.split('\n');
+      const filtered = lines.filter(line => !/^CONFIG_ROBLOX_OUTPUT=/.test(line) && !/^CONFIG_ROBLOX_LINES=/.test(line));
+      textContent = filtered.join('\n');
+    }
   }
 
   const handleCopy = async () => {

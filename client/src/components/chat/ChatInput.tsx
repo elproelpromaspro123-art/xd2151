@@ -66,6 +66,11 @@ export function ChatInput({
         const saved = localStorage.getItem('robloxScriptMode');
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
+    const [robloxLines, setRobloxLines] = useState<500 | 1000 | 1500 | 2000>(() => {
+        if (typeof window === 'undefined') return 500;
+        const saved = Number(localStorage.getItem('robloxLines'));
+        return saved === 1000 || saved === 1500 || saved === 2000 ? (saved as 1000 | 1500 | 2000) : 500;
+    });
     const [useWebSearch, setUseWebSearch] = useState(false);
     const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -147,7 +152,8 @@ export function ChatInput({
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
         if (chatMode === 'roblox') {
             const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
-            fullMessage = `${configLine}\n${fullMessage}`;
+            const linesConfig = `CONFIG_ROBLOX_LINES=${robloxLines}`;
+            fullMessage = `${configLine}\n${linesConfig}\n${fullMessage}`;
         }
 
         if (fullMessage && !isLoading && !disabled) {
@@ -274,7 +280,7 @@ export function ChatInput({
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={!modelAvailable || isLoading}
+                                disabled={isLoading}
                                 className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg ${chatMode === 'general'
                                         ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                                         : 'text-zinc-500 hover:text-primary hover:bg-primary/10'
@@ -435,7 +441,8 @@ export function ChatInput({
                                                 })()
                                                 : '';
                                             
-                                            const isGemini = model.key === "gemini-2.5-flash";
+                                            const isGeminiPro = model.key === "gemini-2.5-pro";
+                                            const isGeminiFlash = model.key === "gemini-2.5-flash";
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
@@ -447,15 +454,20 @@ export function ChatInput({
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGemini ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${isGemini ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {isGemini && (
+                                                        {isGeminiPro && (
                                                             <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
                                                                 ⭐ Mejor
+                                                            </span>
+                                                        )}
+                                                        {isGeminiFlash && (
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                ✨ Segundo
                                                             </span>
                                                         )}
                                                         {model.isRateLimited && (
@@ -523,6 +535,44 @@ export function ChatInput({
                         </div>
 
                         {chatMode === 'roblox' && (
+                            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg hover:bg-zinc-800">
+                                <span className="text-[10px] sm:text-xs text-zinc-400">Líneas:</span>
+                                {([500, 1000, 1500, 2000] as const).map((n) => {
+                                    const premiumRequired = n >= 1500;
+                                    const disabled = isLoading || (!isPremium && premiumRequired);
+                                    const isSelected = robloxLines === n;
+                                    return (
+                                        <Button
+                                            key={n}
+                                            type="button"
+                                            size="sm"
+                                            variant={isSelected ? 'default' : 'ghost'}
+                                            onClick={() => {
+                                                if (disabled) return;
+                                                setRobloxLines(n);
+                                                if (typeof window !== 'undefined') localStorage.setItem('robloxLines', String(n));
+                                            }}
+                                            disabled={disabled}
+                                            className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs rounded-md ${isSelected ? 'bg-white shadow-sm text-slate-900' : ''}`}
+                                        >
+                                            {n}
+                                        </Button>
+                                    );
+                                })}
+                                {(() => {
+                                    const available = (selectedModelInfo as any)?.maxTokens ?? 0;
+                                    const estimated = robloxLines * 20;
+                                    const ok = available > 0 ? available >= estimated : true;
+                                    return (
+                                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[9px] ${ok ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
+                                            {ok ? 'Compatible' : 'No compatible'}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
+                        {chatMode === 'roblox' && (
                             <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg hover:bg-zinc-800`}>
                                 <Button
                                     type="button"
@@ -583,7 +633,7 @@ export function ChatInput({
                                     id="reasoning"
                                     checked={useReasoning}
                                     onCheckedChange={onReasoningChange}
-                                    disabled={!modelAvailable || isLoading}
+                                    disabled={isLoading}
                                     className="scale-50 sm:scale-75 data-[state=checked]:bg-blue-500"
                                 />
                                 <label
