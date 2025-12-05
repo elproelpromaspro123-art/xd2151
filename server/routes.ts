@@ -63,23 +63,23 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // Configuración de modelos con tokens específicos para FREE y PREMIUM
-const AI_MODELS = {
-    "qwen-coder": {
-        id: "qwen/qwen3-coder:free",
-        name: "Qwen 3 Coder",
-        description: "Modelo especializado en programación - 262k contexto/output",
+const AI_MODELS: Record<string, ModelConfig> = {
+    "kat-coder-pro": {
+        id: "kwaipilot/kat-coder-pro:free",
+        name: "Kat Coder Pro",
+        description: "Modelo avanzado de codificación con capacidades superiores de razonamiento y generación de código",
         supportsImages: false,
-        supportsReasoning: false,
+        supportsReasoning: true,
         isPremiumOnly: false,
         category: "programming" as const,
-        provider: "venice/beta",
+        provider: "kwaipilot",
         fallbackProvider: null as string | null,
         apiProvider: "openrouter" as const,
-        // Free: 95% de 262k ≈ 248,900, Premium: 99% de 262k ≈ 259,380
-        freeContextTokens: 248900,
-        freeOutputTokens: 248900,
-        premiumContextTokens: 259380,
-        premiumOutputTokens: 259380,
+        // Basado en documentación de OpenRouter - ajustar según specs reales
+        freeContextTokens: 128000,
+        freeOutputTokens: 128000,
+        premiumContextTokens: 128000,
+        premiumOutputTokens: 128000,
     },
     "deepseek-r1t2": {
         id: "tngtech/deepseek-r1t2-chimera:free",
@@ -119,16 +119,16 @@ const AI_MODELS = {
         description: "Google Gemini 2.5 Flash - El mejor modelo actual para programación y general - 1M contexto/65K output",
         supportsImages: true,
         supportsReasoning: true,
-        isPremiumOnly: true,
+        isPremiumOnly: false,
         category: "general" as const,
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
         // Oficial docs: 1,048,576 contexto, 65,536 output
-        // Free: no disponible (premium only)
+        // Free: 95% de 1M = 996,147 contexto, 95% de 65,536 = 62,259 output
         // Premium: 99% de 1M = 1,038,090 contexto, 99% de 65,536 = 64,880 output
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
+        freeContextTokens: 996147,
+        freeOutputTokens: 62259,
         premiumContextTokens: 1038090,
         premiumOutputTokens: 64880,
     },
@@ -140,6 +140,7 @@ const AI_MODELS = {
          supportsReasoning: false,
          isPremiumOnly: false,
          category: "general" as const,
+         availableModes: ["general"] as const,
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
@@ -172,6 +173,24 @@ const AI_MODELS = {
 };
 
 type ModelKey = keyof typeof AI_MODELS;
+
+interface ModelConfig {
+    id: string;
+    name: string;
+    description: string;
+    supportsImages: boolean;
+    supportsReasoning: boolean;
+    isPremiumOnly: boolean;
+    category: "programming" | "general";
+    availableModes?: ("roblox" | "general")[];
+    provider: string;
+    fallbackProvider: string | null;
+    apiProvider: "openrouter" | "gemini" | "groq";
+    freeContextTokens: number;
+    freeOutputTokens: number;
+    premiumContextTokens: number;
+    premiumOutputTokens: number;
+}
 
 // Store para manejar las solicitudes activas y permitir cancelación
 const activeRequests = new Map<string, AbortController>();
@@ -223,7 +242,9 @@ REGLAS CRÍTICAS DE SALIDA
 - Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
 - Minimiza el texto no relacionado con el código; incluye solo un resumen breve (3–5 líneas) cuando aporte valor.
 - Evita comentarios salvo en la sección de configuración al inicio; si el usuario pide sin comentarios, respeta.
-- Usa las APIs y mejores prácticas más recientes de Roblox Studio y Luau (task.wait/task.defer, anotaciones de tipo de Luau, conexiones RBXScriptSignal correctas, AutomaticSize/UIScale y UIConstraints) y evita funciones obsoletas.
+- SIEMPRE usa las APIs y mejores prácticas MÁS RECIENTES de Roblox Studio y Luau. Verifica cambios recientes en la documentación oficial de Roblox y adapta el código en consecuencia.
+- Si detectas que una API o propiedad ha cambiado, usa la versión más actual disponible.
+- Usa task.wait/task.defer, anotaciones de tipo de Luau, conexiones RBXScriptSignal correctas, AutomaticSize/UIScale y UIConstraints. Evita funciones obsoletas.
 - Si no se indica formato, por defecto genera desde un LocalScript en StarterPlayerScripts.
 
 1) CONTEXTO DEL PROYECTO
@@ -311,14 +332,16 @@ REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 
 INSTRUCCIONES:
-- Responde de forma clara, precisa y útil
-- Sé amable pero conciso
+- Responde de forma clara, precisa y útil, pero sé CONCISO
+- Evita texto innecesario, explicaciones largas o relleno
+- Solo incluye información esencial y directamente relevante
 - Proporciona información actualizada cuando esté disponible
-- Ofrece ejemplos prácticos cuando sea apropiado
+- Ofrece ejemplos prácticos cuando sea apropiado, pero mantén brevedad
 
 SALIDA PARA SOLICITUDES DE CÓDIGO
-- Si el usuario solicita código, responde principalmente con bloques de código completos y extensos (hasta el máximo de tokens disponible) y minimiza el texto.
-- Evita explicaciones largas no necesarias; prioriza que el código sea correcto, ejecutable y sin errores de sintaxis.`;
+- Si el usuario solicita código, responde PRINCIPALMENTE con bloques de código completos y minimiza cualquier texto explicativo
+- Evita comentarios largos; usa comentarios cortos solo cuando sean absolutamente necesarios
+- Prioriza que el código sea correcto, ejecutable y sin errores de sintaxis`;
 
 function getSystemPrompt(mode: "roblox" | "general" = "roblox"): string {
     return mode === "general" ? GENERAL_SYSTEM_PROMPT : ROBLOX_SYSTEM_PROMPT;
@@ -391,7 +414,18 @@ async function searchTavily(query: string): Promise<string> {
     }
 
     try {
-        const truncatedQuery = query.length > 400 ? query.substring(0, 400) : query;
+        // Si la query es muy larga, resumirla para maximizar el uso de Tavily
+        let processedQuery = query;
+        if (query.length > 400) {
+            // Extraer las palabras clave más importantes para la búsqueda
+            const words = query.toLowerCase().split(/\s+/);
+            const keywords = words.filter(word =>
+                word.length > 3 &&
+                !['para', 'como', 'hacer', 'quiero', 'necesito', 'puedes', 'ayudame', 'crear', 'hacer', 'que'].includes(word)
+            );
+            const uniqueKeywords = [...new Set(keywords)].slice(0, 10);
+            processedQuery = uniqueKeywords.join(' ') + ' Roblox API documentation updates';
+        }
         const response = await fetch(TAVILY_API_URL, {
             method: "POST",
             headers: {
@@ -399,7 +433,7 @@ async function searchTavily(query: string): Promise<string> {
             },
             body: JSON.stringify({
                 api_key: apiKey,
-                query: truncatedQuery,
+                query: processedQuery,
                 search_depth: "advanced",
                 include_answer: true,
                 include_raw_content: true,
@@ -1317,17 +1351,20 @@ export function registerRoutes(
         try {
             const userId = getUserIdFromRequest(req);
             const isPremium = userId ? await isUserPremium(userId) : false;
+            const { mode } = req.query; // Get mode from query params
 
             const models = Object.entries(AI_MODELS).map(([key, model]) => {
                 const isAccessible = !model.isPremiumOnly || isPremium;
+                // Check if model is available for the requested mode
+                const modeRestricted = model.availableModes && mode && !model.availableModes.includes(mode as "general" | "roblox");
                 const rateLimitStatus = getModelAvailabilityStatus(key);
-                
+
                 // Obtener información completa de rate limit
                 let rateLimitInfo: any = null;
                 if (!rateLimitStatus.isAvailable) {
                     rateLimitInfo = getRateLimitInfo(key);
                 }
-                
+
                 const maxOutputTokens = isPremium ? model.premiumOutputTokens : model.freeOutputTokens;
                 return {
                     key,
@@ -1338,7 +1375,7 @@ export function registerRoutes(
                     supportsReasoning: model.supportsReasoning,
                     isPremiumOnly: model.isPremiumOnly,
                     category: model.category,
-                    available: isAccessible && rateLimitStatus.isAvailable,
+                    available: isAccessible && rateLimitStatus.isAvailable && !modeRestricted,
                     isRateLimited: !rateLimitStatus.isAvailable,
                     remainingTime: rateLimitStatus.remainingTime,
                     resetTime: rateLimitStatus.resetTime,
@@ -1969,7 +2006,7 @@ export function registerRoutes(
             }
 
             let currentConversationId = clientConversationId;
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
 
             // Verificar si el modelo requiere premium
             if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
@@ -2170,7 +2207,7 @@ export function registerRoutes(
                 return res.status(404).json({ error: "Usuario no encontrado" });
             }
 
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "qwen-coder";
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "kat-coder-pro";
             const modelInfo = AI_MODELS[selectedModel];
             const isGeminiModel = modelInfo.apiProvider === "gemini";
             const isGroqModel = modelInfo.apiProvider === "groq";

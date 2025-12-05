@@ -190,9 +190,9 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>Qwen 3 Coder</span>
+                      <span>Kat Coder Pro</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (248K contexto)</span>
+                    <span className="text-xs text-muted-foreground">Modelo avanzado de codificación (128K contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
@@ -249,11 +249,10 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>✨ Gemini 2.5 Flash</span>
-                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
+                      <span>🚀 Llama 3.3 70B</span>
+                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">GEN</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K salida)</span>
+                    <span className="text-xs text-muted-foreground">Solo modo General - Ultra-rápido (128K contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
