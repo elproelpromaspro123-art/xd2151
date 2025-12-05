@@ -587,10 +587,13 @@ async function streamGeminiCompletion(
             requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
         }
 
-        // Agregar reasoning para Gemini (thinking_budget en generationConfig)
+        // Agregar reasoning para Gemini (thinkingConfig en generationConfig)
         if (useReasoning && modelInfo.supportsReasoning && modelInfo.apiProvider === "gemini") {
             const budgetTokens = isPremium ? 15000 : 8000;
-            requestBody.generationConfig.thinkingBudget = budgetTokens;
+            requestBody.generationConfig.thinkingConfig = {
+                thinkingBudget: budgetTokens,
+                includeThoughts: true
+            };
         }
         
         if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.supportsReasoning) {
