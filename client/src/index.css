@@ -147,9 +147,9 @@
 }
 
 /* ============================================
-   ROBLOX MODO OSCURO
-   Violeta, azul profundo, morado
-   ============================================ */
+    ROBLOX MODO OSCURO
+    Violeta, azul profundo, morado
+    ============================================ */
 .roblox-dark {
   --button-outline: rgba(139, 92, 246, 0.1);
   --badge-outline: rgba(139, 92, 246, 0.05);
@@ -157,30 +157,30 @@
   --elevate-1: rgba(139, 92, 246, 0.03);
   --elevate-2: rgba(139, 92, 246, 0.08);
   --background: 260 30% 8%;
-  --foreground: 260 20% 95%;
+  --foreground: 260 25% 97%;
   --border: 260 35% 28%;
   --card: 260 30% 14%;
-  --card-foreground: 260 20% 95%;
+  --card-foreground: 260 25% 97%;
   --card-border: 260 35% 25%;
   --sidebar: 260 30% 10%;
-  --sidebar-foreground: 260 20% 95%;
+  --sidebar-foreground: 260 25% 97%;
   --sidebar-border: 260 35% 22%;
   --sidebar-primary: 280 85% 55%;
   --sidebar-primary-foreground: 260 30% 8%;
   --sidebar-accent: 260 35% 28%;
-  --sidebar-accent-foreground: 260 20% 95%;
+  --sidebar-accent-foreground: 260 25% 97%;
   --sidebar-ring: 280 85% 55%;
   --popover: 260 30% 16%;
-  --popover-foreground: 260 20% 95%;
+  --popover-foreground: 260 25% 97%;
   --popover-border: 260 35% 28%;
   --primary: 280 85% 55%;
   --primary-foreground: 260 30% 8%;
   --secondary: 260 35% 28%;
-  --secondary-foreground: 260 20% 95%;
+  --secondary-foreground: 260 25% 97%;
   --muted: 260 30% 22%;
-  --muted-foreground: 260 15% 70%;
+  --muted-foreground: 260 20% 75%;
   --accent: 280 85% 55%;
-  --accent-foreground: 260 20% 95%;
+  --accent-foreground: 260 25% 97%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --input: 260 35% 22%;
@@ -217,9 +217,9 @@
 }
 
 /* ============================================
-   ROBLOX MODO CLARO
-   Blanco/Gris claro con acentos en violeta
-   ============================================ */
+    ROBLOX MODO CLARO
+    Blanco/Gris claro con acentos en violeta
+    ============================================ */
 .roblox-light {
   --button-outline: rgba(139, 92, 246, 0.12);
   --badge-outline: rgba(139, 92, 246, 0.06);
@@ -227,30 +227,30 @@
   --elevate-1: rgba(139, 92, 246, 0.04);
   --elevate-2: rgba(139, 92, 246, 0.1);
   --background: 0 0% 98%;
-  --foreground: 260 20% 15%;
+  --foreground: 260 25% 12%;
   --border: 260 30% 88%;
   --card: 0 0% 100%;
-  --card-foreground: 260 20% 15%;
+  --card-foreground: 260 25% 12%;
   --card-border: 260 30% 92%;
   --sidebar: 260 20% 96%;
-  --sidebar-foreground: 260 20% 15%;
+  --sidebar-foreground: 260 25% 12%;
   --sidebar-border: 260 30% 90%;
   --sidebar-primary: 280 85% 55%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 260 30% 88%;
-  --sidebar-accent-foreground: 260 20% 15%;
+  --sidebar-accent-foreground: 260 25% 12%;
   --sidebar-ring: 280 85% 55%;
   --popover: 0 0% 100%;
-  --popover-foreground: 260 20% 15%;
+  --popover-foreground: 260 25% 12%;
   --popover-border: 260 30% 90%;
   --primary: 280 85% 55%;
   --primary-foreground: 0 0% 100%;
   --secondary: 260 30% 88%;
-  --secondary-foreground: 260 20% 15%;
+  --secondary-foreground: 260 25% 12%;
   --muted: 260 20% 92%;
-  --muted-foreground: 260 15% 45%;
+  --muted-foreground: 260 15% 40%;
   --accent: 260 30% 88%;
-  --accent-foreground: 260 20% 15%;
+  --accent-foreground: 260 25% 12%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --input: 260 30% 90%;
@@ -287,9 +287,9 @@
 }
 
 /* ============================================
-   GENERAL MODO OSCURO
-   Azul profundo, índigo, tonos fríos
-   ============================================ */
+    GENERAL MODO OSCURO
+    Azul profundo, índigo, tonos fríos
+    ============================================ */
 .general-dark {
   --button-outline: rgba(79, 70, 229, 0.1);
   --badge-outline: rgba(79, 70, 229, 0.05);
@@ -297,30 +297,30 @@
   --elevate-1: rgba(79, 70, 229, 0.03);
   --elevate-2: rgba(79, 70, 229, 0.08);
   --background: 240 35% 7%;
-  --foreground: 240 15% 93%;
+  --foreground: 240 20% 95%;
   --border: 240 40% 26%;
   --card: 240 35% 13%;
-  --card-foreground: 240 15% 93%;
+  --card-foreground: 240 20% 95%;
   --card-border: 240 40% 24%;
   --sidebar: 240 35% 10%;
-  --sidebar-foreground: 240 15% 93%;
+  --sidebar-foreground: 240 20% 95%;
   --sidebar-border: 240 40% 21%;
   --sidebar-primary: 250 100% 68%;
   --sidebar-primary-foreground: 240 35% 7%;
   --sidebar-accent: 240 40% 26%;
-  --sidebar-accent-foreground: 240 15% 93%;
+  --sidebar-accent-foreground: 240 20% 95%;
   --sidebar-ring: 250 100% 68%;
   --popover: 240 35% 15%;
-  --popover-foreground: 240 15% 93%;
+  --popover-foreground: 240 20% 95%;
   --popover-border: 240 40% 26%;
   --primary: 250 100% 68%;
   --primary-foreground: 240 35% 7%;
   --secondary: 240 40% 26%;
-  --secondary-foreground: 240 15% 93%;
+  --secondary-foreground: 240 20% 95%;
   --muted: 240 35% 21%;
-  --muted-foreground: 240 12% 75%;
+  --muted-foreground: 240 15% 78%;
   --accent: 240 40% 26%;
-  --accent-foreground: 240 15% 93%;
+  --accent-foreground: 240 20% 95%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --input: 240 40% 19%;
@@ -357,9 +357,9 @@
 }
 
 /* ============================================
-   GENERAL MODO CLARO
-   Blanco/Gris claro con acentos en azul índigo
-   ============================================ */
+    GENERAL MODO CLARO
+    Blanco/Gris claro con acentos en azul índigo
+    ============================================ */
 .general-light {
   --button-outline: rgba(79, 70, 229, 0.12);
   --badge-outline: rgba(79, 70, 229, 0.06);
@@ -367,30 +367,30 @@
   --elevate-1: rgba(79, 70, 229, 0.04);
   --elevate-2: rgba(79, 70, 229, 0.1);
   --background: 0 0% 99%;
-  --foreground: 240 15% 12%;
+  --foreground: 240 20% 10%;
   --border: 240 30% 87%;
   --card: 0 0% 100%;
-  --card-foreground: 240 15% 12%;
+  --card-foreground: 240 20% 10%;
   --card-border: 240 30% 91%;
   --sidebar: 240 15% 96%;
-  --sidebar-foreground: 240 15% 12%;
+  --sidebar-foreground: 240 20% 10%;
   --sidebar-border: 240 30% 89%;
   --sidebar-primary: 250 100% 68%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 240 30% 87%;
-  --sidebar-accent-foreground: 240 15% 12%;
+  --sidebar-accent-foreground: 240 20% 10%;
   --sidebar-ring: 250 100% 68%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 15% 12%;
+  --popover-foreground: 240 20% 10%;
   --popover-border: 240 30% 89%;
   --primary: 250 100% 68%;
   --primary-foreground: 0 0% 100%;
   --secondary: 240 30% 87%;
-  --secondary-foreground: 240 15% 12%;
+  --secondary-foreground: 240 20% 10%;
   --muted: 240 15% 91%;
-  --muted-foreground: 240 12% 42%;
+  --muted-foreground: 240 15% 38%;
   --accent: 240 30% 87%;
-  --accent-foreground: 240 15% 12%;
+  --accent-foreground: 240 20% 10%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --input: 240 30% 89%;

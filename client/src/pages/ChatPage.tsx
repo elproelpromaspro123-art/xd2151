@@ -733,62 +733,63 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-4 sm:gap-0 shadow-lg relative overflow-hidden`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-3 sm:gap-4 lg:gap-0 shadow-lg relative overflow-hidden`}>
                         {/* Background pattern */}
                         <div className="absolute inset-0 opacity-[0.02]">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-radial from-blue-400/20 to-transparent rounded-full blur-3xl"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-radial from-blue-400/20 to-transparent rounded-full blur-3xl"></div>
                         </div>
 
-                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto relative z-10">
+                        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto relative z-10 overflow-x-auto">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                                className={`hidden lg:flex h-8 w-8 text-foreground/70 hover:text-foreground`}
+                                className={`hidden lg:flex h-7 w-7 sm:h-8 sm:w-8 text-foreground/70 hover:text-foreground flex-shrink-0`}
                             >
-                                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                                {sidebarCollapsed ? <PanelLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <PanelLeftClose className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                             </Button>
 
                             {/* Mode indicator */}
-                            <div className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shadow-md ${
+                            <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-full text-[10px] sm:text-[11px] lg:text-xs font-semibold whitespace-nowrap shadow-md flex-shrink-0 ${
                                 chatMode === 'general'
                                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
                                     : 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
                             }`}>
-                                {chatMode === 'general' ? <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Gamepad2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                                {chatMode === 'general' ? <MessageCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5" /> : <Gamepad2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5" />}
                                 <span className="hidden xs:inline">{chatMode === 'general' ? 'Modo General' : 'Modo Roblox'}</span>
                                 <span className="xs:hidden">{chatMode === 'general' ? 'General' : 'Roblox'}</span>
                             </div>
 
                             {/* AI Provider badge */}
-                            <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 border-2 border-blue-400/30 text-blue-600 dark:text-blue-300 shadow-md backdrop-blur-sm">
-                                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500" />
-                                <span className="hidden xs:inline">Powered by Gemini AI</span>
-                                <span className="xs:hidden">Gemini</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-full text-[9px] sm:text-[10px] lg:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-pink-500/15 border-2 border-blue-400/30 text-blue-600 dark:text-blue-300 shadow-md backdrop-blur-sm flex-shrink-0">
+                                <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-blue-500" />
+                                <span className="hidden sm:inline">Powered by Gemini AI</span>
+                                <span className="sm:hidden">Gemini</span>
                             </div>
 
                             {/* Model indicator */}
                             {selectedModel === 'gemini-2.5-pro' || selectedModel === 'gemini-2.5-flash' ? (
-                                <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-2 border-amber-400/30 text-amber-600 dark:text-amber-300 shadow-md backdrop-blur-sm">
-                                    <Crown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500" />
-                                    <span className="hidden xs:inline">{selectedModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash'}</span>
-                                    <span className="xs:hidden">{selectedModel === 'gemini-2.5-pro' ? 'Pro' : 'Flash'}</span>
+                                <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-full text-[10px] sm:text-[11px] lg:text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-2 border-amber-400/30 text-amber-600 dark:text-amber-300 shadow-md backdrop-blur-sm flex-shrink-0">
+                                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-amber-500" />
+                                    <span className="hidden sm:inline">{selectedModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro' : 'Gemini 2.5 Flash'}</span>
+                                    <span className="sm:hidden">{selectedModel === 'gemini-2.5-pro' ? 'Pro' : 'Flash'}</span>
                                 </div>
                             ) : null}
 
                             {/* Usage indicators */}
-                            <div className="hidden xs:flex items-center gap-3 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-border/30 backdrop-blur-sm">
-                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium">
-                                    <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${messageRemaining === 999 ? 'text-amber-500' : messageRemaining > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                            <div className="hidden sm:flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-border/30 backdrop-blur-sm flex-shrink-0">
+                                <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs font-medium">
+                                    <Zap className={`h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 flex-shrink-0 ${messageRemaining === 999 ? 'text-amber-500' : messageRemaining > 0 ? 'text-green-500' : 'text-red-500'}`} />
                                     <span className={messageRemaining === 999 ? 'text-amber-600' : messageRemaining > 0 ? 'text-green-600' : 'text-red-600'}>
                                         {messageRemaining === 999 ? "∞" : messageRemaining}
                                     </span>
-                                    <span className="text-muted-foreground/60">mensajes</span>
+                                    <span className="text-muted-foreground/60 hidden lg:inline">mensajes</span>
+                                    <span className="text-muted-foreground/60 lg:hidden">msg</span>
                                 </div>
-                                <div className="w-px h-3 bg-border/30"></div>
-                                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium">
-                                    <Globe className={`h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0 ${webSearchRemaining === 999 ? 'text-amber-500' : webSearchRemaining > 0 ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                <div className="w-px h-2.5 sm:h-3 bg-border/30"></div>
+                                <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] lg:text-xs font-medium">
+                                    <Globe className={`h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 flex-shrink-0 ${webSearchRemaining === 999 ? 'text-amber-500' : webSearchRemaining > 0 ? 'text-emerald-500' : 'text-gray-400'}`} />
                                     <span className={webSearchRemaining === 999 ? 'text-amber-600' : webSearchRemaining > 0 ? 'text-emerald-600' : 'text-gray-500'}>
                                         {webSearchRemaining === 999 ? "∞" : webSearchRemaining}
                                     </span>
@@ -797,23 +798,23 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end relative z-10">
+                        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 w-full sm:w-auto justify-end relative z-10 flex-shrink-0">
                             {user && (
                                 <ProfileModal user={user} chatMode={chatMode}>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="gap-2 h-8 sm:h-9 px-3 text-xs font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-full transition-all duration-200"
+                                        className="gap-1.5 sm:gap-2 h-7 sm:h-8 lg:h-9 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-foreground/80 hover:text-foreground hover:bg-accent/50 rounded-full transition-all duration-200"
                                     >
-                                        <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                        <span className="hidden xs:inline max-w-[80px] truncate">{user.email}</span>
+                                        <UserIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
+                                        <span className="hidden sm:inline max-w-[60px] sm:max-w-[80px] truncate">{user.email}</span>
                                     </Button>
                                 </ProfileModal>
                             )}
 
                             {isPremium && (
-                                <div className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-400/30 shadow-sm">
-                                    <Crown className="h-3 w-3 text-amber-500" />
+                                <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-400/30 shadow-sm">
+                                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500" />
                                     <span>Premium</span>
                                 </div>
                             )}
@@ -822,14 +823,14 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className={`gap-2 h-8 sm:h-9 px-3 text-xs font-semibold rounded-full border-2 transition-all duration-200 ${
+                                    className={`gap-1.5 sm:gap-2 h-7 sm:h-8 lg:h-9 px-2 sm:px-3 text-[10px] sm:text-xs font-semibold rounded-full border-2 transition-all duration-200 ${
                                         isPremium
                                             ? 'border-amber-400/50 text-amber-400 hover:bg-amber-400/10 hover:border-amber-400'
                                             : 'border-primary/60 text-primary hover:bg-primary/10 hover:border-primary'
                                     }`}
                                 >
-                                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    <span className="hidden xs:inline">{isPremium ? "Premium" : "Mejorar"}</span>
+                                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
+                                    <span className="hidden sm:inline">{isPremium ? "Premium" : "Mejorar"}</span>
                                 </Button>
                             </UpgradeModal>
 
@@ -838,9 +839,9 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 sm:h-9 sm:w-9 text-foreground/70 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all duration-200"
+                                        className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 text-foreground/70 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all duration-200 flex-shrink-0"
                                     >
-                                        <LogOut className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                                        <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4 lg:h-4.5 lg:w-4.5" />
                                     </Button>
                                 </LogoutConfirmDialog>
                             )}
@@ -849,18 +850,18 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                     {/* Progress Bar when streaming */}
                     {isStreaming && streamProgress && (
-                        <div className={`px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-secondary/5 border-border/50 backdrop-blur-sm`}>
+                        <div className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 border-b bg-gradient-to-r from-primary/5 to-secondary/5 border-border/50 backdrop-blur-sm`}>
                             <div className="flex items-center justify-between max-w-4xl mx-auto">
-                                <div className={`flex items-center gap-2 text-xs text-primary`}>
-                                    <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                                <div className={`flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-primary`}>
+                                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-current animate-pulse" />
                                     <span>{streamProgress.tokensGenerated} tokens</span>
-                                    <span className={`text-muted-foreground`}>•</span>
+                                    <span className={`text-muted-foreground hidden sm:inline`}>•</span>
                                     <span>{formatTimeRemaining(streamProgress.estimatedSecondsRemaining)}</span>
                                     {webSearchActive && (
                                         <>
-                                            <span className={`text-muted-foreground`}>•</span>
-                                            <Globe className="h-3 w-3 text-emerald-500" />
-                                            <span className="text-emerald-500">Web</span>
+                                            <span className={`text-muted-foreground hidden sm:inline`}>•</span>
+                                            <Globe className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-500" />
+                                            <span className="text-emerald-500 hidden sm:inline">Web</span>
                                         </>
                                     )}
                                 </div>
@@ -868,10 +869,11 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     variant="ghost"
                                     size="sm"
                                     onClick={handleStopGeneration}
-                                    className={`h-7 gap-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10`}
+                                    className={`h-6 sm:h-7 gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10 px-2 sm:px-3`}
                                 >
-                                    <StopCircle className="h-3.5 w-3.5" />
-                                    Detener
+                                    <StopCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    <span className="hidden xs:inline">Detener</span>
+                                    <span className="xs:inline">Stop</span>
                                 </Button>
                             </div>
                         </div>
@@ -883,7 +885,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
                         ) : (
                             <ScrollArea className="h-full">
-                                <div className="w-full max-w-4xl mx-auto py-4 sm:py-8 px-3 sm:px-6">
+                                <div className="w-full max-w-4xl mx-auto py-3 sm:py-4 lg:py-8 px-2 sm:px-3 lg:px-6">
                                     {messages.map((message, index) => (
                                         <MessageBubble
                                             key={message.id}
@@ -939,7 +941,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                         <TypingIndicator chatMode={chatMode} />
                                     )}
 
-                                    <div ref={messagesEndRef} className="h-4" />
+                                    <div ref={messagesEndRef} className="h-3 sm:h-4" />
                                 </div>
                             </ScrollArea>
                         )}
@@ -947,9 +949,9 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
 
                     {/* Rate Limit Alert */}
                     {isModelRateLimited && selectedModelInfo && (
-                        <div className="px-3 sm:px-4 py-3 border-b border-border/50 bg-gradient-to-r from-destructive/5 to-orange/5 backdrop-blur-sm">
+                        <div className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-border/50 bg-gradient-to-r from-destructive/5 to-orange/5 backdrop-blur-sm">
                             <div className="max-w-4xl mx-auto">
-                                <RateLimitAlert 
+                                <RateLimitAlert
                                     modelKey={selectedModel}
                                     modelName={selectedModelInfo.name}
                                     onAvailable={() => setIsModelRateLimited(false)}
