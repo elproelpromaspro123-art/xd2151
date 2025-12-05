@@ -69,6 +69,13 @@ export function ChatInput({
         const saved = localStorage.getItem(key);
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
+    const [robloxLineCount, setRobloxLineCount] = useState<number>(() => {
+        if (typeof window === 'undefined') return 1000;
+        const key = userId ? `robloxLineCount_${userId}` : 'robloxLineCount';
+        const saved = localStorage.getItem(key);
+        const parsed = saved ? parseInt(saved, 10) : 1000;
+        return [500, 1000, 1500, 2000].includes(parsed) ? parsed : 1000;
+    });
     const [useWebSearch, setUseWebSearch] = useState(false);
     const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -150,7 +157,8 @@ export function ChatInput({
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
         if (chatMode === 'roblox') {
             const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
-            fullMessage = `${configLine}\n${fullMessage}`;
+            const lineCountConfig = `CONFIG_ROBLOX_LINE_COUNT=${robloxLineCount}`;
+            fullMessage = `${configLine}\n${lineCountConfig}\n${fullMessage}`;
         }
 
         if (fullMessage && !isLoading && !disabled) {
@@ -569,6 +577,35 @@ export function ChatInput({
                                         >
                                             LocalScript
                                         </Button>
+                                    </div>
+                                </div>
+
+                                {/* Line count selector */}
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
+                                    <span className="text-[10px] sm:text-xs text-zinc-300 font-medium">Líneas:</span>
+                                    <div className="flex gap-1">
+                                        {[500, 1000, 1500, 2000].map((count) => (
+                                            <Button
+                                                key={count}
+                                                type="button"
+                                                size="sm"
+                                                variant={robloxLineCount === count ? 'default' : 'ghost'}
+                                                onClick={() => {
+                                                    setRobloxLineCount(count);
+                                                    if (typeof window !== 'undefined') {
+                                                        const key = userId ? `robloxLineCount_${userId}` : 'robloxLineCount';
+                                                        localStorage.setItem(key, count.toString());
+                                                    }
+                                                }}
+                                                disabled={isLoading}
+                                                className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs rounded-lg font-medium transition-all ${robloxLineCount === count
+                                                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
+                                                        : 'text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/20'
+                                                    }`}
+                                            >
+                                                {count}
+                                            </Button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
