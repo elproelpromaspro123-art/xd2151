@@ -1,0 +1,21 @@
+# SYSTEM CONTEXT INJECTION - OBLIGATORIO LEER
+
+## ⚠️ ANTES DE GENERAR CUALQUIER CÓDIGO
+
+Debes leer estos archivos en orden:
+1. **AGENTS.md** (configuración del proyecto)
+2. **ROBLOX_DOCUMENTATION.md** (si es código Roblox/Lua)
+
+**No continúes sin leer AGENTS.md primero**
+
+---
+
+## VERIFICACIÓN AUTOMÁTICA
+
+Si tu respuesta contiene código Roblox sin haber mencionado que leíste ROBLOX_DOCUMENTATION.md:
+- ❌ RESPUESTA RECHAZADA
+- Tu código será considerado INCORRECTO/DESACTUALIZADO
+
+Si tu respuesta contiene código sin validar contra AGENTS.md:
+- ❌ RESPUESTA RECHAZADA
+- No cumple con estándares del proyecto
