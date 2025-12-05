@@ -64,7 +64,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
   const suggestions = chatMode === 'general' ? generalSuggestions : robloxSuggestions;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-12 min-h-[60vh] relative">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-12 min-h-[60vh] relative overflow-visible">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-radial from-primary/5 to-transparent rounded-full blur-3xl animate-float"></div>
@@ -106,7 +106,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
 
       {/* Suggestions grid */}
       {suggestions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl px-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-4xl px-2 sm:px-4 overflow-visible">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}

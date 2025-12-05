@@ -884,7 +884,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     )}
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto">
                         {showEmptyState ? (
                             <EmptyState onSuggestionClick={handleSuggestionClick} chatMode={chatMode} />
                         ) : (
