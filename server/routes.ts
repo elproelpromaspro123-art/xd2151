@@ -75,9 +75,9 @@ const AI_MODELS = {
         provider: "venice/beta",
         fallbackProvider: null as string | null,
         apiProvider: "openrouter" as const,
-        // Free/Premium: 99% de 262k ≈ 259,380
-        freeContextTokens: 259380,
-        freeOutputTokens: 259380,
+        // Free: 95% de 262k ≈ 248,900, Premium: 99% de 262k ≈ 259,380
+        freeContextTokens: 248900,
+        freeOutputTokens: 248900,
         premiumContextTokens: 259380,
         premiumOutputTokens: 259380,
     },
@@ -139,68 +139,16 @@ const AI_MODELS = {
          supportsImages: false,
          supportsReasoning: false,
          isPremiumOnly: false,
-         category: "programming" as const,
+         category: "general" as const,
          provider: "groq",
          fallbackProvider: null as string | null,
          apiProvider: "groq" as const,
          // Groq: 128K contexto, sin límites de output (hasta 32K razonable)
-         freeContextTokens: 131072, // 128K contexto
-         freeOutputTokens: 32768,
-         premiumContextTokens: 131072,
-         premiumOutputTokens: 32768,
-     },
-     "gpt-oss-120b": {
-         id: "openai/gpt-oss-120b",
-         name: "GPT OSS 120B",
-         description: "OpenAI GPT-OSS 120B - Modelo MoE ultra potente con razonamiento avanzado, 131K contexto, tool use y ejecución de código",
-         supportsImages: false,
-         supportsReasoning: true,
-         isPremiumOnly: true,
-         category: "general" as const,
-         provider: "groq",
-         fallbackProvider: null as string | null,
-         apiProvider: "groq" as const,
-         // Oficial docs: 131,072 contexto
-         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
-         freeContextTokens: 0,
-         freeOutputTokens: 0,
-         premiumContextTokens: 124518,
-         premiumOutputTokens: 64880,
-     },
-     "gpt-oss-20b": {
-         id: "openai/gpt-oss-20b",
-         name: "GPT-OSS 20B",
-         description: "Groq GPT-OSS 20B (MoE) con razonamiento. 131K contexto, salida máx 65,536",
-         supportsImages: false,
-         supportsReasoning: true,
-         isPremiumOnly: false,
-         category: "general" as const,
-         provider: "groq",
-         fallbackProvider: null as string | null,
-         apiProvider: "groq" as const,
-         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
-         freeContextTokens: 124518,
-         freeOutputTokens: 64880,
-         premiumContextTokens: 124518,
-         premiumOutputTokens: 64880,
-     },
-     "qwen3-32b": {
-         id: "qwen/qwen3-32b",
-         name: "Qwen 3 32B",
-         description: "Alibaba Qwen 3 32B - Última generación con razonamiento dual, 128K nativo + 131K expandido con YaRN, reasoning y tool use",
-         supportsImages: false,
-         supportsReasoning: true,
-         isPremiumOnly: true,
-         category: "general" as const,
-         provider: "groq",
-         fallbackProvider: null as string | null,
-         apiProvider: "groq" as const,
-         // Oficial docs: 131,072 contexto (YaRN)
-         // Groq límite de max_tokens: 65,536 → usar 99% = 64,880
-         freeContextTokens: 0,
-         freeOutputTokens: 0,
-         premiumContextTokens: 124518,
-         premiumOutputTokens: 64880,
+         // Usar 99% de tokens disponibles
+         freeContextTokens: 129761, // 99% de 131,072
+         freeOutputTokens: 32495, // 99% de 32,768
+         premiumContextTokens: 129761,
+         premiumOutputTokens: 32495,
      },
     "gemini-2.5-pro": {
         id: "gemini-2.5-pro",
@@ -358,7 +306,7 @@ REGLAS CRÍTICAS DE SALIDA
 
 REGLA DE MODO: Si el mensaje del usuario contiene una línea con \`CONFIG_ROBLOX_OUTPUT=screen\`, genera la GUI como ScreenGui principal. Si contiene \`CONFIG_ROBLOX_OUTPUT=localscript\`, genera todo desde un LocalScript en StarterPlayerScripts (recomendado).
 
-REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, genera aproximadamente N líneas de código Luau, contando solo líneas de código no vacías y evitando comentarios innecesarios (excepto configuración al inicio). Prioriza diseño, compatibilidad y ausencia de errores de sintaxis.`;
+REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, OBLIGATORIAMENTE genera aproximadamente N líneas de código Luau de alta calidad, bien detalladas, sin errores de sintaxis, con el mejor estilo UI/UX artístico disponible. Cuenta solo líneas de código no vacías. NO pongas comentarios dentro del código, solo al inicio en la sección de configuración. Evita crear ModuleScript si el código LocalScript base no es muy extenso (1500-2000 líneas). Los códigos no deben ser exactamente N líneas, sino llegar al aproximado sumando todos los scripts (ej: LocalScript + ModuleScript = ~1500 líneas). Prioriza diseño artístico, compatibilidad móvil y ausencia total de errores.`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 
@@ -639,13 +587,10 @@ async function streamGeminiCompletion(
             requestBody.systemInstruction.parts[0].text += `\n\n## BÚSQUEDA WEB ACTIVA\n${webSearchContext}\n\nUSA esta información en tu respuesta. Cita las fuentes cuando sea relevante.`;
         }
 
-        // Agregar reasoning para Gemini (top-level thinkingConfig)
+        // Agregar reasoning para Gemini (thinking_budget en generationConfig)
         if (useReasoning && modelInfo.supportsReasoning && modelInfo.apiProvider === "gemini") {
             const budgetTokens = isPremium ? 15000 : 8000;
-            requestBody.thinkingConfig = {
-                budgetTokens: budgetTokens,
-                includeThoughts: true
-            };
+            requestBody.generationConfig.thinkingBudget = budgetTokens;
         }
         
         if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.supportsReasoning) {

@@ -937,6 +937,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             chatMode={chatMode}
                             onChatModeChange={setChatMode}
                             onStopGeneration={isStreaming ? handleStopGeneration : undefined}
+                            userId={user?.id}
                         />
                     </div>
                 </div>
@@ -968,33 +969,42 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             <DialogContent className="sm:max-w-[500px] bg-background/95 backdrop-blur-xl border-border shadow-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl flex items-center gap-2">
-                        Presentamos...
+                        🚀 ¡Nuevos Modelos Disponibles!
                         <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[10px] font-semibold">Actualización</span>
                     </DialogTitle>
                     <DialogDescription className="text-sm">
-                        Nuevos modelos estrella para tu trabajo diario.
+                        Descubre los modelos de IA más avanzados para potenciar tu creatividad y productividad.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="p-3 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                    <div className="p-4 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-semibold">⭐ Gemini 2.5 Pro</p>
-                                <p className="text-xs text-muted-foreground">Multimodal, reasoning y 1M contexto</p>
+                                <p className="text-xs text-muted-foreground">Multimodal avanzado con reasoning, 1M contexto, visión y ejecución de código</p>
                             </div>
-                            <span className="px-2 py-0.5 bg-blue-500/15 text-blue-600 rounded text-[10px]">Premium</span>
+                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-600 rounded text-[10px] font-medium">Premium</span>
                         </div>
                     </div>
-                    <div className="p-3 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
+                    <div className="p-4 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-semibold">✨ Gemini 2.5 Flash</p>
-                                <p className="text-xs text-muted-foreground">Rápido y excelente en código</p>
+                                <p className="text-xs text-muted-foreground">Ultra-rápido, excelente en código, con capacidades de reasoning avanzado</p>
                             </div>
-                            <span className="px-2 py-0.5 bg-blue-500/15 text-blue-600 rounded text-[10px]">Premium</span>
+                            <span className="px-2 py-0.5 bg-amber-500/15 text-amber-600 rounded text-[10px] font-medium">Premium</span>
                         </div>
                     </div>
-                    <Button onClick={() => setShowAnnouncement(false)} className="w-full">Entendido</Button>
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                        <div className="text-center">
+                            <p className="text-sm font-medium mb-1">Planes Disponibles</p>
+                            <div className="flex justify-center gap-2 text-xs">
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">Free: 10 mensajes/día</span>
+                                <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded">Premium: Ilimitado</span>
+                            </div>
+                        </div>
+                    </div>
+                    <Button onClick={() => setShowAnnouncement(false)} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">¡Empezar Ahora!</Button>
                 </div>
             </DialogContent>
         </Dialog>

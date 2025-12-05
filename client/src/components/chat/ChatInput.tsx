@@ -35,6 +35,7 @@ interface ChatInputProps {
     chatMode: "roblox" | "general";
     onChatModeChange: (mode: "roblox" | "general") => void;
     onStopGeneration?: () => void;
+    userId?: string;
 }
 
 const WEB_SEARCH_KEYWORDS = [
@@ -58,17 +59,20 @@ export function ChatInput({
     isPremium,
     chatMode,
     onChatModeChange,
-    onStopGeneration
+    onStopGeneration,
+    userId
 }: ChatInputProps) {
     const [message, setMessage] = useState("");
     const [robloxScriptMode, setRobloxScriptMode] = useState<'screen' | 'localscript'>(() => {
         if (typeof window === 'undefined') return 'localscript';
-        const saved = localStorage.getItem('robloxScriptMode');
+        const key = userId ? `robloxScriptMode_${userId}` : 'robloxScriptMode';
+        const saved = localStorage.getItem(key);
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
     const [robloxLines, setRobloxLines] = useState<500 | 1000 | 1500 | 2000>(() => {
         if (typeof window === 'undefined') return 500;
-        const saved = Number(localStorage.getItem('robloxLines'));
+        const key = userId ? `robloxLines_${userId}` : 'robloxLines';
+        const saved = Number(localStorage.getItem(key));
         return saved === 1000 || saved === 1500 || saved === 2000 ? (saved as 1000 | 1500 | 2000) : 500;
     });
     const [useWebSearch, setUseWebSearch] = useState(false);
@@ -550,7 +554,10 @@ export function ChatInput({
                                             onClick={() => {
                                                 if (disabled) return;
                                                 setRobloxLines(n);
-                                                if (typeof window !== 'undefined') localStorage.setItem('robloxLines', String(n));
+                                                if (typeof window !== 'undefined') {
+                                                    const key = userId ? `robloxLines_${userId}` : 'robloxLines';
+                                                    localStorage.setItem(key, String(n));
+                                                }
                                             }}
                                             disabled={disabled}
                                             className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs rounded-md ${isSelected ? 'bg-white shadow-sm text-slate-900' : ''}`}
@@ -580,7 +587,10 @@ export function ChatInput({
                                     variant={robloxScriptMode === 'screen' ? 'default' : 'ghost'}
                                     onClick={() => {
                                         setRobloxScriptMode('screen');
-                                        if (typeof window !== 'undefined') localStorage.setItem('robloxScriptMode', 'screen');
+                                        if (typeof window !== 'undefined') {
+                                            const key = userId ? `robloxScriptMode_${userId}` : 'robloxScriptMode';
+                                            localStorage.setItem(key, 'screen');
+                                        }
                                     }}
                                     disabled={isLoading}
                                     className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs gap-0.5 sm:gap-1 rounded-md ${robloxScriptMode === 'screen' ? 'bg-white shadow-sm text-slate-900' : ''}`}
@@ -593,7 +603,10 @@ export function ChatInput({
                                     variant={robloxScriptMode === 'localscript' ? 'default' : 'ghost'}
                                     onClick={() => {
                                         setRobloxScriptMode('localscript');
-                                        if (typeof window !== 'undefined') localStorage.setItem('robloxScriptMode', 'localscript');
+                                        if (typeof window !== 'undefined') {
+                                            const key = userId ? `robloxScriptMode_${userId}` : 'robloxScriptMode';
+                                            localStorage.setItem(key, 'localscript');
+                                        }
                                     }}
                                     disabled={isLoading}
                                     className={`h-6 sm:h-7 px-1.5 sm:px-2.5 text-[10px] sm:text-xs gap-0.5 sm:gap-1 rounded-md ${robloxScriptMode === 'localscript' ? 'bg-white shadow-sm text-slate-900' : ''}`}
