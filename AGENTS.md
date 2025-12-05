@@ -22,25 +22,64 @@
 - UI: shadcn/ui + Radix primitives, Lucide icons, TailwindCSS
 - Error responses: `{ error: "message" }` with appropriate HTTP status codes
 
-## ROBLOX Mode (Obligatorio desde 5/12/2025)
-**CONTEXTO OBLIGATORIO**: Antes de generar cualquier código Roblox/Lua, **SIEMPRE** lee y contextualízate con `ROBLOX_DOCUMENTATION.md`. Este documento contiene:
-- API oficial de Roblox Studio 2025.1
-- Patrones correctos de UI (Roact, Fusion, componentes modernos)
-- Best practices y métodos validados
-- Enumeraciones, propiedades y eventos actualizados
-- Código de ejemplo funcional 2025
+## ROBLOX Mode (🔴 OBLIGATORIO DESDE 5/12/2025)
 
-**Workflow Roblox**:
-1. Lee `ROBLOX_DOCUMENTATION.md` completamente
-2. Valida sintaxis Lua contra ejemplos del documento
-3. Usa patrones del documento (no improvises)
-4. **VERIFICA ORDEN DE DECLARACIÓN**: Todas las funciones ANTES de usarlas (evita errores naranja)
-5. Si no lo encuentras en el documento, advierte al usuario que necesita actualizar ROBLOX_DOCUMENTATION.md
+### ⚡ REGLA ABSOLUTA
+**ANTES de generar CUALQUIER código Roblox/Lua:**
 
-**Checklist de validación Roblox** (ver `ROBLOX_VALIDATION.md` para detalles):
-- ✅ Funciones definidas antes de ser llamadas
-- ✅ Métodos de clase definidos antes de `render()`
-- ✅ Callbacks declarados antes de conectarlos a eventos
-- ✅ No hay forward references sin pre-declaración (tablas o pre-declaración local)
-- ✅ Código sigue patrones de ROBLOX_DOCUMENTATION.md
-- ✅ Sin errores naranja (orange warnings)
+1. **DEBES leer**: `CONTRATO_ROBLOX.md` (aceptación obligatoria)
+2. **DEBES leer**: `ROBLOX_DOCUMENTATION.md` (API Reference completa)
+3. **DEBES validar**: `npm run validate:lua <archivo.lua>`
+4. **DEBES cumplir**: `ROBLOX_VALIDATION.md` (checklist completo)
+
+**Si no cumplo estos requisitos, NO genero código.**
+
+### 📋 Validación Obligatoria
+
+**Errores ROJOS detectados**:
+```
+❌ Nil indexing: Acceso a propiedades sin validar
+❌ Variables undefined: Usar variable que no existe
+❌ Syntax errors: Paréntesis/end desbalanceados
+❌ Method calls sin validación: Llamar métodos en nil
+```
+
+**Errores NARANJAS detectados**:
+```
+⚠️ Forward references: Usar función antes de definirla
+⚠️ Undefined functions: Función llamada pero no definida
+```
+
+### 🔄 Workflow Obligatorio
+
+1. Leo `CONTRATO_ROBLOX.md` → Acepto términos
+2. Leo `ROBLOX_DOCUMENTATION.md` → Aprendo patrones
+3. Genero código siguiendo orden de declaración
+4. Ejecuto: `npm run validate:lua script.lua`
+5. Debe mostrar: `✅ SIN ERRORES DETECTADOS`
+6. Si hay errores → Corrijo y repito paso 4
+7. Solo entrego si `npm run validate:lua` retorna 0
+
+### ✅ Checklist de Validación (Obligatorio)
+
+**ANTES de CUALQUIER código**:
+- [ ] ¿Leí CONTRATO_ROBLOX.md?
+- [ ] ¿Leí ROBLOX_DOCUMENTATION.md completamente?
+- [ ] ¿Ejecuté npm run validate:lua?
+
+**Errores ROJOS**:
+- [ ] ¿Valido variables ANTES de usarlas?
+- [ ] ¿Uso if/then para nil checks?
+- [ ] ¿Uso :WaitForChild() o :FindFirstChild()?
+- [ ] ¿Sin accesos a propiedades de nil?
+
+**Errores NARANJAS**:
+- [ ] ¿Funciones definidas ANTES de usarlas?
+- [ ] ¿Métodos definidos ANTES de render()?
+- [ ] ¿Callbacks definidos ANTES de Connect()?
+- [ ] ¿Sin forward references?
+
+**Resultado final**:
+- [ ] ¿npm run validate:lua retorna ✅ SIN ERRORES?
+- [ ] ¿Código compilable en Roblox Studio?
+- [ ] ¿Listo para producción?
