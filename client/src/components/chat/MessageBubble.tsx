@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Message } from "@shared/schema";
 import { MessageContent } from "./MessageContent";
@@ -33,8 +33,18 @@ export const MessageBubble = memo(function MessageBubble({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [isHovered, setIsHovered] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const isUser = message.role === "user";
-  
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
+
   let textContent = message.content;
   let imageUrl: string | undefined;
 
@@ -205,8 +215,17 @@ export const MessageBubble = memo(function MessageBubble({
         "flex w-full mb-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
         isUser ? "justify-end" : "justify-start"
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          setHoverTimeout(null);
+        }
+        setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        const timeout = setTimeout(() => setIsHovered(false), 300); // 300ms delay
+        setHoverTimeout(timeout);
+      }}
     >
       <div className={cn(
         "relative flex gap-3 max-w-[90%] lg:max-w-[85%]",

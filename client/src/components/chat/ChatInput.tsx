@@ -69,12 +69,6 @@ export function ChatInput({
         const saved = localStorage.getItem(key);
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
-    const [robloxLines, setRobloxLines] = useState<500 | 1000 | 1500 | 2000>(() => {
-        if (typeof window === 'undefined') return 500;
-        const key = userId ? `robloxLines_${userId}` : 'robloxLines';
-        const saved = Number(localStorage.getItem(key));
-        return saved === 1000 || saved === 1500 || saved === 2000 ? (saved as 1000 | 1500 | 2000) : 500;
-    });
     const [useWebSearch, setUseWebSearch] = useState(false);
     const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -156,8 +150,7 @@ export function ChatInput({
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
         if (chatMode === 'roblox') {
             const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
-            const linesConfig = `CONFIG_ROBLOX_LINES=${robloxLines}`;
-            fullMessage = `${configLine}\n${linesConfig}\n${fullMessage}`;
+            fullMessage = `${configLine}\n${fullMessage}`;
         }
 
         if (fullMessage && !isLoading && !disabled) {
@@ -263,7 +256,7 @@ export function ChatInput({
                         rows={1}
                         className={`w-full resize-none px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] transition-colors ${
                             chatMode === 'general'
-                                ? 'bg-transparent text-slate-900 placeholder:text-slate-500'
+                                ? 'bg-transparent text-foreground placeholder:text-muted-foreground'
                                 : 'bg-transparent text-white placeholder:text-zinc-400'
                         }`}
                     />
@@ -533,56 +526,8 @@ export function ChatInput({
                         </div>
 
                         {chatMode === 'roblox' && (
-                            <div className="flex items-center gap-3">
-                                {/* Lines selector */}
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
-                                    <span className="text-[10px] sm:text-xs text-zinc-300 font-medium">Líneas:</span>
-                                    <div className="flex gap-1">
-                                        {([500, 1000, 1500, 2000] as const).map((n) => {
-                                            const premiumRequired = n >= 1500;
-                                            const disabled = isLoading || (!isPremium && premiumRequired);
-                                            const isSelected = robloxLines === n;
-                                            return (
-                                                <Button
-                                                    key={n}
-                                                    type="button"
-                                                    size="sm"
-                                                    variant={isSelected ? 'default' : 'ghost'}
-                                                    onClick={() => {
-                                                        if (disabled) return;
-                                                        setRobloxLines(n);
-                                                        if (typeof window !== 'undefined') {
-                                                            const key = userId ? `robloxLines_${userId}` : 'robloxLines';
-                                                            localStorage.setItem(key, String(n));
-                                                        }
-                                                    }}
-                                                    disabled={disabled}
-                                                    className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs rounded-lg font-medium transition-all ${isSelected
-                                                            ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md'
-                                                            : 'text-zinc-400 hover:text-violet-300 hover:bg-violet-500/20'
-                                                        } ${premiumRequired && !isPremium ? 'opacity-50' : ''}`}
-                                                >
-                                                    {n}
-                                                </Button>
-                                            );
-                                        })}
-                                    </div>
-                                    {(() => {
-                                        const available = (selectedModelInfo as any)?.maxTokens ?? 0;
-                                        const estimated = robloxLines * 20;
-                                        const ok = available > 0 ? available >= estimated : true;
-                                        return (
-                                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-medium ${ok
-                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                                }`}>
-                                                {ok ? '✓ Compatible' : '⚠ No compatible'}
-                                            </span>
-                                        );
-                                    })()}
-                                </div>
-
-                                {/* Script mode selector */}
+                            <div className="flex items-center gap-2">
+                                {/* Script mode selector - moved first */}
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
                                     <span className="text-[10px] sm:text-xs text-zinc-300 font-medium">Modo:</span>
                                     <div className="flex gap-1">

@@ -221,7 +221,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                 Plan Premium
                 <Crown className="h-4 w-4 text-yellow-500" />
               </h3>
-              <p className="text-2xl font-bold mb-4">$9.99<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+              <p className="text-2xl font-bold mb-4 text-amber-600 dark:text-amber-400">Próximamente</p>
               
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2 text-sm">
@@ -284,9 +284,9 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
               </ul>
               
               {!isPremium && (
-                <Button className="w-full mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold">
+                <Button disabled className="w-full mt-4 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-semibold cursor-not-allowed">
                   <Crown className="h-4 w-4 mr-2" />
-                  Actualizar a Premium
+                  Próximamente
                 </Button>
               )}
             </div>

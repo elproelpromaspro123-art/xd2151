@@ -84,9 +84,9 @@ const AI_MODELS: Record<string, ModelConfig> = {
         premiumOutputTokens: 65536,
     },
     "gemini-flash-2": {
-        id: "gemini-1.5-flash",
+        id: "gemini-2.0-flash-exp",
         name: "Gemini Flash 2",
-        description: "Modelo ultrarrápido optimizado para conversaciones generales y tareas creativas",
+        description: "Modelo ultrarrápido optimizado para conversaciones generales y tareas creativas - Gemini 2.0 Flash Experimental con capacidades avanzadas",
         supportsImages: true,
         supportsReasoning: false,
         isPremiumOnly: false,
@@ -95,7 +95,7 @@ const AI_MODELS: Record<string, ModelConfig> = {
         provider: "google",
         fallbackProvider: null as string | null,
         apiProvider: "gemini" as const,
-        // Flash 2 specs: 1M contexto, 8K output
+        // Gemini 2.0 Flash specs según docs oficiales: 1M contexto, 8K output
         freeContextTokens: 1048576,
         freeOutputTokens: 8192,
         premiumContextTokens: 1048576,
@@ -273,7 +273,9 @@ function extractRelevantRobloxDocs(userMessage: string): string {
 IMPORTANTE: Usa la documentación completa de Roblox Studio disponible en ROBLOX_DOCUMENTATION para asegurar que todo el código generado sea correcto, use las APIs más recientes y siga las mejores prácticas. Verifica siempre las propiedades, métodos y patrones correctos antes de generar código. La documentación ROBLOX_DOCUMENTATION contiene información actualizada sobre todas las APIs, propiedades, métodos, eventos y mejores prácticas de Roblox Studio.
 
 REGLAS CRÍTICAS DE SALIDA
-- Prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
+- SOLO genera código cuando el usuario EXPLÍCITAMENTE lo solicite o pida crear una interfaz/GUI
+- Si el usuario NO pide código o interfaz, responde normalmente con texto explicativo sin incluir código
+- Si el usuario solicita código, prioriza bloques de código Luau extensos y completos, sin errores de sintaxis, usando ~99% del máximo de tokens del modelo.
 - Minimiza el texto no relacionado con el código; incluye solo un resumen breve (3–5 líneas) cuando aporte valor.
 - Evita comentarios salvo en la sección de configuración al inicio; si el usuario pide sin comentarios, respeta.
 - SIEMPRE usa las APIs y mejores prácticas MÁS RECIENTES de Roblox Studio y Luau. Verifica cambios recientes en la documentación oficial de Roblox y adapta el código en consecuencia.
@@ -361,7 +363,7 @@ REGLAS CRÍTICAS DE SALIDA
 
 REGLA DE MODO: Si el mensaje del usuario contiene una línea con \`CONFIG_ROBLOX_OUTPUT=screen\`, genera la GUI como ScreenGui principal. Si contiene \`CONFIG_ROBLOX_OUTPUT=localscript\`, genera todo desde un LocalScript en StarterPlayerScripts (recomendado).
 
-REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, OBLIGATORIAMENTE genera aproximadamente N líneas de código Luau de alta calidad, bien detalladas, sin errores de sintaxis, con el mejor estilo UI/UX artístico disponible. Cuenta solo líneas de código no vacías. NO pongas comentarios dentro del código, solo al inicio en la sección de configuración. Evita crear ModuleScript si el código LocalScript base no es muy extenso (1500-2000 líneas). Los códigos no deben ser exactamente N líneas, sino llegar al aproximado sumando todos los scripts (ej: LocalScript + ModuleScript = ~1500 líneas). Prioriza diseño artístico, compatibilidad móvil y ausencia total de errores.`;
+REGLA DE LÍNEAS: Si el mensaje del usuario contiene \`CONFIG_ROBLOX_LINES=N\`, entonces genera aproximadamente N líneas de código Luau de alta calidad, bien detalladas, sin errores de sintaxis, con el mejor estilo UI/UX artístico disponible. Cuenta solo líneas de código no vacías. NO pongas comentarios dentro del código, solo al inicio en la sección de configuración. Evita crear ModuleScript si el código LocalScript base no es muy extenso (1500-2000 líneas). Los códigos no deben ser exactamente N líneas, sino llegar al aproximado sumando todos los scripts (ej: LocalScript + ModuleScript = ~1500 líneas). Prioriza diseño artístico, compatibilidad móvil y ausencia total de errores.`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 
@@ -373,6 +375,8 @@ INSTRUCCIONES:
 - Ofrece ejemplos prácticos cuando sea apropiado, pero mantén brevedad
 
 SALIDA PARA SOLICITUDES DE CÓDIGO
+- SOLO proporciona código cuando el usuario EXPLÍCITAMENTE lo solicite o pida
+- Si el usuario NO pide código, responde normalmente sin incluir código
 - Si el usuario solicita código, responde PRINCIPALMENTE con bloques de código completos y minimiza cualquier texto explicativo
 - Evita comentarios largos; usa comentarios cortos solo cuando sean absolutamente necesarios
 - Prioriza que el código sea correcto, ejecutable y sin errores de sintaxis`;
@@ -2123,7 +2127,26 @@ export function registerRoutes(
 
             // Crear conversación si no existe
             if (!currentConversationId) {
-                const title = message.slice(0, 50) + (message.length > 50 ? "..." : "");
+                // Extraer el mensaje real del usuario, ignorando las líneas de configuración de Roblox
+                let userMessageForTitle = message;
+                if (chatMode === "roblox") {
+                    // Remover las líneas de configuración que empiezan con CONFIG_
+                    const lines = message.split('\n');
+                    const filteredLines = lines.filter(line => !line.startsWith('CONFIG_'));
+                    userMessageForTitle = filteredLines.join('\n').trim();
+                }
+
+                // Generar un título inteligente basado en el mensaje
+                let title = userMessageForTitle.slice(0, 50);
+                if (userMessageForTitle.length > 50) {
+                    title += "...";
+                }
+
+                // Si el título está vacío o solo tiene configuración, usar un título genérico
+                if (!title.trim() || title.trim().length === 0) {
+                    title = chatMode === "roblox" ? "Nueva interfaz Roblox" : "Nueva conversación";
+                }
+
                 const newConversation = await createUserConversation(userId, title);
                 currentConversationId = newConversation.id;
             }

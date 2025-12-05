@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, MessageSquare, Trash2, X, Menu, ChevronLeft, MoreHorizontal } from "lucide-react";
+import { Plus, MessageSquare, Trash2, X, Menu, ChevronLeft, MoreHorizontal, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -11,6 +11,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +58,9 @@ export function ChatSidebar({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [conversationToRename, setConversationToRename] = useState<Conversation | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,6 +79,35 @@ export function ChatSidebar({
   const handleConfirmDeleteAll = () => {
     onDeleteAllConversations();
     setDeleteAllDialogOpen(false);
+  };
+
+  const handleRenameClick = (conversation: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConversationToRename(conversation);
+    setNewTitle(conversation.title);
+    setRenameDialogOpen(true);
+  };
+
+  const handleConfirmRename = async () => {
+    if (!conversationToRename || !newTitle.trim()) return;
+
+    try {
+      await fetch(`/api/conversations/${conversationToRename.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: newTitle.trim() }),
+      });
+      // Refresh conversations
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error("Error renaming conversation:", error);
+    }
+
+    setRenameDialogOpen(false);
+    setConversationToRename(null);
+    setNewTitle("");
   };
 
   const formatDate = (date: Date | string) => {
@@ -162,6 +203,15 @@ export function ChatSidebar({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleRenameClick(conversation, e as any);
+                    }}
+                  >
+                    <Edit3 className="h-3.5 w-3.5 mr-2" />
+                    Editar nombre
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleDeleteClick(conversation.id, e as any);
                     }}
                     className="text-red-500 focus:text-red-500"
@@ -183,7 +233,7 @@ export function ChatSidebar({
     return (
       <div className={`hidden lg:flex flex-col h-full w-16 border-r transition-all duration-300 ${
         chatMode === "general"
-          ? "bg-white/80 border-slate-200/60"
+          ? "bg-background/80 border-border/60"
           : "bg-zinc-900 border-zinc-800/50"
       }`}>
         <div className="p-2 flex flex-col items-center gap-2">
@@ -260,12 +310,12 @@ export function ChatSidebar({
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-40 w-72 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } ${
-          chatMode === "general"
-            ? "bg-white/95 backdrop-blur-xl border-r border-slate-200/60"
-            : "bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800/50"
-        }`}
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          } ${
+            chatMode === "general"
+              ? "bg-background/95 backdrop-blur-xl border-r border-border/60"
+              : "bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800/50"
+          }`}
       >
         {/* Header */}
         <div className={`p-4 border-b ${
@@ -415,6 +465,50 @@ export function ChatSidebar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className={chatMode === "general" ? "" : "bg-zinc-900 border-zinc-800"}>
+          <DialogHeader>
+            <DialogTitle className={chatMode === "general" ? "" : "text-white"}>
+              Renombrar conversación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="title" className={chatMode === "general" ? "" : "text-zinc-300"}>
+              Nuevo nombre
+            </Label>
+            <Input
+              id="title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Ingresa el nuevo nombre..."
+              className={`mt-2 ${chatMode === "general" ? "" : "bg-zinc-800 border-zinc-700 text-white"}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleConfirmRename();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRenameDialogOpen(false)}
+              className={chatMode === "general" ? "" : "bg-zinc-800 text-zinc-300 border-zinc-700"}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmRename}
+              disabled={!newTitle.trim()}
+              className={chatMode === "general" ? "" : "bg-primary hover:bg-primary/90"}
+            >
+              Renombrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
