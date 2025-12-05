@@ -74,9 +74,10 @@ export function ChatInput({
 
     const selectedModelInfo = livesModels.find(m => m.key === selectedModel);
     const modelSupportsImages = selectedModelInfo?.supportsImages === true;
+    const modelSupportsReasoning = selectedModelInfo?.supportsReasoning === true;
     const modelAvailable = selectedModelInfo?.available !== false;
-    const canUploadImage = modelSupportsImages && modelAvailable;
-    const canUseReasoning = selectedModelInfo?.supportsReasoning === true && modelAvailable;
+    const showImageButton = modelSupportsImages;
+    const showReasoningToggle = modelSupportsReasoning;
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -258,12 +259,13 @@ export function ChatInput({
                             className="hidden"
                         />
 
-                        {canUploadImage && !isLoading && (
+                        {showImageButton && (
                             <Button
                                 type="button"
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => fileInputRef.current?.click()}
+                                disabled={!modelAvailable || isLoading}
                                 className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg ${chatMode === 'general'
                                         ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                                         : 'text-zinc-500 hover:text-primary hover:bg-primary/10'
@@ -346,7 +348,8 @@ export function ChatInput({
                                                 })()
                                                 : '';
                                             
-                                            const isGemini = model.key === "gemini-2.5-flash";
+                                            const isGeminiPro = model.key === "gemini-2.5-pro";
+                                            const isGeminiFlash = model.key === "gemini-2.5-flash";
                                             return (
                                             <DropdownMenuItem
                                                 key={model.key}
@@ -358,15 +361,20 @@ export function ChatInput({
                                                         }
                                                     }
                                                 }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGemini ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
+                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
                                                 disabled={!model.available}
                                             >
                                                 <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${isGemini ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
                                                     <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {isGemini && (
+                                                        {isGeminiPro && (
                                                             <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                ⭐ Mejor
+                                                                ⭐ Estrella
+                                                            </span>
+                                                        )}
+                                                        {isGeminiFlash && (
+                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                ✨ Segundo
                                                             </span>
                                                         )}
                                                         {model.isRateLimited && (
@@ -528,14 +536,14 @@ export function ChatInput({
                         </div>
 
                         {/* Reasoning toggle */}
-                        {canUseReasoning && (
+                        {showReasoningToggle && (
                             <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg ${chatMode === 'general' ? 'hover:bg-slate-100' : 'hover:bg-zinc-800'
                                 }`}>
                                 <Switch
                                     id="reasoning"
                                     checked={useReasoning}
                                     onCheckedChange={onReasoningChange}
-                                    disabled={isLoading}
+                                    disabled={!modelAvailable || isLoading}
                                     className="scale-50 sm:scale-75 data-[state=checked]:bg-blue-500"
                                 />
                                 <label

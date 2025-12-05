@@ -192,7 +192,7 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                     <div className="flex items-center gap-1.5">
                       <span>Qwen 3 Coder</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">90% de capacidad (235K contexto)</span>
+                    <span className="text-xs text-muted-foreground">90% capacidad (235K contexto)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
@@ -238,11 +238,22 @@ export function UpgradeModal({ usage, children, chatMode = "roblox" }: UpgradeMo
                   <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span>⭐ Gemini 2.5 Flash</span>
+                      <span>⭐ Gemini 2.5 Pro</span>
                       <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
                       <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K output)</span>
+                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K salida)</span>
+                  </div>
+                </li>
+                <li className="flex items-start gap-2 text-sm">
+                  <Check className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span>✨ Gemini 2.5 Flash</span>
+                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded text-[9px] font-medium">IMG</span>
+                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded text-[9px] font-medium">R1</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">95% capacidad (995K contexto + 62K salida)</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-2 text-sm">
