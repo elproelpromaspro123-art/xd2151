@@ -132,22 +132,6 @@ const AI_MODELS = {
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
     },
-    "gemini-2.5-flash-image": {
-        id: "gemini-2.5-flash-image",
-        name: "Gemini 2.5 Flash Image",
-        description: "Generación de imágenes de alta calidad con Gemini 2.5 Flash Image (premium)",
-        supportsImages: true,
-        supportsReasoning: false,
-        isPremiumOnly: true,
-        category: "general" as const,
-        provider: "google",
-        fallbackProvider: null as string | null,
-        apiProvider: "gemini" as const,
-        freeContextTokens: 0,
-        freeOutputTokens: 0,
-        premiumContextTokens: 995746,
-        premiumOutputTokens: 7782,
-    },
      "llama-3.3-70b": {
          id: "llama-3.3-70b-versatile",
          name: "Llama 3.3 70B",
@@ -221,22 +205,6 @@ const AI_MODELS = {
         freeOutputTokens: 0,
         premiumContextTokens: 995746,
         premiumOutputTokens: 62259,
-    },
-    "gemini-2.0-flash-image": {
-        id: "gemini-2.0-flash-preview-image-generation",
-        name: "Gemini 2.0 Flash Image",
-        description: "Generación de imágenes rápida y confiable con Gemini 2.0 Flash Image (free)",
-        supportsImages: true,
-        supportsReasoning: false,
-        isPremiumOnly: false,
-        category: "general" as const,
-        provider: "google",
-        fallbackProvider: null as string | null,
-        apiProvider: "gemini" as const,
-        freeContextTokens: 943718,
-        freeOutputTokens: 7373,
-        premiumContextTokens: 1027581,
-        premiumOutputTokens: 8028,
     },
      };
 
@@ -577,7 +545,7 @@ async function streamGeminiCompletion(
                 include_thoughts: true
             };
         }
-
+        
         if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.supportsReasoning) {
             requestBody.tools = [
                 { google_search: {} },
