@@ -8,11 +8,15 @@
 
 Por este medio, **DECLARO QUE**:
 
+✅ LocalScripts serán **AUTOCONTENIDOS** (TODO en un archivo, sin módulos)  
+✅ LocalScripts serán **SIN COMENTARIOS** (código limpio)  
 ✅ Voy a leer **AGENTS.md** completamente antes de generar código  
 ✅ Voy a leer **ROBLOX_DOCUMENTATION.md** completamente  
+✅ Voy a leer **.amp/ROBLOX_API_REAL.md** (propiedades válidas)  
 ✅ Voy a leer **ROBLOX_VALIDATION.md** antes de entregar código  
-✅ Voy a ejecutar validación automática: `npm run validate:lua <archivo.lua>`  
-✅ Voy a verificar que NO hay errores naranja ni rojos  
+✅ Voy a ejecutar: `npm run validate:lua <archivo.lua>` (errores rojos/naranjas)  
+✅ Voy a ejecutar: `npm run validate:api <archivo.lua>` (propiedades inválidas)  
+✅ Voy a verificar que NO hay errores naranja, rojos, NI API inválida  
 
 **Si no cumplo estos requisitos, mi código será RECHAZADO.**
 

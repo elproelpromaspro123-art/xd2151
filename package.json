@@ -10,7 +10,8 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "validate:lua": "node .amp/validate-lua.js"
+    "validate:lua": "node .amp/validate-lua.js",
+    "validate:api": "node .amp/validate-properties.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

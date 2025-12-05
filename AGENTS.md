@@ -24,13 +24,24 @@
 
 ## ROBLOX Mode (🔴 OBLIGATORIO DESDE 5/12/2025)
 
+### ⚡ REGLA ABSOLUTA - PRINCIPIO FUNDAMENTAL
+
+**📌 LOCALSCRIPTS DEBEN SER AUTOCONTENIDOS**
+- ✅ TODO el código en UN SOLO archivo LocalScript
+- ❌ NO dependencias de módulos
+- ❌ NO requieren otros scripts
+- ❌ Sin comentarios en el código (código limpio)
+- ✅ Funciona 100% independiente
+
 ### ⚡ REGLA ABSOLUTA
 **ANTES de generar CUALQUIER código Roblox/Lua:**
 
 1. **DEBES leer**: `CONTRATO_ROBLOX.md` (aceptación obligatoria)
-2. **DEBES leer**: `ROBLOX_DOCUMENTATION.md` (API Reference completa)
-3. **DEBES validar**: `npm run validate:lua <archivo.lua>`
-4. **DEBES cumplir**: `ROBLOX_VALIDATION.md` (checklist completo)
+2. **DEBES leer**: `ROBLOX_DOCUMENTATION.md` (API Reference)
+3. **DEBES leer**: `.amp/ROBLOX_API_REAL.md` (propiedades válidas)
+4. **DEBES validar**: `npm run validate:lua <archivo.lua>`
+5. **DEBES validar**: `npm run validate:api <archivo.lua>`
+6. **DEBES cumplir**: `ROBLOX_VALIDATION.md` (checklist)
 
 **Si no cumplo estos requisitos, NO genero código.**
 
