@@ -155,25 +155,25 @@ export function ChatSidebar({
     if (convos.length === 0) return null;
 
     return (
-      <div className="mb-4">
-        <h3 className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider ${
-          chatMode === "general" ? "text-slate-400" : "text-zinc-500"
+      <div className="mb-5">
+        <h3 className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest ${
+          chatMode === "general" ? "text-slate-500" : "text-zinc-400"
         }`}>
           {title}
         </h3>
-        <div className="space-y-0.5">
+        <div className="space-y-2 px-2">
           {convos.map((conversation) => (
             <div
               key={conversation.id}
               onClick={() => onSelectConversation(conversation.id)}
-              className={`group flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer transition-all duration-150 ${
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 border ${
                 currentConversationId === conversation.id
                   ? chatMode === "general"
-                    ? "bg-blue-100 text-blue-900"
-                    : "bg-primary/20 text-white"
+                    ? "bg-blue-100 text-blue-900 border-blue-300 shadow-md"
+                    : "bg-primary/25 text-white border-primary/40 shadow-lg shadow-primary/10"
                   : chatMode === "general"
-                    ? "text-slate-700 hover:bg-slate-100"
-                    : "text-zinc-300 hover:bg-zinc-800/60"
+                    ? "text-slate-700 hover:bg-slate-100 border-slate-200/50 hover:shadow-sm"
+                    : "text-zinc-300 hover:bg-zinc-800/50 border-zinc-700/30 hover:shadow-md"
               }`}
             >
               <MessageSquare className={`h-4 w-4 flex-shrink-0 ${

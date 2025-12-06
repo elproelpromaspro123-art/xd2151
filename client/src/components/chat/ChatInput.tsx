@@ -193,15 +193,14 @@ export function ChatInput({
         <div className="p-2 sm:p-3 md:p-6 w-full bg-gradient-to-b from-background/50 to-background/80 backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
                 {/* Main input container */}
-                <div className={`relative rounded-xl sm:rounded-2xl md:rounded-3xl transition-all duration-300 ${isFocused
+                <div className={`relative rounded-2xl sm:rounded-3xl transition-all duration-300 ${isFocused
                         ? chatMode === 'general'
-                            ? 'ring-2 ring-blue-500/40 shadow-2xl shadow-blue-500/10 border-blue-200/50'
-                            : 'ring-2 ring-primary/40 shadow-2xl shadow-primary/10 border-primary/30'
-                        : 'shadow-xl border'
-                    } ${chatMode === 'general'
-                        ? 'bg-card/95 border-border/60'
-                        : 'bg-zinc-900/95 border-zinc-700/60'
-                    } backdrop-blur-xl`}>
+                            ? 'ring-2 ring-blue-500/50 shadow-xl shadow-blue-500/15 border-blue-400/60 bg-card'
+                            : 'ring-2 ring-primary/50 shadow-xl shadow-primary/15 border-primary/50 bg-background'
+                        : chatMode === 'general'
+                            ? 'border-border/40 shadow-lg bg-card/90'
+                            : 'border-zinc-700/50 shadow-lg bg-background/90'
+                    } backdrop-blur-sm`}>
 
                     {/* Pasted chips */}
                     {pastedChips.length > 0 && (
@@ -262,9 +261,9 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className={`w-full resize-none px-3 sm:px-4 py-3 sm:py-3.5 pr-12 sm:pr-16 md:pr-24 text-sm sm:text-base focus:outline-none disabled:opacity-50 min-h-[48px] sm:min-h-[52px] max-h-[200px] transition-colors ${
+                        className={`w-full resize-none px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] transition-colors ${
                             chatMode === 'general'
-                                ? 'bg-transparent text-foreground placeholder:text-muted-foreground'
+                                ? 'bg-transparent text-foreground placeholder:text-muted-foreground/70'
                                 : 'bg-transparent text-white placeholder:text-zinc-400'
                         }`}
                     />

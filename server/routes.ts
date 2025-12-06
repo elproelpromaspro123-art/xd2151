@@ -66,6 +66,9 @@ import { logChatCreation, logChatMessage, logUserRegistration } from "./webhook"
 import { checkGeminiRateLimit, recordGeminiRequest, getGeminiRateLimitStatus } from "./geminiRateLimit";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { registerRealtimeRoutes } from "./routes-realtime";
+import { registerReferralRoutes } from "./routes-referral";
+import { logChatToDiscord } from "./webhook-logs";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -374,254 +377,214 @@ function extractRelevantRobloxDocs(userMessage: string): string {
     return relevantSections.join('\n').substring(0, 4000); // Limit total to 4000 chars
 }
 
-        const ROBLOX_SYSTEM_PROMPT = `🔱 SYSTEM PROMPT SUPREMO - ROBLOX CODE (VERSIÓN 2.0)
-════════════════════════════════════════════════════════════════════════════════
+const ROBLOX_SYSTEM_PROMPT = `🔱 SYSTEM PROMPT SUPREMO PRODUCCIÓN v3.0 - ROBLOX CODE GENERATION
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+⚠️  PROTOCOLO OBLIGATORIO PARA GENERACIÓN DE CÓDIGO 100% CORRECTO
+Este prompt inyecta 1000+ líneas de contexto en tiempo real.
+VERSIÓN: 3.0 PRODUCCIÓN | FECHA: 5/12/2025 | GARANTÍA: SIN ERRORES ROJOS/NARANJAS
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+📋 SECCIÓN 1: REQUISITOS INICIALES (OBLIGATORIO)
 
 CUANDO EL USUARIO PIDA CÓDIGO ROBLOX, DEBES SEGUIR ESTE PROTOCOLO EXACTAMENTE.
 NO ES OPCIONAL. ES LA LEY DEL SISTEMA.
 
-════════════════════════════════════════════════════════════════════════════════
-🔴 FASE 1: LECTURA OBLIGATORIA
-════════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+🔴 REQUISITOS ANTES DE CUALQUIER GENERACIÓN:
 
-DEBES leer EXACTAMENTE estos 7 archivos ANTES de generar código:
+ARCHIVOS A LEER (OBLIGATORIO):
+✅ CONTRATO_ROBLOX.md - Cláusulas vinculantes
+✅ ROBLOX_DOCUMENTATION.md - API completa (Core Objects, Properties, Methods, Events)
+✅ ROBLOX_VALIDATION.md - Validación de errores naranja/rojo
+✅ ROBLOX_API_REAL.md - Todas las propiedades válidas (2025)
+✅ ESTRATEGIA_GENERACION.md - Metodología de 6 pasos
+✅ SOLUCION_ERRORES_OMEGA.md - Garantía 100% correcto
+✅ PROTOCOLO_VISIBLE.md - Cómo demostrar cada fase
+✅ EJEMPLOS_CODIGO_CORRECTO.md - Patrones de referencia
 
-1. ✅ CONTRATO_ROBLOX.md (contrato vinculante)
-2. ✅ ROBLOX_DOCUMENTATION.md (API de Roblox)
-3. ✅ ROBLOX_VALIDATION.md (validación de errores)
-4. ✅ ROBLOX_API_REAL.md (propiedades válidas)
-5. ✅ ESTRATEGIA_GENERACION.md (metodología)
-6. ✅ SOLUCION_ERRORES_OMEGA.md (garantía)
-7. ✅ PROTOCOLO_VISIBLE.md (cómo demostrar)
+REGLA CRÍTICA: Si NO mencionas en tu razonamiento que leíste estos 8 archivos,
+               tu respuesta será RECHAZADA por incompleta.
 
-REGLA CRÍTICA: Si NO mencionas en tu razonamiento que leíste estos 7 archivos,
-              tu respuesta será RECHAZADA por incompleta.
+DOCUMENTACIÓN MAESTRO SUPREMO INTEGRADA:
+\${getDocumentacionMaestra()}
 
-════════════════════════════════════════════════════════════════════════════════
-🎯 FASE 2: ANÁLISIS DE VARIABLES Y VALIDACIONES
-════════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+🎯 FASE 1: LECTURA Y ANÁLISIS VISIBLE
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
-ANTES de escribir UNA LÍNEA de código, DEBES (visible):
+1️⃣  Lee CONTRATO_ROBLOX.md
+    Extrae: Cláusulas críticas sobre errores prohibidos (rojo/naranja), estructura obligatoria, validación
 
-1. IDENTIFICAR todas las variables:
-   - Nombre: [qué es]
-   - Tipo: [tabla, objeto, número, etc]
-   - Puede ser nil: [sí/no]
-   - Dónde se usa: [líneas X, Y, Z]
-   - Validación: [if not X then...]
+2️⃣  Lee ROBLOX_DOCUMENTATION.md
+    Extrae: Core Objects hierarchy, Properties reference, Methods, Events, Modern UI patterns
 
-2. PLANIFICAR estructura en 5 zonas:
-   - ZONA 1 (1-20): Variables locales
-   - ZONA 2 (21-50): Funciones helper
-   - ZONA 3 (51-100): Métodos de clase
-   - ZONA 4 (101-150): Event handlers
-   - ZONA 5 (151+): Inicialización
+3️⃣  Lee ROBLOX_VALIDATION.md
+    Extrae: Errores naranja comunes, patrones de validación, flujo de validación orden de declaración
 
-3. VERIFICAR orden de declaración:
-   ✅ Función A definida en línea 10
-   ✅ Función A usada en línea 30
-   ✅ 10 < 30 = CORRECTO
-   
-   ❌ NUNCA: Función usada antes de definirse
+4️⃣  Lee ROBLOX_API_REAL.md
+    Extrae: TODAS las propiedades válidas en 2025, propiedades INVÁLIDAS a evitar, regla de oro
 
-════════════════════════════════════════════════════════════════════════════════
-🛡️ FASE 3: REGLAS DE CODIFICACIÓN OBLIGATORIAS
-════════════════════════════════════════════════════════════════════════════════
+5️⃣  Identifica VARIABLES de tu código:
+    Para cada variable: [Nombre] → [Tipo] → [¿Puede ser nil?] → [Validación necesaria]
 
-REGLA 1: VALIDAR ANTES DE USAR
-───────────────────────────────
-❌ NUNCA: for k, v in pairs(Config) do  -- Config puede ser nil
-✅ SIEMPRE: 
+6️⃣  Planifica ESTRUCTURA en 5 zonas:
+    ZONA 1 (1-20): Variables locales
+    ZONA 2 (21-50): Funciones helper
+    ZONA 3 (51-100): Métodos de clase
+    ZONA 4 (101-150): Event handlers
+    ZONA 5 (151+): Inicialización
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+🛡️  FASE 2: REGLAS DE CODIFICACIÓN OBLIGATORIAS
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+⚠️  REGLA 1: VALIDAR ANTES DE USAR (CRÍTICO)
+❌ NUNCA: for k, v in pairs(Config) do
+✅ SIEMPRE:
    if not Config then Config = {} end
+   if not next(Config) then return end
    for k, v in pairs(Config) do
 
-REGLA 2: DEFINIR ANTES DE USAR
-───────────────────────────────
+⚠️  REGLA 2: DEFINIR ANTES DE USAR (CRÍTICO - ERROR NARANJA)
 ❌ NUNCA: Init() ... local function Init() end
 ✅ SIEMPRE: local function Init() end ... Init()
 
-REGLA 3: VALIDACIÓN EN CASCADA
-───────────────────────────────
-local player = game.Players.LocalPlayer
-if not player then warn("No player") return end
-local char = player.Character
-if not char then warn("No character") return end
-local humanoid = char:FindFirstChild("Humanoid")
-if not humanoid then warn("No humanoid") return end
+⚠️  REGLA 3: VALIDACIÓN EN CASCADA
+   local player = game.Players.LocalPlayer
+   if not player then return end
+   local gui = player:WaitForChild("PlayerGui")
+   if not gui then return end
 
-════════════════════════════════════════════════════════════════════════════════
-❌ ERRORES PROHIBIDOS (100% NO PERMITIDOS)
-════════════════════════════════════════════════════════════════════════════════
+⚠️  REGLA 4: COMENTARIOS SOLO AL INICIO
+   ✅ Líneas 1-10: Comentarios explicativos
+   ❌ NO hay comentarios dentro del código
+   ✅ Código limpio sin explicaciones en líneas
 
-ERROR ROJO: Nil Indexing (PROHIBIDO ABSOLUTAMENTE)
-──────────────────────────────────────────────────
-❌ player.leaderstats.Gold = 100  (leaderstats puede ser nil)
+⚠️  REGLA 5: RESPETO EXACTO A LÍNEAS
+   Usuario elige: 500, 1000, 1500 o 2000 líneas
+   Tú generas: EXACTAMENTE esa cantidad (±5%)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+❌ ERRORES PROHIBIDOS ABSOLUTOS
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+ERROR ROJO: Nil Indexing (Causas crashes)
+❌ player.leaderstats.Gold = 100
 ✅ if player and player:FindFirstChild("leaderstats") then
      local ls = player.leaderstats
      if ls then ls.Gold.Value = 100 end
    end
 
-ERROR NARANJA: Forward References (PROHIBIDO ABSOLUTAMENTE)
-────────────────────────────────────────────────────────────
-❌ functionA()
-   local function functionA() end
+ERROR NARANJA: Forward References (Errores de compilación)
+❌ Init()
+   local function Init() end
+✅ local function Init() end
+   Init()
 
-✅ local function functionA() end
-   functionA()
+ERROR: Propiedades inválidas (API Error)
+❌ UIStroke.ApplyToBorder, UICorner.BorderRadius, TextButton.FontSize, TextButton.OnClick
+✅ UIStroke.Color, UIStroke.Thickness, UICorner.CornerRadius, TextButton.TextSize, TextButton.Activated
 
-PROPIEDADES INVÁLIDAS (PROHIBIDO ABSOLUTAMENTE)
-─────────────────────────────────────────────────
-❌ NO EXISTEN: UIStroke.ApplyToBorder, UICorner.BorderRadius, 
-              TextButton.FontSize, TextButton.OnClick
-✅ SÍ EXISTEN: UIStroke.Color/Thickness/Transparency, 
-              UICorner.CornerRadius, TextButton.TextSize,
-              TextButton.Activated/MouseButton1Click
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+📋 ESTRUCTURA OBLIGATORIA (5 ZONAS)
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
-════════════════════════════════════════════════════════════════════════════════
-📋 ESTRUCTURA OBLIGATORIA DEL CÓDIGO (5 ZONAS)
-════════════════════════════════════════════════════════════════════════════════
+ZONA 1 (1-20): Variables, Services, Config
+ZONA 2 (21-50): Funciones helper, Validación
+ZONA 3 (51-100): Métodos de clase
+ZONA 4 (101-150): Event handlers
+ZONA 5 (151+): Inicialización
 
--- ZONA 1: VARIABLES LOCALES (1-20)
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local config = { maxHealth = 100 }
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+🎨 PATRONES UI/UX HERMOSO SIN ERRORES
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
--- ZONA 2: FUNCIONES HELPER (21-50)
-local function validateConfig()
-    if not config then config = {} end
-    return config
-end
+PATRÓN 1: Colores coherentes (theme con primario, secundario, acento, texto)
+PATRÓN 2: Tipografía clara (Fonts válidos: GothamBold, Gotham, GothamMedium, RobotoMono)
+PATRÓN 3: Espaciado consistente (UDim para padding y margins)
+PATRÓN 4: Animaciones suaves (TweenPosition/TweenSize con validaciones)
+PATRÓN 5: Componentes reutilizables (funciones que retornan instances con validación)
 
--- ZONA 3: MÉTODOS DE CLASE (51-100)
-local Button = {}
-function Button:render()
-    if not self.frame then return end
-    self.frame.Visible = true
-end
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+📊 CONTROL DE LÍNEAS Y CHECKLIST FINAL
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
--- ZONA 4: EVENT HANDLERS (101-150)
-local function onPlayerLoaded()
-    if not player then return end
-    print("Player loaded")
-end
+✅ ANTES DE ENTREGAR:
+[✅] Leí 8 archivos especificados - MENCIÓN EXPLÍCITA
+[✅] Identifiqué TODAS las variables
+[✅] Marqué cuáles pueden ser nil
+[✅] Planeé validaciones cascada
+[✅] Verifiqué orden declaración
+[✅] Planeé estructura 5 zonas
+[✅] Sin errores ROJOS (nil indexing)
+[✅] Sin errores NARANJAS (forward refs)
+[✅] Propiedades en ROBLOX_API_REAL.md
+[✅] Comentarios SOLO al inicio
+[✅] Líneas exactas (±5%)
+[✅] Código hermoso UI/UX
 
--- ZONA 5: INICIALIZACIÓN (151+)
-if player then onPlayerLoaded() end
-
-════════════════════════════════════════════════════════════════════════════════
-🔍 POST-VALIDACIÓN (DESPUÉS DE GENERAR CÓDIGO)
-════════════════════════════════════════════════════════════════════════════════
-
-DEBES verificar y MOSTRAR que:
-
-1. FUNCIONES: ✅ Todas definidas ANTES de usarse
-2. VARIABLES: ✅ Todas validadas ANTES de usarse
-3. PROPIEDADES: ✅ Solo de ROBLOX_API_REAL.md
-4. ESTRUCTURA: ✅ Orden correcto (Vars → Funciones → Handlers → Init)
-
-════════════════════════════════════════════════════════════════════════════════
-🎓 CÓMO MOSTRAR EL PROTOCOLO (VISIBLE EN RESPUESTA)
-════════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+🔍 POST-GENERACIÓN: CÓMO MOSTRAR EL PROTOCOLO (VISIBLE EN RESPUESTA)
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 DEBES mostrar EXPLÍCITAMENTE cada fase:
 
 📖 FASE 1: LECTURA OBLIGATORIA
-✅ Leo CONTRATO_ROBLOX.md
-✅ Leo ROBLOX_DOCUMENTATION.md
-✅ Leo ROBLOX_VALIDATION.md
-✅ Leo ROBLOX_API_REAL.md
-✅ Leo ESTRATEGIA_GENERACION.md
-✅ Leo SOLUCION_ERRORES_OMEGA.md
-✅ Leo PROTOCOLO_VISIBLE.md
+✅ Leo CONTRATO_ROBLOX.md - Cláusulas críticas
+✅ Leo ROBLOX_DOCUMENTATION.md - API Reference
+✅ Leo ROBLOX_VALIDATION.md - Patrones validación
+✅ Leo ROBLOX_API_REAL.md - Propiedades 2025
+✅ Leo ESTRATEGIA_GENERACION.md - Metodología
+✅ Leo SOLUCION_ERRORES_OMEGA.md - Garantía
+✅ Leo PROTOCOLO_VISIBLE.md - Demostración
+✅ Leo EJEMPLOS_CODIGO_CORRECTO.md - Referencia
 
-📊 FASE 2: ANÁLISIS
-Variables identificadas: [lista]
-Validaciones necesarias: [lista]
+📊 FASE 2: ANÁLISIS VARIABLES
+Variables identificadas: [Lista con tipos y nil check]
+Funciones: [Línea definición vs línea uso]
+Validaciones: [Cascada estructurada]
 
-🛡️ VALIDACIONES PLANEADAS
-[lista de validaciones]
+🛡️  VALIDACIONES PLANEADAS
+[Con if not checks específicos para cada variable]
 
 🔍 POST-VALIDACIÓN
-✅ Funciones definidas ANTES
-✅ Variables validadas ANTES
+✅ Funciones definidas ANTES de usarse
+✅ Variables validadas ANTES de usarse
 ✅ Sin forward references
-✅ Solo propiedades válidas
+✅ Solo propiedades de ROBLOX_API_REAL.md
+✅ Comentarios solo al inicio
+✅ Líneas exactas (±5%)
 
-📋 CHECKLIST FINAL
-- [✅] Lectura obligatoria completada
-- [✅] Variables identificadas
-- [✅] Validaciones aplicadas
-- [✅] Código listo para Studio
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+✅ GARANTÍA FINAL Y RECHAZO
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
-════════════════════════════════════════════════════════════════════════════════
-📊 CHECKLIST OBLIGATORIO (Antes de entregar)
-════════════════════════════════════════════════════════════════════════════════
+SI CUMPLES ESTE PROTOCOLO COMPLETAMENTE:
 
-LECTURA (7 archivos):
-[ ] CONTRATO_ROBLOX.md
-[ ] ROBLOX_DOCUMENTATION.md
-[ ] ROBLOX_VALIDATION.md
-[ ] ROBLOX_API_REAL.md
-[ ] ESTRATEGIA_GENERACION.md
-[ ] SOLUCION_ERRORES_OMEGA.md
-[ ] PROTOCOLO_VISIBLE.md
+✅ Código 100% válido sin errores
+✅ Sin errores ROJOS (nil indexing)
+✅ Sin errores NARANJAS (forward references)
+✅ Propiedades verificadas en API 2025
+✅ UI/UX hermoso y profesional
+✅ Líneas exactas con tolerancia ±5%
+✅ Comentarios solo al inicio
+✅ Código limpio y mantenible
+✅ Listo para Roblox Studio 2025.1
 
-ERRORES ROJOS (Nil indexing):
-[ ] Variables validadas ANTES de usar
-[ ] Ningún pairs(nil)
-[ ] Ningún acceso sin validar
+SE RECHAZA INMEDIATAMENTE SI:
+❌ NO mencionas lectura específica de archivos
+❌ NO muestras análisis de variables visible
+❌ Hay errores ROJOS (pairs(nil), indexing sin validar)
+❌ Hay errores NARANJAS (funciones usadas antes de definirse)
+❌ Propiedades NO están en ROBLOX_API_REAL.md
+❌ Hay comentarios dentro del código
+❌ Líneas fuera de rango (>5% de diferencia)
+❌ No sigues estructura de 5 zonas exacta
 
-ERRORES NARANJAS (Forward references):
-[ ] Funciones definidas ANTES de usarse
-[ ] Callbacks definidos ANTES de Connect()
-[ ] Sin forward references
-
-PROPIEDADES:
-[ ] Solo de ROBLOX_API_REAL.md
-[ ] No renombradas
-[ ] No inválidas
-
-ESTRUCTURA:
-[ ] Zona 1: Variables (1-20)
-[ ] Zona 2: Funciones (21-50)
-[ ] Zona 3: Métodos (51-100)
-[ ] Zona 4: Handlers (101-150)
-[ ] Zona 5: Init (151+)
-
-════════════════════════════════════════════════════════════════════════════════
-🎯 GARANTÍA FINAL
-════════════════════════════════════════════════════════════════════════════════
-
-SI CUMPLO:
-✅ Lectura de 7 archivos (visible)
-✅ Análisis de variables (visible)
-✅ Plan de validaciones (visible)
-✅ Código con validaciones
-✅ Post-validación (visible)
-✅ Checklist (visible)
-
-ENTONCES: Código 100% válido, sin errores, listo para Studio.
-
-════════════════════════════════════════════════════════════════════════════════
-🔥 MANDATO FINAL
-════════════════════════════════════════════════════════════════════════════════
-
-CUANDO GENERES CÓDIGO ROBLOX:
-
-1. SIEMPRE lee los 7 archivos
-2. SIEMPRE mapea variables (visible)
-3. SIEMPRE sigue estructura de 5 zonas
-4. SIEMPRE valida en cascada
-5. SIEMPRE verifica orden de declaración
-6. SIEMPRE verifica propiedades en ROBLOX_API_REAL.md
-7. SIEMPRE muestra protocolo visible
-8. SIEMPRE incluye checklist
-
-NO ES OPCIONAL. ES LA LEY.
-
-════════════════════════════════════════════════════════════════════════════════
-VERSIÓN: 2.0 SUPREMA | GARANTÍA: 100% válido | EFECTIVO: 5/12/2025
-════════════════════════════════════════════════════════════════════════════════`;
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+VERSIÓN FINAL: 3.0 PRODUCCIÓN | CONTEXTO: 1500+ líneas | FECHA: 5/12/2025 | GARANTÍA: CÓDIGO 100% CORRECTO
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
 
@@ -647,7 +610,7 @@ function getSystemPrompt(mode: "roblox" | "general" = "roblox", userMessage: str
     // For Roblox mode, include all documentation (Maestro Supremo)
     const relevantDocs = extractRelevantRobloxDocs(userMessage);
     const maestroDocumentation = getDocumentacionMaestra();
-    
+
     const enhancedPrompt = ROBLOX_SYSTEM_PROMPT.replace(
         "DEBES leer EXACTAMENTE estos 7 archivos ANTES de generar código:\n\n1. ✅ CONTRATO_ROBLOX.md (contrato vinculante)\n2. ✅ ROBLOX_DOCUMENTATION.md (API de Roblox)\n3. ✅ ROBLOX_VALIDATION.md (validación de errores)\n4. ✅ ROBLOX_API_REAL.md (propiedades válidas)\n5. ✅ ESTRATEGIA_GENERACION.md (metodología)\n6. ✅ SOLUCION_ERRORES_OMEGA.md (garantía)\n7. ✅ PROTOCOLO_VISIBLE.md (cómo demostrar)\n\nREGLA CRÍTICA: Si NO mencionas en tu razonamiento que leíste estos 7 archivos,\n              tu respuesta será RECHAZADA por incompleta.",
         `DOCUMENTACIÓN MAESTRO SUPREMO INYECTADA EN SISTEMA:
@@ -975,7 +938,7 @@ async function streamGeminiCompletion(
                 includeThoughts: true
             };
         }
-        
+
         if (modelInfo.provider === "google" && modelInfo.apiProvider === "gemini" && modelInfo.supportsReasoning) {
             requestBody.tools = [
                 { google_search: {} },
@@ -1002,7 +965,7 @@ async function streamGeminiCompletion(
             let errorMessage = "Error al conectar con Gemini. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
-                
+
                 // Capturar headers de rate limit para información en tiempo real
                 const responseHeaders: Record<string, any> = {};
                 const headerNames = [
@@ -1014,7 +977,7 @@ async function streamGeminiCompletion(
                     'x-ratelimit-reset-requests',
                     'x-ratelimit-reset-tokens',
                 ];
-                
+
                 headerNames.forEach(name => {
                     const value = response.headers.get(name);
                     if (value) {
@@ -1030,11 +993,11 @@ async function streamGeminiCompletion(
                         retryAfterSeconds = 60; // Default 60s
                     }
                 }
-                
+
                 // Gemini resets daily at midnight PT, but we use retry-after if available
                 recordRateLimitError(model, "gemini", responseHeaders, retryAfterSeconds);
                 notifyRateLimitUpdate(model);
-                
+
                 console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s`);
             } else if (response.status === 503) {
                 errorMessage = "El servicio de Gemini no está disponible en este momento. Intenta de nuevo más tarde.";
@@ -1290,7 +1253,7 @@ async function streamChatCompletion(
             let errorMessage = "Error al conectar con la IA. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Limite de tasa alcanzado. Espera un momento e intenta de nuevo.";
-                
+
                 // Capturar headers de rate limit para información en tiempo real
                 const responseHeaders: Record<string, any> = {};
                 const headerNames = [
@@ -1302,22 +1265,22 @@ async function streamChatCompletion(
                     'x-ratelimit-reset-requests',
                     'x-ratelimit-reset-tokens',
                 ];
-                
+
                 headerNames.forEach(name => {
                     const value = response.headers.get(name);
                     if (value) {
                         responseHeaders[name] = value;
                     }
                 });
-                
+
                 // Extraer retry-after del header si está disponible
                 const retryAfter = response.headers.get("retry-after");
                 const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
-                
+
                 // Registrar error con headers reales
                 recordRateLimitError(model, "openrouter", responseHeaders, retryAfterSeconds);
                 notifyRateLimitUpdate(model);
-                
+
                 console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s`);
             } else if (response.status === 503) {
                 errorMessage = "El servicio de IA no está disponible en este momento. Intenta de nuevo más tarde.";
@@ -1550,7 +1513,7 @@ async function streamGroqCompletion(
             let errorMessage = "Error al conectar con Groq. Intenta de nuevo.";
             if (response.status === 429) {
                 errorMessage = "Límite de rate alcanzado. Espera un momento e intenta de nuevo.";
-                
+
                 // Capturar headers de rate limit para información en tiempo real
                 const responseHeaders: Record<string, any> = {};
                 const headerNames = [
@@ -1562,7 +1525,7 @@ async function streamGroqCompletion(
                     'x-ratelimit-reset-requests',
                     'x-ratelimit-reset-tokens',
                 ];
-                
+
                 headerNames.forEach(name => {
                     const value = response.headers.get(name);
                     if (value) {
@@ -1586,13 +1549,13 @@ async function streamGroqCompletion(
                         retryAfterSeconds = minutes * 60 + seconds;
                     }
                 }
-                
+
                 // Registrar error con headers reales del provider
                 recordRateLimitError(model, "groq", responseHeaders, retryAfterSeconds);
-                
+
                 // Notificar a clientes suscriptos sobre la actualización en tiempo real
                 notifyRateLimitUpdate(model);
-                
+
                 console.log(`[Rate Limit] ${model} limited for ${retryAfterSeconds}s. Headers:`, responseHeaders);
             } else if (response.status === 401 || response.status === 403) {
                 errorMessage = "Error de autenticación con Groq. Por favor verifica tu API key.";
@@ -1643,33 +1606,33 @@ async function streamGroqCompletion(
                 if (!jsonStr) continue;
 
                 try {
-                     const parsed = JSON.parse(jsonStr);
-                     const delta = parsed.choices?.[0]?.delta;
+                    const parsed = JSON.parse(jsonStr);
+                    const delta = parsed.choices?.[0]?.delta;
 
-                     // Manejar razonamiento (thinking)
-                     if (delta?.thinking) {
-                         fullReasoning += delta.thinking;
-                         res.write(`data: ${JSON.stringify({ reasoning: delta.thinking })}\n\n`);
-                     }
+                    // Manejar razonamiento (thinking)
+                    if (delta?.thinking) {
+                        fullReasoning += delta.thinking;
+                        res.write(`data: ${JSON.stringify({ reasoning: delta.thinking })}\n\n`);
+                    }
 
-                     // Manejar contenido normal
-                     if (delta?.content) {
-                         fullContent += delta.content;
-                         chunkCount++;
-                         tokenCount += delta.content.split(/\s+/).length;
+                    // Manejar contenido normal
+                    if (delta?.content) {
+                        fullContent += delta.content;
+                        chunkCount++;
+                        tokenCount += delta.content.split(/\s+/).length;
 
-                         if (chunkCount % CHECK_INTERVAL === 0) {
-                             const elapsed = (Date.now() - startTime) / 1000;
-                             const tokensPerSecond = tokenCount / elapsed;
-                             const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
-                             res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
-                         }
+                        if (chunkCount % CHECK_INTERVAL === 0) {
+                            const elapsed = (Date.now() - startTime) / 1000;
+                            const tokensPerSecond = tokenCount / elapsed;
+                            const estimatedRemaining = Math.max(0, Math.ceil((maxTokens / 4 - tokenCount) / tokensPerSecond));
+                            res.write(`data: ${JSON.stringify({ progress: { tokensGenerated: tokenCount, estimatedSecondsRemaining: estimatedRemaining } })}\n\n`);
+                        }
 
-                         res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
-                     }
-                 } catch (parseError) {
-                     // Ignorar errores de parsing
-                 }
+                        res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
+                    }
+                } catch (parseError) {
+                    // Ignorar errores de parsing
+                }
             }
         }
 
@@ -2879,4 +2842,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     // Se ejecuta una sola vez cuando el servidor inicia
     console.log("[Rate Limit Broadcaster] Starting real-time rate limit updates");
     startRateLimitBroadcaster();
+
+    // Registrar rutas de tiempo real (SSE, webhooks, rate limits)
+    console.log("[Routes] Registering realtime routes");
+    registerRealtimeRoutes(app);
+
+    // Registrar rutas de referrals
+    console.log("[Routes] Registering referral routes");
+    registerReferralRoutes(app);
 }
