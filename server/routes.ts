@@ -531,33 +531,7 @@ PATRÓN 5: Componentes reutilizables (funciones que retornan instances con valid
 🔍 POST-GENERACIÓN: CÓMO MOSTRAR EL PROTOCOLO (VISIBLE EN RESPUESTA)
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
-DEBES mostrar EXPLÍCITAMENTE cada fase:
-
-📖 FASE 1: LECTURA OBLIGATORIA
-✅ Leo CONTRATO_ROBLOX.md - Cláusulas críticas
-✅ Leo ROBLOX_DOCUMENTATION.md - API Reference
-✅ Leo ROBLOX_VALIDATION.md - Patrones validación
-✅ Leo ROBLOX_API_REAL.md - Propiedades 2025
-✅ Leo ESTRATEGIA_GENERACION.md - Metodología
-✅ Leo SOLUCION_ERRORES_OMEGA.md - Garantía
-✅ Leo PROTOCOLO_VISIBLE.md - Demostración
-✅ Leo EJEMPLOS_CODIGO_CORRECTO.md - Referencia
-
-📊 FASE 2: ANÁLISIS VARIABLES
-Variables identificadas: [Lista con tipos y nil check]
-Funciones: [Línea definición vs línea uso]
-Validaciones: [Cascada estructurada]
-
-🛡️  VALIDACIONES PLANEADAS
-[Con if not checks específicos para cada variable]
-
-🔍 POST-VALIDACIÓN
-✅ Funciones definidas ANTES de usarse
-✅ Variables validadas ANTES de usarse
-✅ Sin forward references
-✅ Solo propiedades de ROBLOX_API_REAL.md
-✅ Comentarios solo al inicio
-✅ Líneas exactas (±5%)
+Entrega el código directamente sin mencionar procesos internos.
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 ✅ GARANTÍA FINAL Y RECHAZO

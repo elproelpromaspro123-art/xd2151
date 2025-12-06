@@ -69,12 +69,12 @@ export function ChatInput({
         const saved = localStorage.getItem(key);
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
-    const [robloxLineCount, setRobloxLineCount] = useState<number>(() => {
-        if (typeof window === 'undefined') return 1000;
+    const [robloxLineCount, setRobloxLineCount] = useState<number | null>(() => {
+        if (typeof window === 'undefined') return null;
         const key = userId ? `robloxLineCount_${userId}` : 'robloxLineCount';
         const saved = localStorage.getItem(key);
-        const parsed = saved ? parseInt(saved, 10) : 1000;
-        return [500, 1000, 1500, 2000].includes(parsed) ? parsed : 1000;
+        const parsed = saved ? parseInt(saved, 10) : null;
+        return [500, 1000, 1500, 2000].includes(parsed as number) ? parsed : null;
     });
     const [useWebSearch, setUseWebSearch] = useState(false);
     const [pastedChips, setPastedChips] = useState<PastedChip[]>([]);
@@ -156,6 +156,10 @@ export function ChatInput({
         const chipContents = pastedChips.map(c => c.fullContent).join('\n\n');
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
         if (chatMode === 'roblox') {
+            if (!robloxLineCount) {
+                // Don't send if no line count is selected
+                return;
+            }
             const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
             const lineCountConfig = `CONFIG_ROBLOX_LINE_COUNT=${robloxLineCount}`;
             fullMessage = `${configLine}\n${lineCountConfig}\n${fullMessage}`;
@@ -184,6 +188,7 @@ export function ChatInput({
 
     const canUseWebSearch = webSearchRemaining > 0;
     const hasContent = message.trim() || pastedChips.length > 0;
+    const canSendInRobloxMode = chatMode !== 'roblox' || robloxLineCount !== null;
 
     // Filtrar modelos por plan (free vs premium)
     const freeModels = models.filter(m => !m.isPremiumOnly);
@@ -273,7 +278,7 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className={`w-full resize-none px-4 sm:px-5 py-3.5 sm:py-4 pr-20 sm:pr-28 text-sm sm:text-base focus:outline-none disabled:opacity-50 min-h-[48px] sm:min-h-[56px] max-h-[220px] transition-all duration-300 leading-relaxed relative z-10 ${
+                        className={`w-full resize-none px-4 sm:px-5 py-3.5 sm:py-4 pr-20 sm:pr-28 text-sm sm:text-base focus:outline-none focus:ring-0 focus:ring-offset-0 border-0 disabled:opacity-50 min-h-[48px] sm:min-h-[56px] max-h-[220px] transition-all duration-300 leading-relaxed relative z-10 ${
                             chatMode === 'general'
                                 ? 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
                                 : 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
@@ -319,7 +324,7 @@ export function ChatInput({
                             <Button
                                 type="submit"
                                 size="icon"
-                                disabled={!hasContent || isLoading || disabled}
+                                disabled={!hasContent || !canSendInRobloxMode || isLoading || disabled}
                                 className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl ${hasContent
                                         ? chatMode === 'general'
                                             ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'
