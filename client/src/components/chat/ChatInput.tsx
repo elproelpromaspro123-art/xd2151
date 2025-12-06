@@ -298,7 +298,7 @@ export function ChatInput({
                     />
 
                     {/* Action buttons */}
-                    <div className="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 flex items-center gap-2 sm:gap-2.5">
+                    <div className="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 flex items-center gap-2 sm:gap-2.5 pointer-events-auto z-50">
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -312,9 +312,13 @@ export function ChatInput({
                                 type="button"
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    fileInputRef.current?.click();
+                                }}
                                 disabled={isLoading}
-                                className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 ${chatMode === 'general'
+                                className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 pointer-events-auto ${chatMode === 'general'
                                     ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100/80 shadow-sm hover:shadow-md'
                                     : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20 shadow-sm hover:shadow-md'
                                     } backdrop-blur-sm`}
@@ -327,8 +331,12 @@ export function ChatInput({
                             <Button
                                 type="button"
                                 size="icon"
-                                onClick={onStopGeneration}
-                                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 text-white touch-manipulation shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onStopGeneration();
+                                }}
+                                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 text-white touch-manipulation shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 pointer-events-auto"
                             >
                                 <StopCircle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                             </Button>
@@ -337,7 +345,11 @@ export function ChatInput({
                                 type="submit"
                                 size="icon"
                                 disabled={(!hasContent && !canSendWithLineCountOnly) || !canSendInRobloxMode || isLoading || disabled}
-                                className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl ${(hasContent || canSendWithLineCountOnly)
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                                className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl pointer-events-auto ${(hasContent || canSendWithLineCountOnly)
                                     ? chatMode === 'general'
                                         ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'
                                         : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary active:from-primary/80 active:to-primary/70 text-white'
