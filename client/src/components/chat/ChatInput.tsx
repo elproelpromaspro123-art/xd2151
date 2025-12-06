@@ -190,17 +190,29 @@ export function ChatInput({
     const premiumModels = models.filter(m => m.isPremiumOnly);
 
     return (
-        <div className="p-2 sm:p-3 md:p-6 w-full bg-gradient-to-b from-background/50 to-background/80 backdrop-blur-sm">
-            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+        <div className="p-3 sm:p-4 md:p-6 w-full bg-gradient-to-b from-background/60 via-background/40 to-background/80 backdrop-blur-md relative">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 opacity-[0.02]">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-secondary/20"></div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative z-10">
                 {/* Main input container */}
-                <div className={`relative rounded-2xl sm:rounded-3xl transition-all duration-300 ${isFocused
+                <div className={`relative rounded-2xl sm:rounded-3xl transition-all duration-500 ease-out ${isFocused
                         ? chatMode === 'general'
-                            ? 'ring-2 ring-blue-500/50 shadow-xl shadow-blue-500/15 border-blue-400/60 bg-card'
-                            : 'ring-2 ring-primary/50 shadow-xl shadow-primary/15 border-primary/50 bg-background'
+                            ? 'ring-2 ring-blue-500/60 shadow-2xl shadow-blue-500/20 bg-card/95 border border-blue-400/30'
+                            : 'ring-2 ring-primary/60 shadow-2xl shadow-primary/20 bg-background/95 border border-primary/30'
                         : chatMode === 'general'
-                            ? 'border-border/40 shadow-lg bg-card/90'
-                            : 'border-zinc-700/50 shadow-lg bg-background/90'
-                    } backdrop-blur-sm`}>
+                            ? 'border border-border/50 shadow-xl bg-card/85 hover:bg-card/95 hover:shadow-2xl'
+                            : 'border border-zinc-700/60 shadow-xl bg-background/85 hover:bg-background/95 hover:shadow-2xl'
+                    } backdrop-blur-xl overflow-hidden`}>
+                    {/* Inner glow effect */}
+                    <div className={`absolute inset-0 rounded-2xl sm:rounded-3xl transition-opacity duration-500 ${isFocused ? 'opacity-100' : 'opacity-0'}`}>
+                        <div className={`absolute inset-0 bg-gradient-to-r ${chatMode === 'general'
+                            ? 'from-blue-500/5 via-transparent to-blue-500/5'
+                            : 'from-primary/5 via-transparent to-primary/5'
+                        }`}></div>
+                    </div>
 
                     {/* Pasted chips */}
                     {pastedChips.length > 0 && (
@@ -261,15 +273,15 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className={`w-full resize-none px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] transition-colors ${
+                        className={`w-full resize-none px-4 sm:px-5 py-3.5 sm:py-4 pr-20 sm:pr-28 text-sm sm:text-base focus:outline-none disabled:opacity-50 min-h-[48px] sm:min-h-[56px] max-h-[220px] transition-all duration-300 leading-relaxed relative z-10 ${
                             chatMode === 'general'
-                                ? 'bg-transparent text-foreground placeholder:text-muted-foreground/70'
-                                : 'bg-transparent text-white placeholder:text-zinc-400'
+                                ? 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
+                                : 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
                         }`}
                     />
 
                     {/* Action buttons */}
-                    <div className="absolute right-2 sm:right-2 bottom-2 sm:bottom-2 flex items-center gap-1 sm:gap-1">
+                    <div className="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 flex items-center gap-2 sm:gap-2.5">
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -285,12 +297,12 @@ export function ChatInput({
                                 variant="ghost"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isLoading}
-                                className={`h-8 w-8 sm:h-8 sm:w-8 rounded-lg touch-manipulation ${chatMode === 'general'
-                                        ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 active:bg-blue-100'
-                                        : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20'
-                                    } transition-colors`}
+                                className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 ${chatMode === 'general'
+                                        ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100/80 shadow-sm hover:shadow-md'
+                                        : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20 shadow-sm hover:shadow-md'
+                                    } backdrop-blur-sm`}
                             >
-                                <Image className="h-4 w-4 sm:h-4 sm:w-4" />
+                                <Image className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                             </Button>
                         )}
 
@@ -299,28 +311,28 @@ export function ChatInput({
                                 type="button"
                                 size="icon"
                                 onClick={onStopGeneration}
-                                className="h-9 w-9 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white touch-manipulation shadow-md"
+                                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 text-white touch-manipulation shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                             >
-                                <StopCircle className="h-4 w-4 sm:h-4 sm:w-4" />
+                                <StopCircle className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                             </Button>
                         ) : (
                             <Button
                                 type="submit"
                                 size="icon"
                                 disabled={!hasContent || isLoading || disabled}
-                                className={`h-9 w-9 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl transition-all touch-manipulation ${hasContent
+                                className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl ${hasContent
                                         ? chatMode === 'general'
-                                            ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-md'
-                                            : 'bg-primary hover:bg-primary/90 active:bg-primary/80 shadow-md'
+                                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'
+                                            : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary active:from-primary/80 active:to-primary/70 text-white'
                                         : chatMode === 'general'
-                                            ? 'bg-slate-100 text-slate-400'
-                                            : 'bg-zinc-700 text-zinc-500'
+                                            ? 'bg-slate-100 text-slate-400 shadow-sm'
+                                            : 'bg-zinc-700/80 text-zinc-500 shadow-sm'
                                     }`}
                             >
                                 {isLoading ? (
-                                    <Loader2 className="h-4 w-4 sm:h-4 sm:w-4 animate-spin" />
+                                    <Loader2 className="h-4.5 w-4.5 sm:h-5 sm:w-5 animate-spin" />
                                 ) : (
-                                    <Send className="h-4 w-4 sm:h-4 sm:w-4" />
+                                    <Send className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                                 )}
                             </Button>
                         )}
