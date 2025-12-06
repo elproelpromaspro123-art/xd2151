@@ -151,31 +151,34 @@ export function ChatInput({
         return WEB_SEARCH_KEYWORDS.some(keyword => lowerText.includes(keyword));
     }, []);
 
+    const formatMessageWithConfig = (msg: string): string => {
+        if (chatMode === 'roblox' && robloxLineCount !== null && robloxLineCount !== 'auto') {
+            const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
+            const lineCountConfig = `CONFIG_ROBLOX_LINE_COUNT=${robloxLineCount}`;
+            return `${configLine}\n${lineCountConfig}\n${msg}`;
+        }
+        return msg;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         const chipContents = pastedChips.map(c => c.fullContent).join('\n\n');
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
 
-        if (chatMode === 'roblox' && robloxLineCount !== null && robloxLineCount !== 'auto') {
-            // Modo con líneas específicas
-            const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
-            const lineCountConfig = `CONFIG_ROBLOX_LINE_COUNT=${robloxLineCount}`;
+        if (chatMode === 'roblox' && robloxLineCount === null && !message.trim()) {
+            // No line count selected at all
+            return;
+        }
 
+        if (chatMode === 'roblox' && robloxLineCount !== null && robloxLineCount !== 'auto') {
             // If no message provided, use default prompt
             if (!fullMessage) {
                 fullMessage = `Genera ${robloxScriptMode === 'screen' ? 'una UI moderna y profesional' : 'un script autocontenido funcional'} de ${robloxLineCount} líneas exactas sin errores.`;
             }
-
-            fullMessage = `${configLine}\n${lineCountConfig}\n${fullMessage}`;
-        } else if (chatMode === 'roblox' && robloxLineCount === 'auto') {
-            // Modo auto - sin restricción de líneas, solo conversación normal
-            // El bot tiene libertad completa para responder
-            // No agregamos CONFIG_ aquí
-        } else if (chatMode === 'roblox' && !robloxLineCount) {
-            // No line count selected at all
-            return;
         }
+
+        fullMessage = formatMessageWithConfig(fullMessage);
 
         if (fullMessage && !isLoading && !disabled) {
             const shouldUseWebSearch = useWebSearch || (canUseWebSearch && detectWebSearchIntent(fullMessage));
@@ -345,10 +348,6 @@ export function ChatInput({
                                 type="submit"
                                 size="icon"
                                 disabled={(!hasContent && !canSendWithLineCountOnly) || !canSendInRobloxMode || isLoading || disabled}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                }}
                                 className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl pointer-events-auto ${(hasContent || canSendWithLineCountOnly)
                                     ? chatMode === 'general'
                                         ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'

@@ -482,16 +482,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             });
         } finally {
             setIsStreaming(false);
-            setStreamingMessage("");
-            setStreamingReasoning("");
-            setStreamProgress(null);
-            setCurrentRequestId(null);
-            setWebSearchActive(false);
 
             // Check for artifacts in the final message after streaming completes
-            if (finalMessage) {
-                const codeBlock = extractLatestCodeBlock(finalMessage);
-                if (codeBlock && codeBlock.code.length > 50) {
+            const messageToCheck = fullMessage || streamingMessage;
+            if (messageToCheck) {
+                const codeBlock = extractLatestCodeBlock(messageToCheck);
+                if (codeBlock && codeBlock.code.length > 50 && codeBlock.isComplete) {
                     setArtifactState({
                         isOpen: true,
                         content: codeBlock.code,
@@ -500,6 +496,12 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                     });
                 }
             }
+
+            setStreamingMessage("");
+            setStreamingReasoning("");
+            setStreamProgress(null);
+            setCurrentRequestId(null);
+            setWebSearchActive(false);
         }
     };
 

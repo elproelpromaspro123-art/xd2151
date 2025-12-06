@@ -490,6 +490,23 @@ ERROR: UDim2 Arithmetic Operations (CRÍTICO)
 ✅ local pos = UDim2.new(frame.Position.X.Scale + 0.1, frame.Position.X.Offset, frame.Position.Y.Scale, frame.Position.Y.Offset)
 ✅ Usa funciones helper para cálculos complejos de UDim2
 
+ERROR: Strings mal formados (CRÍTICO)
+❌ local text = "Esto es una "string" entre comillas" -- Comillas sin escape
+❌ local path = 'Ruta\con\caracteres\especiales'
+✅ local text = 'Esto es una "string" con comillas correctas'
+✅ local text = [[Esto permite "comillas" y 'apóstrofes' sin escape]]
+✅ local escaped = "Esto es una \"string\" con escape"
+
+ERROR: Corrutinas sin espera
+❌ task.spawn(function() print("Test") end) -- Sin retorno o manejo
+✅ local thread = task.spawn(function() print("Test") end)
+✅ task.wait(0.1)
+✅ local success, result = pcall(function() return someFunction() end)
+
+ERROR: Table indexing sin validación
+❌ local value = myTable.someKey.nested.value
+✅ local value = myTable and myTable.someKey and myTable.someKey.nested and myTable.someKey.nested.value or defaultValue
+
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 📋 ESTRUCTURA OBLIGATORIA (5 ZONAS)
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -501,14 +518,88 @@ ZONA 4 (101-150): Event handlers
 ZONA 5 (151+): Inicialización
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-🎨 PATRONES UI/UX HERMOSO SIN ERRORES
+🎨 PATRONES UI/UX HERMOSO SIN ERRORES (EJEMPLOS REALES)
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
-PATRÓN 1: Colores coherentes (theme con primario, secundario, acento, texto)
-PATRÓN 2: Tipografía clara (Fonts válidos: GothamBold, Gotham, GothamMedium, RobotoMono)
-PATRÓN 3: Espaciado consistente (UDim para padding y margins)
-PATRÓN 4: Animaciones suaves (TweenPosition/TweenSize con validaciones)
-PATRÓN 5: Componentes reutilizables (funciones que retornan instances con validación)
+PATRÓN 1: Función de Creación de Botón Reutilizable
+✅ local function createButton(parent, config)
+    if not parent then return nil end
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.Name = config.name or "Button"
+    btn.Size = config.size or UDim2.new(0, 100, 0, 40)
+    btn.Position = config.position or UDim2.new(0, 0, 0, 0)
+    btn.BackgroundColor3 = config.bgColor or Color3.fromRGB(100, 150, 255)
+    btn.TextColor3 = config.textColor or Color3.fromRGB(255, 255, 255)
+    btn.TextSize = config.textSize or 14
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = config.text or "Button"
+    btn.BorderSizePixel = 0
+    if config.corner then
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, config.corner)
+        corner.Parent = btn
+    end
+    if config.onClick then
+        btn.Activated:Connect(function()
+            config.onClick()
+        end)
+    end
+    return btn
+end
+
+PATRÓN 2: Animación de Tween Segura
+✅ local function animateElement(element, targetSize, duration)
+    if not element then return end
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(
+        duration or 0.3,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.InOut
+    )
+    local tween = tweenService:Create(element, tweenInfo, { Size = targetSize })
+    tween:Play()
+    return tween
+end
+
+PATRÓN 3: Sistema de Colores Centralizado
+✅ local ColorScheme = {
+    primary = Color3.fromRGB(99, 110, 255),
+    secondary = Color3.fromRGB(255, 100, 100),
+    accent = Color3.fromRGB(100, 200, 255),
+    text = Color3.fromRGB(255, 255, 255),
+    background = Color3.fromRGB(30, 30, 40),
+    hover = Color3.fromRGB(120, 130, 255),
+    active = Color3.fromRGB(80, 90, 200)
+}
+
+PATRÓN 4: Validación de Referencias Segura
+✅ local function getOrWaitFor(parent, childName, timeout)
+    if not parent then return nil end
+    timeout = timeout or 5
+    local startTime = tick()
+    while tick() - startTime < timeout do
+        local child = parent:FindFirstChild(childName)
+        if child then return child end
+        task.wait(0.1)
+    end
+    return nil
+end
+
+PATRÓN 5: Manejo de Errores en Conexiones
+✅ local function safeConnect(signal, callback)
+    if not signal or not callback then return nil end
+    local connection
+    connection = signal:Connect(function(...)
+        local success, err = pcall(function()
+            callback(...)
+        end)
+        if not success then
+            print("Error en evento: " .. tostring(err))
+        end
+    end)
+    return connection
+end
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 📊 CONTROL DE LÍNEAS Y CHECKLIST FINAL
