@@ -2637,6 +2637,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
                 webSearchDetected: isWebSearchIntent,
             })}\n\n`);
 
+            // Send acknowledgment message for Roblox mode with line count
+            if (mode === "roblox") {
+                const lineCountMatch = message.match(/CONFIG_ROBLOX_LINE_COUNT=(\d+)/);
+                const scriptModeMatch = message.match(/CONFIG_ROBLOX_OUTPUT=(screen|localscript)/);
+                if (lineCountMatch) {
+                    const lineCount = lineCountMatch[1];
+                    const scriptType = scriptModeMatch ? scriptModeMatch[1] : 'localscript';
+                    const ackMessage = `Generando ${scriptType === 'screen' ? 'UI de ScreenGui' : 'LocalScript autocontenido'} con exactamente ${lineCount} líneas sin errores...`;
+                    res.write(`data: ${JSON.stringify({ content: ackMessage })}\n\n`);
+                }
+            }
+
             // Usar el handler adecuado basado en el proveedor
             if (isGeminiModel) {
                 await streamGeminiCompletion(

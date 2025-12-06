@@ -69,10 +69,11 @@ export function ChatInput({
         const saved = localStorage.getItem(key);
         return saved === 'screen' || saved === 'localscript' ? (saved as 'screen' | 'localscript') : 'localscript';
     });
-    const [robloxLineCount, setRobloxLineCount] = useState<number | null>(() => {
+    const [robloxLineCount, setRobloxLineCount] = useState<number | 'auto' | null>(() => {
         if (typeof window === 'undefined') return null;
         const key = userId ? `robloxLineCount_${userId}` : 'robloxLineCount';
         const saved = localStorage.getItem(key);
+        if (saved === 'auto') return 'auto';
         const parsed = saved ? parseInt(saved, 10) : null;
         return [500, 1000, 1500, 2000].includes(parsed as number) ? parsed : null;
     });
@@ -155,14 +156,25 @@ export function ChatInput({
 
         const chipContents = pastedChips.map(c => c.fullContent).join('\n\n');
         let fullMessage = chipContents ? `${chipContents}\n\n${message.trim()}` : message.trim();
-        if (chatMode === 'roblox') {
-            if (!robloxLineCount) {
-                // Don't send if no line count is selected
-                return;
-            }
+
+        if (chatMode === 'roblox' && robloxLineCount !== null && robloxLineCount !== 'auto') {
+            // Modo con líneas específicas
             const configLine = robloxScriptMode === 'screen' ? 'CONFIG_ROBLOX_OUTPUT=screen' : 'CONFIG_ROBLOX_OUTPUT=localscript';
             const lineCountConfig = `CONFIG_ROBLOX_LINE_COUNT=${robloxLineCount}`;
+
+            // If no message provided, use default prompt
+            if (!fullMessage) {
+                fullMessage = `Genera ${robloxScriptMode === 'screen' ? 'una UI moderna y profesional' : 'un script autocontenido funcional'} de ${robloxLineCount} líneas exactas sin errores.`;
+            }
+
             fullMessage = `${configLine}\n${lineCountConfig}\n${fullMessage}`;
+        } else if (chatMode === 'roblox' && robloxLineCount === 'auto') {
+            // Modo auto - sin restricción de líneas, solo conversación normal
+            // El bot tiene libertad completa para responder
+            // No agregamos CONFIG_ aquí
+        } else if (chatMode === 'roblox' && !robloxLineCount) {
+            // No line count selected at all
+            return;
         }
 
         if (fullMessage && !isLoading && !disabled) {
@@ -189,6 +201,7 @@ export function ChatInput({
     const canUseWebSearch = webSearchRemaining > 0;
     const hasContent = message.trim() || pastedChips.length > 0;
     const canSendInRobloxMode = chatMode !== 'roblox' || robloxLineCount !== null;
+    const canSendWithLineCountOnly = chatMode === 'roblox' && robloxLineCount === 'auto' ? false : (chatMode === 'roblox' && robloxLineCount !== null && !hasContent);
 
     // Filtrar modelos por plan (free vs premium)
     const freeModels = models.filter(m => !m.isPremiumOnly);
@@ -204,19 +217,19 @@ export function ChatInput({
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative z-10">
                 {/* Main input container */}
                 <div className={`relative rounded-2xl sm:rounded-3xl transition-all duration-500 ease-out ${isFocused
-                        ? chatMode === 'general'
-                            ? 'ring-2 ring-blue-500/60 shadow-2xl shadow-blue-500/20 bg-card/95 border border-blue-400/30'
-                            : 'ring-2 ring-primary/60 shadow-2xl shadow-primary/20 bg-background/95 border border-primary/30'
-                        : chatMode === 'general'
-                            ? 'border border-border/50 shadow-xl bg-card/85 hover:bg-card/95 hover:shadow-2xl'
-                            : 'border border-zinc-700/60 shadow-xl bg-background/85 hover:bg-background/95 hover:shadow-2xl'
+                    ? chatMode === 'general'
+                        ? 'ring-2 ring-blue-500/60 shadow-2xl shadow-blue-500/20 bg-card/95 border border-blue-400/30'
+                        : 'ring-2 ring-primary/60 shadow-2xl shadow-primary/20 bg-background/95 border border-primary/30'
+                    : chatMode === 'general'
+                        ? 'border border-border/50 shadow-xl bg-card/85 hover:bg-card/95 hover:shadow-2xl'
+                        : 'border border-zinc-700/60 shadow-xl bg-background/85 hover:bg-background/95 hover:shadow-2xl'
                     } backdrop-blur-xl overflow-hidden`}>
                     {/* Inner glow effect */}
                     <div className={`absolute inset-0 rounded-2xl sm:rounded-3xl transition-opacity duration-500 ${isFocused ? 'opacity-100' : 'opacity-0'}`}>
                         <div className={`absolute inset-0 bg-gradient-to-r ${chatMode === 'general'
                             ? 'from-blue-500/5 via-transparent to-blue-500/5'
                             : 'from-primary/5 via-transparent to-primary/5'
-                        }`}></div>
+                            }`}></div>
                     </div>
 
                     {/* Pasted chips */}
@@ -226,8 +239,8 @@ export function ChatInput({
                                 <div
                                     key={chip.id}
                                     className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[11px] sm:text-xs group ${chatMode === 'general'
-                                            ? 'bg-blue-50 text-blue-700 border border-blue-200/50'
-                                            : 'bg-primary/10 text-primary border border-primary/20'
+                                        ? 'bg-blue-50 text-blue-700 border border-blue-200/50'
+                                        : 'bg-primary/10 text-primary border border-primary/20'
                                         }`}
                                 >
                                     <span className="truncate max-w-[100px] sm:max-w-[150px]">{chip.preview}</span>
@@ -278,11 +291,10 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className={`w-full resize-none px-4 sm:px-5 py-3.5 sm:py-4 pr-20 sm:pr-28 text-sm sm:text-base focus:outline-none focus:ring-0 focus:ring-offset-0 border-0 disabled:opacity-50 min-h-[48px] sm:min-h-[56px] max-h-[220px] transition-all duration-300 leading-relaxed relative z-10 ${
-                            chatMode === 'general'
+                        className={`w-full resize-none px-4 sm:px-5 py-3.5 sm:py-4 pr-20 sm:pr-28 text-sm sm:text-base focus:outline-none focus:ring-0 focus:ring-offset-0 border-0 disabled:opacity-50 min-h-[48px] sm:min-h-[56px] max-h-[220px] transition-all duration-300 leading-relaxed relative z-10 ${chatMode === 'general'
                                 ? 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
                                 : 'bg-transparent text-foreground placeholder:text-muted-foreground/60'
-                        }`}
+                            }`}
                     />
 
                     {/* Action buttons */}
@@ -303,8 +315,8 @@ export function ChatInput({
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isLoading}
                                 className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 ${chatMode === 'general'
-                                        ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100/80 shadow-sm hover:shadow-md'
-                                        : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20 shadow-sm hover:shadow-md'
+                                    ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100/80 shadow-sm hover:shadow-md'
+                                    : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20 shadow-sm hover:shadow-md'
                                     } backdrop-blur-sm`}
                             >
                                 <Image className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
@@ -324,14 +336,14 @@ export function ChatInput({
                             <Button
                                 type="submit"
                                 size="icon"
-                                disabled={!hasContent || !canSendInRobloxMode || isLoading || disabled}
-                                className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl ${hasContent
-                                        ? chatMode === 'general'
-                                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'
-                                            : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary active:from-primary/80 active:to-primary/70 text-white'
-                                        : chatMode === 'general'
-                                            ? 'bg-slate-100 text-slate-400 shadow-sm'
-                                            : 'bg-zinc-700/80 text-zinc-500 shadow-sm'
+                                disabled={(!hasContent && !canSendWithLineCountOnly) || !canSendInRobloxMode || isLoading || disabled}
+                                className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl touch-manipulation transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl ${(hasContent || canSendWithLineCountOnly)
+                                    ? chatMode === 'general'
+                                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white'
+                                        : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary active:from-primary/80 active:to-primary/70 text-white'
+                                    : chatMode === 'general'
+                                        ? 'bg-slate-100 text-slate-400 shadow-sm'
+                                        : 'bg-zinc-700/80 text-zinc-500 shadow-sm'
                                     }`}
                             >
                                 {isLoading ? (
@@ -354,8 +366,8 @@ export function ChatInput({
                                     variant="ghost"
                                     size="sm"
                                     className={`h-7 sm:h-8 gap-1 sm:gap-1.5 text-[11px] sm:text-xs rounded-lg px-1.5 sm:px-2 ${chatMode === 'general'
-                                            ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                            : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                                         }`}
                                     disabled={isLoading}
                                 >
@@ -371,7 +383,7 @@ export function ChatInput({
                                             Free
                                         </div>
                                         {freeModels.map(model => {
-                                            const formattedTime = model.remainingTime 
+                                            const formattedTime = model.remainingTime
                                                 ? (() => {
                                                     const totalSeconds = Math.ceil(model.remainingTime / 1000);
                                                     const minutes = Math.floor(totalSeconds / 60);
@@ -383,65 +395,65 @@ export function ChatInput({
                                                     return `${hours}h ${remainingMinutes}m`;
                                                 })()
                                                 : '';
-                                            
+
                                             const isGeminiPro = model.key === "gemini-2.5-pro";
                                             const isGeminiFlash = model.key === "gemini-2.5-flash";
                                             const isGeminiFlash2 = model.key === "gemini-flash-2";
                                             const isFlash2Blocked = isGeminiFlash2 && chatMode !== "general";
 
                                             return (
-                                            <DropdownMenuItem
-                                                key={model.key}
-                                                onClick={() => {
-                                                    if (model.available && !isFlash2Blocked) {
-                                                        onModelChange(model.key);
-                                                        if (!model.supportsReasoning) {
-                                                            onReasoningChange(false);
+                                                <DropdownMenuItem
+                                                    key={model.key}
+                                                    onClick={() => {
+                                                        if (model.available && !isFlash2Blocked) {
+                                                            onModelChange(model.key);
+                                                            if (!model.supportsReasoning) {
+                                                                onReasoningChange(false);
+                                                            }
                                                         }
-                                                    }
-                                                }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available || isFlash2Blocked ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
-                                                disabled={!model.available || isFlash2Blocked}
-                                            >
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
-                                                    <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {isGeminiPro && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                🏆 Mejor para programar
-                                                            </span>
-                                                        )}
-                                                        {isGeminiFlash && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 dark:text-green-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                💚 Mejor para plan free
-                                                            </span>
-                                                        )}
-                                                        {isGeminiFlash2 && isFlash2Blocked && (
-                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                🔒 Solo modo general
-                                                            </span>
-                                                        )}
-                                                        {model.isRateLimited && (
-                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                No disponible ({formattedTime})
-                                                            </span>
-                                                        )}
-                                                        {model.supportsImages && (
-                                                            <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
-                                                                IMG
-                                                            </span>
-                                                        )}
-                                                        {model.supportsReasoning && (
-                                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
-                                                                R1
-                                                            </span>
-                                                        )}
+                                                    }}
+                                                    className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available || isFlash2Blocked ? 'opacity-50' : ''} ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-md border border-blue-400/20 hover:border-blue-400/40 transition-all' : ''}`}
+                                                    disabled={!model.available || isFlash2Blocked}
+                                                >
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        <span className={`font-medium text-sm flex-1 ${(isGeminiPro || isGeminiFlash || isGeminiFlash2) ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                        <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                            {isGeminiPro && (
+                                                                <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    🏆 Mejor para programar
+                                                                </span>
+                                                            )}
+                                                            {isGeminiFlash && (
+                                                                <span className="px-2 py-0.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 dark:text-green-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    💚 Mejor para plan free
+                                                                </span>
+                                                            )}
+                                                            {isGeminiFlash2 && isFlash2Blocked && (
+                                                                <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    🔒 Solo modo general
+                                                                </span>
+                                                            )}
+                                                            {model.isRateLimited && (
+                                                                <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    No disponible ({formattedTime})
+                                                                </span>
+                                                            )}
+                                                            {model.supportsImages && (
+                                                                <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
+                                                                    IMG
+                                                                </span>
+                                                            )}
+                                                            {model.supportsReasoning && (
+                                                                <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
+                                                                    R1
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <span className="text-[10px] text-muted-foreground">{model.description}</span>
-                                            </DropdownMenuItem>
+                                                    <span className="text-[10px] text-muted-foreground">{model.description}</span>
+                                                </DropdownMenuItem>
                                             );
-                                            })}
+                                        })}
                                     </>
                                 )}
 
@@ -452,7 +464,7 @@ export function ChatInput({
                                             <Sparkles className="h-3 w-3" /> Premium
                                         </div>
                                         {premiumModels.map(model => {
-                                            const formattedTime = model.remainingTime 
+                                            const formattedTime = model.remainingTime
                                                 ? (() => {
                                                     const totalSeconds = Math.ceil(model.remainingTime / 1000);
                                                     const minutes = Math.floor(totalSeconds / 60);
@@ -464,60 +476,60 @@ export function ChatInput({
                                                     return `${hours}h ${remainingMinutes}m`;
                                                 })()
                                                 : '';
-                                            
+
                                             const isGeminiPro = model.key === "gemini-2.5-pro";
                                             return (
-                                            <DropdownMenuItem
-                                                key={model.key}
-                                                onClick={() => {
-                                                    if (model.available) {
-                                                        onModelChange(model.key);
-                                                        if (!model.supportsReasoning) {
-                                                            onReasoningChange(false);
+                                                <DropdownMenuItem
+                                                    key={model.key}
+                                                    onClick={() => {
+                                                        if (model.available) {
+                                                            onModelChange(model.key);
+                                                            if (!model.supportsReasoning) {
+                                                                onReasoningChange(false);
+                                                            }
                                                         }
-                                                    }
-                                                }}
-                                                className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGeminiPro ? 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-md border border-amber-400/20 hover:border-amber-400/40 transition-all' : ''}`}
-                                                disabled={!model.available}
-                                            >
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <span className={`font-medium text-sm flex-1 ${isGeminiPro ? 'bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
-                                                    <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                                                        {isGeminiPro && (
-                                                            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                🏆 Mejor actualmente
-                                                            </span>
-                                                        )}
-                                                        {model.isRateLimited && (
-                                                            <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
-                                                                No disponible ({formattedTime})
-                                                            </span>
-                                                        )}
-                                                        {model.supportsImages && (
-                                                            <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
-                                                                IMG
-                                                            </span>
-                                                        )}
-                                                        {model.supportsReasoning && (
-                                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
-                                                                R1
-                                                            </span>
-                                                        )}
+                                                    }}
+                                                    className={`flex flex-col items-start gap-0.5 py-2 relative ${!model.available ? 'opacity-50' : ''} ${isGeminiPro ? 'bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-md border border-amber-400/20 hover:border-amber-400/40 transition-all' : ''}`}
+                                                    disabled={!model.available}
+                                                >
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        <span className={`font-medium text-sm flex-1 ${isGeminiPro ? 'bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent' : ''}`}>{model.name}</span>
+                                                        <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                                            {isGeminiPro && (
+                                                                <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-300 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    🏆 Mejor actualmente
+                                                                </span>
+                                                            )}
+                                                            {model.isRateLimited && (
+                                                                <span className="px-2 py-0.5 bg-red-500/15 text-red-700 dark:text-red-400 rounded text-[8px] font-semibold whitespace-nowrap">
+                                                                    No disponible ({formattedTime})
+                                                                </span>
+                                                            )}
+                                                            {model.supportsImages && (
+                                                                <span className="px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[9px] font-medium">
+                                                                    IMG
+                                                                </span>
+                                                            )}
+                                                            {model.supportsReasoning && (
+                                                                <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9px] font-medium">
+                                                                    R1
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <span className="text-[10px] text-muted-foreground">{model.description}</span>
-                                            </DropdownMenuItem>
+                                                    <span className="text-[10px] text-muted-foreground">{model.description}</span>
+                                                </DropdownMenuItem>
                                             );
-                                            })}
-                                            </>
-                                            )}
-                                            </DropdownMenuContent>
+                                        })}
+                                    </>
+                                )}
+                            </DropdownMenuContent>
                         </DropdownMenu>
 
                         {/* Mode toggle */}
                         <div className={`flex items-center rounded-xl p-1 border ${chatMode === 'general'
-                                ? 'bg-card border-border shadow-sm'
-                                : 'bg-zinc-800/50 border-zinc-700 shadow-lg'
+                            ? 'bg-card border-border shadow-sm'
+                            : 'bg-zinc-800/50 border-zinc-700 shadow-lg'
                             } transition-all duration-200`}>
                             <Button
                                 type="button"
@@ -526,8 +538,8 @@ export function ChatInput({
                                 onClick={() => onChatModeChange("roblox")}
                                 disabled={isLoading}
                                 className={`h-7 sm:h-8 px-2 sm:px-3 text-[11px] sm:text-xs gap-1 sm:gap-1.5 rounded-lg font-medium transition-all ${chatMode === "roblox"
-                                        ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md hover:shadow-lg"
-                                        : "text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10"
+                                    ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md hover:shadow-lg"
+                                    : "text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10"
                                     }`}
                             >
                                 <Gamepad2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -540,8 +552,8 @@ export function ChatInput({
                                 onClick={() => onChatModeChange("general")}
                                 disabled={isLoading}
                                 className={`h-7 sm:h-8 px-2 sm:px-3 text-[11px] sm:text-xs gap-1 sm:gap-1.5 rounded-lg font-medium transition-all ${chatMode === "general"
-                                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg"
-                                        : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg"
+                                    : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
                                     }`}
                             >
                                 <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -568,8 +580,8 @@ export function ChatInput({
                                             }}
                                             disabled={isLoading}
                                             className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs gap-1 rounded-lg font-medium transition-all ${robloxScriptMode === 'screen'
-                                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                                                    : 'text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/20'
+                                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
+                                                : 'text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/20'
                                                 }`}
                                         >
                                             ScreenGui
@@ -587,8 +599,8 @@ export function ChatInput({
                                             }}
                                             disabled={isLoading}
                                             className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs gap-1 rounded-lg font-medium transition-all ${robloxScriptMode === 'localscript'
-                                                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
-                                                    : 'text-zinc-400 hover:text-orange-300 hover:bg-orange-500/20'
+                                                ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-md'
+                                                : 'text-zinc-400 hover:text-orange-300 hover:bg-orange-500/20'
                                                 }`}
                                         >
                                             LocalScript
@@ -599,7 +611,7 @@ export function ChatInput({
                                 {/* Line count selector */}
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-800/30 border border-zinc-700/50">
                                     <span className="text-[10px] sm:text-xs text-zinc-300 font-medium">Líneas:</span>
-                                    <div className="flex gap-1">
+                                    <div className="flex gap-1 flex-wrap">
                                         {[500, 1000, 1500, 2000].map((count) => (
                                             <Button
                                                 key={count}
@@ -615,13 +627,32 @@ export function ChatInput({
                                                 }}
                                                 disabled={isLoading}
                                                 className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs rounded-lg font-medium transition-all ${robloxLineCount === count
-                                                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
-                                                        : 'text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/20'
+                                                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
+                                                    : 'text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/20'
                                                     }`}
                                             >
                                                 {count}
                                             </Button>
                                         ))}
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant={robloxLineCount === 'auto' ? 'default' : 'ghost'}
+                                            onClick={() => {
+                                                setRobloxLineCount('auto');
+                                                if (typeof window !== 'undefined') {
+                                                    const key = userId ? `robloxLineCount_${userId}` : 'robloxLineCount';
+                                                    localStorage.setItem(key, 'auto');
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                            className={`h-6 sm:h-7 px-2 sm:px-2.5 text-[10px] sm:text-xs rounded-lg font-medium transition-all whitespace-nowrap ${robloxLineCount === 'auto'
+                                                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md'
+                                                : 'text-zinc-400 hover:text-purple-300 hover:bg-purple-500/20'
+                                                }`}
+                                        >
+                                            Auto
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -629,12 +660,12 @@ export function ChatInput({
 
                         {/* Web search toggle */}
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${canUseWebSearch
-                                ? chatMode === 'general'
-                                    ? 'bg-card border-border hover:bg-card/80'
-                                    : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
-                                : chatMode === 'general'
-                                    ? 'bg-card/50 border-border/50'
-                                    : 'bg-zinc-800/20 border-zinc-700/30'
+                            ? chatMode === 'general'
+                                ? 'bg-card border-border hover:bg-card/80'
+                                : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
+                            : chatMode === 'general'
+                                ? 'bg-card/50 border-border/50'
+                                : 'bg-zinc-800/20 border-zinc-700/30'
                             }`}>
                             <Switch
                                 id="web-search"
@@ -646,8 +677,8 @@ export function ChatInput({
                             <label
                                 htmlFor="web-search"
                                 className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-medium cursor-pointer ${canUseWebSearch
-                                        ? chatMode === 'general' ? 'text-slate-700' : 'text-zinc-300'
-                                        : chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'
+                                    ? chatMode === 'general' ? 'text-slate-700' : 'text-zinc-300'
+                                    : chatMode === 'general' ? 'text-slate-400' : 'text-zinc-500'
                                     }`}
                             >
                                 <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-500" />
@@ -661,8 +692,8 @@ export function ChatInput({
                         {/* Reasoning toggle */}
                         {showReasoningToggle && (
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${chatMode === 'general'
-                                    ? 'bg-card border-border hover:bg-card/80'
-                                    : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
+                                ? 'bg-card border-border hover:bg-card/80'
+                                : 'bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-700/50'
                                 }`}>
                                 <Switch
                                     id="reasoning"
@@ -699,8 +730,8 @@ export function ChatInput({
             {/* Disclaimer */}
             <div className="mt-4 sm:mt-6 text-center">
                 <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-200 hover:scale-105 ${chatMode === 'general'
-                        ? 'bg-gradient-to-r from-muted/60 to-muted/40 text-muted-foreground border border-border/30 hover:border-border/50'
-                        : 'bg-gradient-to-r from-zinc-800/40 to-zinc-700/40 text-zinc-400 border border-zinc-700/30 hover:border-zinc-600/50'
+                    ? 'bg-gradient-to-r from-muted/60 to-muted/40 text-muted-foreground border border-border/30 hover:border-border/50'
+                    : 'bg-gradient-to-r from-zinc-800/40 to-zinc-700/40 text-zinc-400 border border-zinc-700/30 hover:border-zinc-600/50'
                     } backdrop-blur-sm shadow-sm hover:shadow-md`}>
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
                     <span className="text-[10px] sm:text-xs font-medium">La IA puede cometer errores. Verifica el código antes de usarlo en producción.</span>
