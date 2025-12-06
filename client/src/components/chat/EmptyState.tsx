@@ -64,7 +64,7 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
   const suggestions = chatMode === 'general' ? generalSuggestions : robloxSuggestions;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-12 min-h-[60vh] relative overflow-visible">
+    <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 md:py-12 min-h-[50vh] sm:min-h-[60vh] relative overflow-visible">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-radial from-primary/5 to-transparent rounded-full blur-3xl animate-float"></div>
@@ -106,12 +106,12 @@ export function EmptyState({ onSuggestionClick, chatMode = "roblox" }: EmptyStat
 
       {/* Suggestions grid */}
       {suggestions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-4xl px-2 sm:px-4 overflow-visible">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 md:gap-4 w-full max-w-4xl px-1 sm:px-2 md:px-4 overflow-visible">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               onClick={() => onSuggestionClick(suggestion.prompt)}
-              className={`group flex items-start gap-3 p-3 sm:p-4 rounded-xl text-left transition-all duration-300 bg-card hover:bg-card/90 border border-card-border hover:border-primary/40 shadow-sm hover:shadow-lg hover-lift relative overflow-hidden`}
+              className={`group flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl text-left transition-all duration-300 bg-card hover:bg-card/90 border border-card-border hover:border-primary/40 shadow-sm hover:shadow-lg hover-lift relative overflow-hidden touch-manipulation`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Subtle background gradient on hover */}

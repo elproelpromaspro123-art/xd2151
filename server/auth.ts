@@ -27,6 +27,10 @@ interface User {
   lastLoginAt: string;
   registrationIp: string;
   registrationIpHash: string;
+  referralCode?: string;
+  referredBy?: string;
+  successfulReferrals?: number;
+  premiumGrantedAt?: string;
 }
 
 interface VerificationCode {
@@ -144,6 +148,10 @@ function hashPassword(password: string): string {
 function hashIp(ip: string): string {
   const salt = "ip_tracking_salt_v1_secure";
   return createHash("sha256").update(ip + salt).digest("hex");
+}
+
+function generateReferralCode(): string {
+  return randomUUID().substring(0, 8).toUpperCase();
 }
 
 export function generateVerificationCode(): string {
@@ -553,4 +561,85 @@ export function changePassword(
   saveUsersData(data);
 
   return { success: true };
+}
+
+export function getUserReferralCode(userId: string): string | null {
+  const user = getUserById(userId);
+  if (!user) return null;
+
+  if (!user.referralCode) {
+    // Generate referral code if not exists
+    const data = loadUsersData();
+    const referralCode = generateReferralCode();
+    data.users[userId].referralCode = referralCode;
+    data.users[userId].successfulReferrals = data.users[userId].successfulReferrals || 0;
+    saveUsersData(data);
+    return referralCode;
+  }
+
+  return user.referralCode;
+}
+
+export function getUserByReferralCode(referralCode: string): User | null {
+  const data = loadUsersData();
+  return Object.values(data.users).find(u => u.referralCode === referralCode) || null;
+}
+
+export function validateReferralSignup(referralCode: string, ip: string): { valid: boolean; referrerId?: string; error?: string } {
+  const referrer = getUserByReferralCode(referralCode);
+  if (!referrer) {
+    return { valid: false, error: "Código de referencia inválido" };
+  }
+
+  // Check IP limit for this referrer (max 2 accounts per IP from referrals)
+  const data = loadUsersData();
+  const referredUsersFromSameIP = Object.values(data.users).filter(u =>
+    u.referredBy === referrer.id && u.registrationIp === ip
+  );
+
+  if (referredUsersFromSameIP.length >= 2) {
+    return { valid: false, error: "Ya se han creado demasiadas cuentas desde esta IP usando este código de referencia" };
+  }
+
+  return { valid: true, referrerId: referrer.id };
+}
+
+export function processSuccessfulReferral(referrerId: string, newUserId: string, referralCode: string): boolean {
+  const data = loadUsersData();
+  const referrer = data.users[referrerId];
+  const newUser = data.users[newUserId];
+
+  if (!referrer || !newUser) return false;
+
+  // Mark new user as referred
+  newUser.referredBy = referrerId;
+
+  // Increment referrer's successful referrals
+  referrer.successfulReferrals = (referrer.successfulReferrals || 0) + 1;
+
+  // Check if referrer should get premium (30 successful referrals)
+  if (referrer.successfulReferrals >= 30 && !referrer.isPremium) {
+    referrer.isPremium = true;
+    referrer.premiumGrantedAt = new Date().toISOString();
+  }
+
+  saveUsersData(data);
+  return true;
+}
+
+export function getUserReferralStats(userId: string): { referralCode: string | null; successfulReferrals: number; isPremiumFromReferrals: boolean } {
+  const user = getUserById(userId);
+  if (!user) {
+    return { referralCode: null, successfulReferrals: 0, isPremiumFromReferrals: false };
+  }
+
+  const referralCode = getUserReferralCode(userId);
+  const successfulReferrals = user.successfulReferrals || 0;
+  const isPremiumFromReferrals = user.premiumGrantedAt ? true : false;
+
+  return {
+    referralCode,
+    successfulReferrals,
+    isPremiumFromReferrals
+  };
 }

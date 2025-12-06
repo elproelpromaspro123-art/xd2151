@@ -11,6 +11,8 @@ import { UpgradeModal } from "@/components/chat/UpgradeModal";
 import { ProfileModal } from "@/components/ProfileModal";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { RateLimitAlert } from "@/components/RateLimitAlert";
+import { MessageResetCountdown } from "@/components/MessageResetCountdown";
+import { GeminiRateLimitStatus } from "@/components/GeminiRateLimitStatus";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -33,23 +35,26 @@ interface ArtifactState {
 }
 
 interface UsageInfo {
-    aiUsageCount: number;
-    webSearchCount: number;
-    conversationCount: number;
-    limits: {
-        aiUsagePerWeek: number;
-        webSearchPerWeek: number;
-        maxChats: number;
-    };
-    messageLimits?: {
-        roblox: number;
-        general: number;
-    };
-    robloxMessageCount?: number;
-    generalMessageCount?: number;
-    weekStartDate: string;
-    isPremium: boolean;
-    isLoggedIn?: boolean;
+  aiUsageCount: number;
+  webSearchCount: number;
+  conversationCount: number;
+  limits: {
+    aiUsagePerWeek: number;
+    webSearchPerWeek: number;
+    maxChats: number;
+  };
+  messageLimits?: {
+    roblox: number;
+    general: number;
+  };
+  robloxMessageCount?: number;
+  generalMessageCount?: number;
+  weekStartDate: string;
+  nextResetTime?: string;
+  timeUntilResetMs?: number;
+  timeUntilResetFormatted?: string;
+  isPremium: boolean;
+  isLoggedIn?: boolean;
 }
 
 interface ModelsResponse {
@@ -328,6 +333,8 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
         setCurrentModelName("");
         setWebSearchActive(useWebSearch);
 
+        let finalMessage = ""; // Store final message for artifact detection
+
         try {
             const token = getToken();
             const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -424,16 +431,6 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                 if (parsed.content) {
                                     fullMessage += parsed.content;
                                     setStreamingMessage(fullMessage);
-
-                                    const codeBlock = extractLatestCodeBlock(fullMessage);
-                                    if (codeBlock && codeBlock.code.length > 50) {
-                                        setArtifactState({
-                                            isOpen: true,
-                                            content: codeBlock.code,
-                                            language: codeBlock.language,
-                                            title: "Generando código..."
-                                        });
-                                    }
                                 }
 
                                 if (parsed.error) {
@@ -489,6 +486,19 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
             setStreamProgress(null);
             setCurrentRequestId(null);
             setWebSearchActive(false);
+
+            // Check for artifacts in the final message after streaming completes
+            if (finalMessage) {
+                const codeBlock = extractLatestCodeBlock(finalMessage);
+                if (codeBlock && codeBlock.code.length > 50) {
+                    setArtifactState({
+                        isOpen: true,
+                        content: codeBlock.code,
+                        language: codeBlock.language,
+                        title: `${codeBlock.language === "luau" ? "Luau" : codeBlock.language.toUpperCase()} Code`
+                    });
+                }
+            }
         }
     };
 
@@ -610,9 +620,10 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                             }
 
                             if (parsed.content) {
-                                fullMessage += parsed.content;
-                                setStreamingMessage(fullMessage);
-                            }
+                                 fullMessage += parsed.content;
+                                 finalMessage = fullMessage; // Update final message for artifacts
+                                 setStreamingMessage(fullMessage);
+                             }
 
                             if (parsed.error) {
                                 toast({
@@ -733,7 +744,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                 <div className={`flex flex-col h-full w-full transition-all duration-300 ease-in-out ${artifactState.isOpen ? 'hidden lg:flex lg:w-1/2' : 'flex w-full'
                     }`}>
                     {/* Header */}
-                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-3 sm:gap-4 lg:gap-0 shadow-lg relative overflow-hidden transition-all duration-300`}>
+                    <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 lg:py-5 border-b border-border/30 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-2xl gap-2 sm:gap-3 md:gap-4 lg:gap-0 shadow-lg relative overflow-hidden transition-all duration-300`}>
                         {/* Background pattern */}
                         <div className="absolute inset-0 opacity-[0.03]">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
@@ -744,7 +755,7 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                         {/* Animated border gradient */}
                         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
-                        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:w-auto relative z-10 overflow-x-auto">
+                        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 w-full sm:w-auto relative z-10 overflow-x-auto scrollbar-hide">
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -799,6 +810,25 @@ export default function ChatPage({ user, onLogout }: ChatPageProps) {
                                     </span>
                                     <span className="text-muted-foreground/60">web</span>
                                 </div>
+                                {!isPremium && usage?.nextResetTime && (
+                                    <>
+                                        <div className="w-px h-2.5 sm:h-3 bg-border/30"></div>
+                                        <MessageResetCountdown
+                                            nextResetTime={usage.nextResetTime}
+                                            isPremium={isPremium}
+                                            className="text-[9px] sm:text-[10px] lg:text-xs"
+                                        />
+                                    </>
+                                )}
+                                {modelsData?.models?.find((m: any) => m.key === selectedModel)?.provider === "google" && (
+                                    <>
+                                        <div className="w-px h-2.5 sm:h-3 bg-border/30"></div>
+                                        <GeminiRateLimitStatus
+                                            modelKey={selectedModel}
+                                            className="text-[9px] sm:text-[10px] lg:text-xs"
+                                        />
+                                    </>
+                                )}
                             </div>
                         </div>
 

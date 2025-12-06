@@ -19,6 +19,11 @@ import {
     loadVerificationData,
     saveVerificationData,
     sendVerificationEmail,
+    validateReferralSignup,
+    processSuccessfulReferral,
+    getUserReferralCode,
+    getUserReferralStats,
+    getUserByReferralCode,
 } from "./auth";
 import {
     createSession,
@@ -57,6 +62,8 @@ import {
     subscribeToRateLimits,
     startRateLimitBroadcaster,
 } from "./rateLimitStream";
+import { logChatCreation, logChatMessage, logUserRegistration } from "./webhook";
+import { checkGeminiRateLimit, recordGeminiRequest, getGeminiRateLimitStatus } from "./geminiRateLimit";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -1385,6 +1392,16 @@ async function streamChatCompletion(
         if (fullContent) {
             if (userId) {
                 createUserMessage(userId, conversationId, "assistant", fullContent);
+
+                // Log assistant message to Discord
+                await logChatMessage(
+                    conversationId,
+                    userId,
+                    "assistant",
+                    fullContent,
+                    model,
+                    chatMode
+                );
             } else {
                 await storage.createMessage({
                     id: randomUUID(),
@@ -1787,6 +1804,27 @@ export function registerRoutes(
         }
     });
 
+    // Endpoint para obtener estado de rate limits de Gemini
+    app.get("/api/gemini-rate-limits", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const { model } = req.query;
+            if (!model || typeof model !== 'string') {
+                return res.status(400).json({ error: "Modelo requerido" });
+            }
+
+            const status = getGeminiRateLimitStatus(userId, model);
+            res.status(200).json(status);
+        } catch (error) {
+            console.error("Error fetching Gemini rate limits:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
     // Endpoint SSE para suscribirse a actualizaciones en tiempo real de rate limits
     app.get("/api/rate-limits/stream", (req: Request, res: Response) => {
         try {
@@ -1820,6 +1858,13 @@ export function registerRoutes(
             const usage = getUserUsage(userId);
             const isPremium = user.isPremium;
 
+            // Calculate next reset time (3 days from weekStartDate)
+            const nextResetTime = new Date(usage.weekStartDate);
+            nextResetTime.setDate(nextResetTime.getDate() + 3);
+            const timeUntilReset = Math.max(0, nextResetTime.getTime() - Date.now());
+            const hoursUntilReset = Math.floor(timeUntilReset / (1000 * 60 * 60));
+            const minutesUntilReset = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+
             res.status(200).json({
                 aiUsageCount: usage.robloxMessageCount + usage.generalMessageCount,
                 webSearchCount: usage.webSearchCount,
@@ -1836,6 +1881,9 @@ export function registerRoutes(
                 robloxMessageCount: usage.robloxMessageCount,
                 generalMessageCount: usage.generalMessageCount,
                 weekStartDate: usage.weekStartDate,
+                nextResetTime: nextResetTime.toISOString(),
+                timeUntilResetMs: timeUntilReset,
+                timeUntilResetFormatted: timeUntilReset > 0 ? `${hoursUntilReset}h ${minutesUntilReset}m` : "0m",
                 isPremium: user.isPremium,
                 isLoggedIn: true,
             });
@@ -1844,57 +1892,77 @@ export function registerRoutes(
             res.status(500).json({ error: "Error interno del servidor" });
         }
     });
+app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+        const { email, password, turnstileToken, referralCode } = req.body;
 
-    app.post("/api/auth/register", async (req: Request, res: Response) => {
-        try {
-            const { email, password, turnstileToken } = req.body;
-
-            if (!email || !password) {
-                return res.status(400).json({ error: "Correo y contraseña son requeridos" });
-            }
-
-            const ip = getClientIp(req);
-            const vpnCheck = await detectVpnOrProxy(req);
-            if (vpnCheck.isVpn) {
-                return res.status(403).json({
-                    error: "No se permite el uso de VPN o proxy para registrarse.",
-                    code: "VPN_DETECTED"
-                });
-            }
-
-            const ipRestriction = checkIpRestrictions(ip);
-            if (!ipRestriction.allowed) {
-                return res.status(403).json({
-                    error: ipRestriction.reason || "Acceso denegado",
-                    code: "IP_RESTRICTED"
-                });
-            }
-
-            const result = await registerUser(email, password, ip);
-            if (!result.success || !result.userId) {
-                return res.status(400).json({ error: result.error || "Registro inválido" });
-            }
-
-            const session = createSession(result.userId, req.headers['user-agent'], ip);
-            const user = getUserById(result.userId);
-            return res.status(201).json({
-                token: session.token,
-                user: user ? {
-                    id: user.id,
-                    email: user.email,
-                    isPremium: user.isPremium,
-                    isVerified: user.isEmailVerified,
-                    isGoogleUser: !!user.googleId,
-                } : undefined
-            });
-        } catch (error: any) {
-            console.error("Error during registration:", error);
-            if (error.message === "User already exists") {
-                return res.status(409).json({ error: "El usuario ya existe" });
-            }
-            res.status(500).json({ error: "Error interno del servidor" });
+        if (!email || !password) {
+            return res.status(400).json({ error: "Correo y contraseña son requeridos" });
         }
-    });
+
+        const ip = getClientIp(req);
+        const vpnCheck = await detectVpnOrProxy(req);
+        if (vpnCheck.isVpn) {
+            return res.status(403).json({
+                error: "No se permite el uso de VPN o proxy para registrarse.",
+                code: "VPN_DETECTED"
+            });
+        }
+
+        const ipRestriction = checkIpRestrictions(ip);
+        if (!ipRestriction.allowed) {
+            return res.status(403).json({
+                error: ipRestriction.reason || "Acceso denegado",
+                code: "IP_RESTRICTED"
+            });
+        }
+
+        // Validate referral code if provided
+        let referrerId: string | undefined;
+        if (referralCode) {
+            const referralValidation = validateReferralSignup(referralCode, ip);
+            if (!referralValidation.valid) {
+                return res.status(400).json({ error: referralValidation.error });
+            }
+            referrerId = referralValidation.referrerId;
+        }
+
+        const result = await registerUser(email, password, ip);
+        if (!result.success || !result.userId) {
+            return res.status(400).json({ error: result.error || "Registro inválido" });
+        }
+
+        // Process successful referral if applicable
+        if (referrerId && referralCode) {
+            processSuccessfulReferral(referrerId, result.userId, referralCode);
+        }
+
+        const session = createSession(result.userId, req.headers['user-agent'], ip);
+        const user = getUserById(result.userId);
+
+        // Log user registration to Discord
+        if (user) {
+            await logUserRegistration(result.userId, user.email, ip, user.isPremium, referralCode);
+        }
+
+        return res.status(201).json({
+            token: session.token,
+            user: user ? {
+                id: user.id,
+                email: user.email,
+                isPremium: user.isPremium,
+                isVerified: user.isEmailVerified,
+                isGoogleUser: !!user.googleId,
+            } : undefined
+        });
+    } catch (error: any) {
+        console.error("Error during registration:", error);
+        if (error.message === "User already exists") {
+            return res.status(409).json({ error: "El usuario ya existe" });
+        }
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
 
     app.post("/api/auth/login", async (req: Request, res: Response) => {
         try {
@@ -1948,6 +2016,7 @@ export function registerRoutes(
             let googleId = req.body.googleId;
             let email = req.body.email;
             const credential = req.body.credential;
+            const referralCode = req.body.referralCode;
 
             if (!googleId || !email) {
                 if (credential) {
@@ -1985,12 +2054,31 @@ export function registerRoutes(
                 });
             }
 
+            // Validate referral code if provided
+            let referrerId: string | undefined;
+            if (referralCode) {
+                const referralValidation = validateReferralSignup(referralCode, ip);
+                if (!referralValidation.valid) {
+                    return res.status(400).json({ error: referralValidation.error });
+                }
+                referrerId = referralValidation.referrerId;
+            }
+
             const result = loginWithGoogle(googleId, email, ip);
             if (!result.success || !result.user) {
                 return res.status(401).json({ error: result.error || "Login de Google inválido" });
             }
 
+            // Process successful referral if applicable and it's a new user
+            if (referrerId && referralCode && result.isNewUser) {
+                processSuccessfulReferral(referrerId, result.user.id, referralCode);
+            }
+
             const session = createSession(result.user.id, req.headers['user-agent'], ip);
+
+            // Log user registration/login to Discord
+            await logUserRegistration(result.user.id, result.user.email, ip, result.user.isPremium, referralCode);
+
             res.status(200).json({
                 token: session.token,
                 user: {
@@ -2156,6 +2244,51 @@ export function registerRoutes(
         }
     });
 
+    app.get("/api/user/referral", async (req: Request, res: Response) => {
+        try {
+            const userId = getUserIdFromRequest(req);
+            if (!userId) {
+                return res.status(401).json({ error: "No autorizado" });
+            }
+
+            const referralStats = getUserReferralStats(userId);
+            const referralLink = referralStats.referralCode
+                ? `${process.env.APP_URL || 'https://your-app-url.com'}?ref=${referralStats.referralCode}`
+                : null;
+
+            res.status(200).json({
+                referralCode: referralStats.referralCode,
+                referralLink,
+                successfulReferrals: referralStats.successfulReferrals,
+                referralsNeededForPremium: Math.max(0, 30 - referralStats.successfulReferrals),
+                isPremiumFromReferrals: referralStats.isPremiumFromReferrals,
+            });
+        } catch (error) {
+            console.error("Error fetching referral data:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
+    app.get("/api/referral/:code", async (req: Request, res: Response) => {
+        try {
+            const { code } = req.params;
+            const referrer = getUserByReferralCode(code);
+
+            if (!referrer) {
+                return res.status(404).json({ error: "Código de referencia inválido" });
+            }
+
+            res.status(200).json({
+                valid: true,
+                referrerEmail: referrer.email,
+                referrerId: referrer.id,
+            });
+        } catch (error) {
+            console.error("Error validating referral code:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
+    });
+
     app.get("/api/conversations", async (req: Request, res: Response) => {
         try {
             const userId = getUserIdFromRequest(req);
@@ -2199,8 +2332,18 @@ export function registerRoutes(
                 return res.status(401).json({ error: "No autorizado" });
             }
 
-            const { title } = req.body;
+            const { title, chatMode, model } = req.body;
             const conversation = await createUserConversation(userId, title || "Nueva Conversación");
+
+            // Log conversation creation to Discord
+            await logChatCreation(
+                conversation.id,
+                conversation.title,
+                userId,
+                chatMode || "roblox",
+                model || "gemini-2.5-flash"
+            );
+
             res.status(201).json({ conversation, id: conversation.id });
         } catch (error) {
             console.error("Error creating conversation:", error);
@@ -2368,6 +2511,9 @@ export function registerRoutes(
             const mode: "roblox" | "general" = chatMode === "general" ? "general" : "roblox";
             const isPremium = user.isPremium;
 
+            let currentConversationId = clientConversationId;
+            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "gemini-2.5-flash";
+
             // Verificar límites de mensajes
             if (!isPremium) {
                 const canSend = canSendMessage(userId, mode);
@@ -2379,8 +2525,19 @@ export function registerRoutes(
                 }
             }
 
-            let currentConversationId = clientConversationId;
-            const selectedModel: ModelKey = (model && (model in AI_MODELS)) ? (model as ModelKey) : "gemini-2.5-flash";
+            // Check Gemini-specific rate limits
+            const isGeminiModelForRateLimit = AI_MODELS[selectedModel]?.apiProvider === "gemini";
+            if (isGeminiModelForRateLimit) {
+                const rateLimitCheck = checkGeminiRateLimit(userId, selectedModel);
+                if (!rateLimitCheck.allowed) {
+                    return res.status(429).json({
+                        error: rateLimitCheck.reason || "Límite de rate alcanzado para este modelo.",
+                        code: "GEMINI_RATE_LIMIT",
+                        resetTime: rateLimitCheck.resetTime,
+                        limits: rateLimitCheck.limits,
+                    });
+                }
+            }
 
             // Verificar si el modelo requiere premium
             if (AI_MODELS[selectedModel].isPremiumOnly && !isPremium) {
@@ -2512,9 +2669,24 @@ export function registerRoutes(
                 : message;
             createUserMessage(userId, currentConversationId!, "user", contentToSave);
 
+            // Log user message to Discord
+            await logChatMessage(
+                currentConversationId!,
+                userId,
+                "user",
+                message,
+                selectedModel,
+                mode
+            );
+
             // Incrementar contador de mensajes
             if (!isPremium) {
                 incrementMessageCount(userId, mode);
+            }
+
+            // Record Gemini request for rate limiting
+            if (isGeminiModelForRateLimit) {
+                recordGeminiRequest(userId, selectedModel);
             }
 
             // Enviar info inicial al cliente

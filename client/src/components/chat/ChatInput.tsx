@@ -190,10 +190,10 @@ export function ChatInput({
     const premiumModels = models.filter(m => m.isPremiumOnly);
 
     return (
-        <div className="p-3 sm:p-6 w-full bg-gradient-to-b from-background/50 to-background/80 backdrop-blur-sm">
+        <div className="p-2 sm:p-3 md:p-6 w-full bg-gradient-to-b from-background/50 to-background/80 backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
                 {/* Main input container */}
-                <div className={`relative rounded-2xl sm:rounded-3xl transition-all duration-300 ${isFocused
+                <div className={`relative rounded-xl sm:rounded-2xl md:rounded-3xl transition-all duration-300 ${isFocused
                         ? chatMode === 'general'
                             ? 'ring-2 ring-blue-500/40 shadow-2xl shadow-blue-500/10 border-blue-200/50'
                             : 'ring-2 ring-primary/40 shadow-2xl shadow-primary/10 border-primary/30'
@@ -262,7 +262,7 @@ export function ChatInput({
                             : "Describe tu UI..."}
                         disabled={isLoading || disabled}
                         rows={1}
-                        className={`w-full resize-none px-3 sm:px-4 py-2.5 sm:py-3.5 pr-16 sm:pr-24 text-sm focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[52px] max-h-[200px] transition-colors ${
+                        className={`w-full resize-none px-3 sm:px-4 py-3 sm:py-3.5 pr-12 sm:pr-16 md:pr-24 text-sm sm:text-base focus:outline-none disabled:opacity-50 min-h-[48px] sm:min-h-[52px] max-h-[200px] transition-colors ${
                             chatMode === 'general'
                                 ? 'bg-transparent text-foreground placeholder:text-muted-foreground'
                                 : 'bg-transparent text-white placeholder:text-zinc-400'
@@ -270,7 +270,7 @@ export function ChatInput({
                     />
 
                     {/* Action buttons */}
-                    <div className="absolute right-1.5 sm:right-2 bottom-1.5 sm:bottom-2 flex items-center gap-0.5 sm:gap-1">
+                    <div className="absolute right-2 sm:right-2 bottom-2 sm:bottom-2 flex items-center gap-1 sm:gap-1">
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -286,12 +286,12 @@ export function ChatInput({
                                 variant="ghost"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isLoading}
-                                className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg ${chatMode === 'general'
-                                        ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
-                                        : 'text-zinc-500 hover:text-primary hover:bg-primary/10'
-                                    }`}
+                                className={`h-8 w-8 sm:h-8 sm:w-8 rounded-lg touch-manipulation ${chatMode === 'general'
+                                        ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 active:bg-blue-100'
+                                        : 'text-zinc-500 hover:text-primary hover:bg-primary/10 active:bg-primary/20'
+                                    } transition-colors`}
                             >
-                                <Image className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <Image className="h-4 w-4 sm:h-4 sm:w-4" />
                             </Button>
                         )}
 
@@ -300,28 +300,28 @@ export function ChatInput({
                                 type="button"
                                 size="icon"
                                 onClick={onStopGeneration}
-                                className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-red-500 hover:bg-red-600 text-white"
+                                className="h-9 w-9 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white touch-manipulation shadow-md"
                             >
-                                <StopCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <StopCircle className="h-4 w-4 sm:h-4 sm:w-4" />
                             </Button>
                         ) : (
                             <Button
                                 type="submit"
                                 size="icon"
                                 disabled={!hasContent || isLoading || disabled}
-                                className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl transition-all ${hasContent
+                                className={`h-9 w-9 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl transition-all touch-manipulation ${hasContent
                                         ? chatMode === 'general'
-                                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-                                            : 'bg-primary hover:bg-primary/90 shadow-md'
+                                            ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-md'
+                                            : 'bg-primary hover:bg-primary/90 active:bg-primary/80 shadow-md'
                                         : chatMode === 'general'
                                             ? 'bg-slate-100 text-slate-400'
                                             : 'bg-zinc-700 text-zinc-500'
                                     }`}
                             >
                                 {isLoading ? (
-                                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                                    <Loader2 className="h-4 w-4 sm:h-4 sm:w-4 animate-spin" />
                                 ) : (
-                                    <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <Send className="h-4 w-4 sm:h-4 sm:w-4" />
                                 )}
                             </Button>
                         )}
@@ -329,7 +329,7 @@ export function ChatInput({
                 </div>
 
                 {/* Controls bar */}
-                <div className="flex flex-wrap items-center justify-between mt-3 sm:mt-4 px-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className="flex flex-wrap items-center justify-between mt-2 sm:mt-3 md:mt-4 px-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         {/* Model selector */}
                         <DropdownMenu>

@@ -212,7 +212,7 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div
       className={cn(
-        "flex w-full mb-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
+        "flex w-full mb-4 sm:mb-6 animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
         isUser ? "justify-end" : "justify-start"
       )}
       onMouseEnter={() => {
@@ -228,7 +228,7 @@ export const MessageBubble = memo(function MessageBubble({
       }}
     >
       <div className={cn(
-        "relative flex gap-3 max-w-[90%] lg:max-w-[85%]",
+        "relative flex gap-2 sm:gap-3 max-w-[95%] sm:max-w-[90%] lg:max-w-[85%]",
         isUser && "flex-row-reverse"
       )}>
         <ActionButtons />
@@ -260,7 +260,7 @@ export const MessageBubble = memo(function MessageBubble({
           {/* Message bubble */}
           <div
             className={cn(
-              "rounded-2xl px-4 py-3 transition-all",
+              "rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all",
               isUser
                 ? "bg-primary text-primary-foreground rounded-tr-md"
                 : "bg-card border border-card-border shadow-sm rounded-tl-md text-card-foreground"
