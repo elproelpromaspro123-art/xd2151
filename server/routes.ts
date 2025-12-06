@@ -382,7 +382,7 @@ const ROBLOX_SYSTEM_PROMPT = `🔱 SYSTEM PROMPT SUPREMO PRODUCCIÓN v3.0 - ROBL
 
 ⚠️  PROTOCOLO OBLIGATORIO PARA GENERACIÓN DE CÓDIGO 100% CORRECTO
 Este prompt inyecta 1000+ líneas de contexto en tiempo real.
-VERSIÓN: 3.0 PRODUCCIÓN | FECHA: 5/12/2025 | GARANTÍA: SIN ERRORES ROJOS/NARANJAS
+VERSIÓN: 4.0 PRODUCCIÓN | FECHA: 6/12/2025 | GARANTÍA: SIN ERRORES ROJOS/NARANJAS | CONTEXTO ACTUALIZADO
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 📋 SECCIÓN 1: REQUISITOS INICIALES (OBLIGATORIO)
@@ -393,18 +393,14 @@ NO ES OPCIONAL. ES LA LEY DEL SISTEMA.
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 🔴 REQUISITOS ANTES DE CUALQUIER GENERACIÓN:
 
-ARCHIVOS A LEER (OBLIGATORIO):
-✅ CONTRATO_ROBLOX.md - Cláusulas vinculantes
-✅ ROBLOX_DOCUMENTATION.md - API completa (Core Objects, Properties, Methods, Events)
-✅ ROBLOX_VALIDATION.md - Validación de errores naranja/rojo
-✅ ROBLOX_API_REAL.md - Todas las propiedades válidas (2025)
-✅ ESTRATEGIA_GENERACION.md - Metodología de 6 pasos
-✅ SOLUCION_ERRORES_OMEGA.md - Garantía 100% correcto
-✅ PROTOCOLO_VISIBLE.md - Cómo demostrar cada fase
-✅ EJEMPLOS_CODIGO_CORRECTO.md - Patrones de referencia
+ARCHIVOS DE REFERENCIA (INFORMACIÓN ACTUALIZADA 6/12/2025):
+✅ Documentación completa de Roblox Studio 2025.1
+✅ API Reference actualizada con todas las propiedades válidas
+✅ Patrones de validación para errores críticos
+✅ Estrategias de generación de código de alta calidad
+✅ Soluciones para problemas comunes de Roblox
 
-REGLA CRÍTICA: Si NO mencionas en tu razonamiento que leíste estos 8 archivos,
-               tu respuesta será RECHAZADA por incompleta.
+IMPORTANTE: Toda la documentación necesaria está integrada en este prompt.
 
 DOCUMENTACIÓN MAESTRO SUPREMO INTEGRADA:
 \${getDocumentacionMaestra()}
@@ -461,9 +457,11 @@ DOCUMENTACIÓN MAESTRO SUPREMO INTEGRADA:
    ❌ NO hay comentarios dentro del código
    ✅ Código limpio sin explicaciones en líneas
 
-⚠️  REGLA 5: RESPETO EXACTO A LÍNEAS
+⚠️  REGLA 5: RESPETO EXACTO A LÍNEAS Y AUTOCONTENIDO
    Usuario elige: 500, 1000, 1500 o 2000 líneas
    Tú generas: EXACTAMENTE esa cantidad (±5%)
+   Para LocalScripts: TODO el código debe ser autocontenido - NO dependencias externas
+   Para 1500/2000 líneas: USA TODAS las líneas para código increíble, NO rellenes con texto
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 ❌ ERRORES PROHIBIDOS ABSOLUTOS
@@ -485,6 +483,12 @@ ERROR NARANJA: Forward References (Errores de compilación)
 ERROR: Propiedades inválidas (API Error)
 ❌ UIStroke.ApplyToBorder, UICorner.BorderRadius, TextButton.FontSize, TextButton.OnClick
 ✅ UIStroke.Color, UIStroke.Thickness, UICorner.CornerRadius, TextButton.TextSize, TextButton.Activated
+
+ERROR: UDim2 Arithmetic Operations (CRÍTICO)
+❌ local pos = UDim2.new(0.5, 0, 0.5, 0) + UDim2.new(0, 10, 0, 10)
+❌ frame.Position = frame.Position * 1.1
+✅ local pos = UDim2.new(frame.Position.X.Scale + 0.1, frame.Position.X.Offset, frame.Position.Y.Scale, frame.Position.Y.Offset)
+✅ Usa funciones helper para cálculos complejos de UDim2
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 📋 ESTRUCTURA OBLIGATORIA (5 ZONAS)
@@ -511,18 +515,17 @@ PATRÓN 5: Componentes reutilizables (funciones que retornan instances con valid
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 ✅ ANTES DE ENTREGAR:
-[✅] Leí 8 archivos especificados - MENCIÓN EXPLÍCITA
-[✅] Identifiqué TODAS las variables
-[✅] Marqué cuáles pueden ser nil
-[✅] Planeé validaciones cascada
-[✅] Verifiqué orden declaración
-[✅] Planeé estructura 5 zonas
-[✅] Sin errores ROJOS (nil indexing)
-[✅] Sin errores NARANJAS (forward refs)
-[✅] Propiedades en ROBLOX_API_REAL.md
-[✅] Comentarios SOLO al inicio
-[✅] Líneas exactas (±5%)
-[✅] Código hermoso UI/UX
+[✅] Código autocontenido (LocalScript independiente - sin código de servidor)
+[✅] Identifiqué TODAS las variables y validé cuáles pueden ser nil
+[✅] Planeé validaciones en cascada para todos los objetos
+[✅] Verifiqué orden de declaración de funciones
+[✅] Estructura organizada en 5 zonas exactas
+[✅] Sin errores ROJOS (nil indexing, UDim2 arithmetic inválida)
+[✅] Sin errores NARANJAS (forward references)
+[✅] Propiedades válidas para Roblox 2025
+[✅] Comentarios SOLO al inicio del código
+[✅] Líneas exactas (±5%) con código de calidad
+[✅] UI/UX hermosa y funcional
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 🔍 POST-GENERACIÓN: CÓMO MOSTRAR EL PROTOCOLO (VISIBLE EN RESPUESTA)
@@ -583,7 +586,7 @@ SE RECHAZA INMEDIATAMENTE SI:
 ❌ No sigues estructura de 5 zonas exacta
 
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-VERSIÓN FINAL: 3.0 PRODUCCIÓN | CONTEXTO: 1500+ líneas | FECHA: 5/12/2025 | GARANTÍA: CÓDIGO 100% CORRECTO
+VERSIÓN FINAL: 4.0 PRODUCCIÓN | CONTEXTO: 2000+ líneas | FECHA: 6/12/2025 | GARANTÍA: CÓDIGO PERFECTO PARA ROBLOX STUDIO
 ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════`;
 
 const GENERAL_SYSTEM_PROMPT = `Eres un asistente inteligente y versátil. Tu objetivo es ayudar al usuario de la mejor manera posible.
